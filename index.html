@@ -2,19 +2,21 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<!-- 外へ通信しない宣言：すべてのファイルを同じ住所からだけ読む -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<!-- 外へ通信しない：読み込むファイルはすべて、このページと同じ住所に置く -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; media-src 'self'; font-src 'self'; connect-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
 <meta name="color-scheme" content="light">
-<meta name="theme-color" content="#FFF4DE">
+<meta name="theme-color" content="#FFF4E0">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="ねこ試作">
-<title>ねこ試作</title>
+<meta name="apple-mobile-web-app-title" content="ねこきめ">
+<meta name="format-detection" content="telephone=no">
+<title>ねこきめ</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<!-- STARTUP-IMAGES:BEGIN -->
 <link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="icons/startup-750x1334.png">
 <link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="icons/startup-828x1792.png">
 <link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="icons/startup-1125x2436.png">
@@ -26,103 +28,170 @@
 <link rel="apple-touch-startup-image" media="(device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="icons/startup-1206x2622.png">
 <link rel="apple-touch-startup-image" media="(device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="icons/startup-1320x2868.png">
 <link rel="apple-touch-startup-image" media="(device-width: 420px) and (device-height: 912px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="icons/startup-1260x2736.png">
-<link rel="stylesheet" href="style.css">
-<script src="app.js" defer></script>
+<!-- STARTUP-IMAGES:END -->
+<link rel="preload" href="fonts/ZenMaruGothic-Bold.woff" as="font" type="font/woff" crossorigin>
+<link rel="preload" href="fonts/ZenMaruGothic-Medium.woff" as="font" type="font/woff" crossorigin>
+<link rel="stylesheet" href="css/style.css">
+<script type="module" src="js/app.js"></script>
 </head>
 <body>
-<header class="top">
-  <img class="logo" src="icons/icon-192.png" alt="" width="48" height="48">
-  <div>
-    <h1>ねこ試作</h1>
-    <p class="sub">確かめるための試作です（版 <span id="ver">-</span>）</p>
+<div id="app" class="app">
+
+  <!-- ホーム -->
+  <section id="view-home" class="view is-shown" data-view="home">
+    <div class="scene" id="home-scene" aria-hidden="true"></div>
+    <div class="leaves" aria-hidden="true"></div>
+    <div class="view-body home-body">
+      <header class="home-head">
+        <div class="logo" id="home-logo" aria-hidden="true"></div>
+        <h1 class="home-title">ねこきめ</h1>
+        <p class="home-sub">あきの みほん　３つの あそび</p>
+      </header>
+      <nav class="menu" aria-label="あそび">
+        <button type="button" class="menu-card" data-go="roulette">
+          <span class="menu-art" data-art="roulette" aria-hidden="true"></span>
+          <span class="menu-text">
+            <span class="menu-name">にくきゅうルーレット</span>
+            <span class="menu-desc">はりが とまった ところ</span>
+          </span>
+          <span class="menu-arrow" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="menu-card" data-go="stamp">
+          <span class="menu-art" data-art="stamp" aria-hidden="true"></span>
+          <span class="menu-text">
+            <span class="menu-name">にくきゅうスタンプ</span>
+            <span class="menu-desc">ねこの てで ぽんと おす</span>
+          </span>
+          <span class="menu-arrow" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="menu-card" data-go="nobi">
+          <span class="menu-art" data-art="nobi" aria-hidden="true"></span>
+          <span class="menu-text">
+            <span class="menu-name">のびのび せいくらべ</span>
+            <span class="menu-desc">のびた たかさで コインが きまる</span>
+          </span>
+          <span class="menu-arrow" aria-hidden="true"></span>
+        </button>
+      </nav>
+      <div class="home-foot">
+        <button type="button" class="sub-button" data-go="settings">
+          <span class="icon-gear" aria-hidden="true"></span>せってい
+        </button>
+        <p id="home-notice" class="notice" hidden></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- にくきゅうルーレット -->
+  <section id="view-roulette" class="view game-view" data-view="roulette" hidden>
+    <div class="scene" id="roulette-scene" aria-hidden="true"></div>
+    <div class="leaves" aria-hidden="true"></div>
+    <div class="view-body">
+      <header class="bar">
+        <button type="button" class="back" data-go="home" aria-label="もどる"><span class="icon-back" aria-hidden="true"></span></button>
+        <h2 class="bar-title">にくきゅうルーレット</h2>
+        <span class="bar-space"></span>
+      </header>
+      <div class="stage" id="roulette-stage"></div>
+      <div class="result" id="roulette-result" aria-live="polite"></div>
+      <div class="actions">
+        <button type="button" class="play" id="roulette-play">まわす</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- にくきゅうスタンプ -->
+  <section id="view-stamp" class="view game-view" data-view="stamp" hidden>
+    <div class="scene" id="stamp-scene" aria-hidden="true"></div>
+    <div class="leaves" aria-hidden="true"></div>
+    <div class="view-body">
+      <header class="bar">
+        <button type="button" class="back" data-go="home" aria-label="もどる"><span class="icon-back" aria-hidden="true"></span></button>
+        <h2 class="bar-title">にくきゅうスタンプ</h2>
+        <span class="bar-space"></span>
+      </header>
+      <div class="stage" id="stamp-stage"></div>
+      <div class="result" id="stamp-result" aria-live="polite"></div>
+      <div class="actions">
+        <button type="button" class="play" id="stamp-play">スタンプ</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- のびのび せいくらべ -->
+  <section id="view-nobi" class="view game-view" data-view="nobi" hidden>
+    <div class="scene" id="nobi-scene" aria-hidden="true"></div>
+    <div class="leaves" aria-hidden="true"></div>
+    <div class="view-body">
+      <header class="bar">
+        <button type="button" class="back" data-go="home" aria-label="もどる"><span class="icon-back" aria-hidden="true"></span></button>
+        <h2 class="bar-title">のびのび せいくらべ</h2>
+        <span class="bar-space"></span>
+      </header>
+      <div class="stage" id="nobi-stage"></div>
+      <div class="result" id="nobi-result" aria-live="polite"></div>
+      <div class="actions">
+        <button type="button" class="play" id="nobi-play">のびる</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- せってい -->
+  <section id="view-settings" class="view" data-view="settings" hidden>
+    <div class="scene" id="settings-scene" aria-hidden="true"></div>
+    <div class="view-body settings-body">
+      <header class="bar">
+        <button type="button" class="back" data-go="home" aria-label="もどる"><span class="icon-back" aria-hidden="true"></span></button>
+        <h2 class="bar-title">設定</h2>
+        <span class="bar-space"></span>
+      </header>
+      <div class="settings-scroll">
+        <section class="panel">
+          <h3 class="panel-title">おやつの選択肢</h3>
+          <p class="panel-hint">ルーレットとスタンプで使います。2〜12個、1つ8文字まで。</p>
+          <ol class="choice-list" id="list-choices"></ol>
+          <button type="button" class="sub-button add" data-add="choices"><span class="icon-plus" aria-hidden="true"></span>ふやす</button>
+        </section>
+        <section class="panel">
+          <h3 class="panel-title">コインの段階</h3>
+          <p class="panel-hint">せいくらべで使います。上に書いたものほど低い段階です。2〜12個、1つ8文字まで。</p>
+          <ol class="choice-list" id="list-stages"></ol>
+          <button type="button" class="sub-button add" data-add="stages"><span class="icon-plus" aria-hidden="true"></span>ふやす</button>
+        </section>
+        <section class="panel">
+          <h3 class="panel-title">音</h3>
+          <label class="switch-row">
+            <span class="switch-label">音を鳴らす</span>
+            <input type="checkbox" id="opt-sound" class="switch">
+          </label>
+          <label class="switch-row">
+            <span class="switch-label">消音モードでも鳴らす</span>
+            <input type="checkbox" id="opt-playback" class="switch">
+          </label>
+        </section>
+        <section class="panel">
+          <h3 class="panel-title">状態</h3>
+          <dl class="status">
+            <dt>通信なしで遊ぶ準備</dt><dd id="st-offline">-</dd>
+            <dt>画面を消さない仕組み</dt><dd id="st-wake">-</dd>
+            <dt>ホーム画面から開いた</dt><dd id="st-standalone">-</dd>
+            <dt>版</dt><dd id="st-version">-</dd>
+          </dl>
+          <p class="panel-hint">このアプリは、遊んだ記録や設定を外へ送りません。</p>
+          <p class="panel-hint">書体：Zen Maru Gothic（SIL Open Font License 1.1、fonts/OFL.txt）</p>
+        </section>
+      </div>
+    </div>
+  </section>
+
+  <!-- 横向きの時 -->
+  <div id="rotate" class="rotate" hidden>
+    <div class="rotate-art" id="rotate-art" aria-hidden="true"></div>
+    <p class="rotate-text">たてに もどしてね</p>
   </div>
-</header>
 
-<section id="not-standalone" class="card notice" hidden>
-  <h2>Safari で開いています</h2>
-  <p>確認は、ホーム画面に追加したアイコンから開いて行ってください。ホーム画面のアプリは Safari と保存場所が別のため、ここで変えた設定は引き継がれません。</p>
-</section>
-
-<section class="card">
-  <h2>いまの状態</h2>
-  <dl class="status">
-    <dt>ホーム画面から開いた</dt><dd id="st-standalone">-</dd>
-    <dt>通信</dt><dd id="st-online">-</dd>
-    <dt>通信なしで出す仕組み</dt><dd id="st-sw">-</dd>
-    <dt>端末に保存したファイル</dt><dd id="st-cache">-</dd>
-    <dt>このアプリを開いた回数</dt><dd id="st-opens">-</dd>
-    <dt>保存の確保</dt><dd id="st-persist">-</dd>
-  </dl>
-  <button id="start" class="primary big" type="button">はじめる（音と画面の準備）</button>
-  <p class="hint">「はじめる」を押すと、音を鳴らす準備と、画面を消さない仕組みの準備をします。</p>
-</section>
-
-<section class="card">
-  <h2>1. 音</h2>
-  <p class="hint">消音モードにしたまま、下のボタンを押してください。</p>
-  <div class="row">
-    <button id="snd-synth" type="button">合成音を鳴らす</button>
-    <button id="snd-file" type="button">音ファイルを鳴らす</button>
-  </div>
-  <label class="check"><input id="snd-playback" type="checkbox" checked> 消音モードでも鳴らす指定（playback）を使う</label>
-  <dl class="status">
-    <dt>音の種類の指定</dt><dd id="st-audiosession">-</dd>
-    <dt>音の準備</dt><dd id="st-audio">-</dd>
-  </dl>
-</section>
-
-<section class="card">
-  <h2>2. 画面を消さない</h2>
-  <label class="check"><input id="wake-on" type="checkbox" checked> 画面を消さない仕組みを使う</label>
-  <dl class="status">
-    <dt>画面を消さない仕組み</dt><dd id="st-wake">-</dd>
-    <dt>最後に画面に触れてから</dt><dd id="st-idle" class="big-num">-</dd>
-  </dl>
-</section>
-
-<section class="card">
-  <h2>3. 選択肢（設定）</h2>
-  <p class="hint">書き換えると、すぐ端末に保存します。</p>
-  <ol id="choices" class="choices"></ol>
-  <div class="row">
-    <button id="choice-add" type="button">選択肢を足す</button>
-  </div>
-  <dl class="status">
-    <dt>最後に保存した時刻</dt><dd id="st-saved">-</dd>
-    <dt>読み込み</dt><dd id="st-load">-</dd>
-  </dl>
-</section>
-
-<section class="card">
-  <h2>4. 遊びと画面の切り替え</h2>
-  <div id="stage" class="stage">
-    <div class="scene scene-a is-shown" data-name="はる"><p>はるの場面</p></div>
-    <div class="scene scene-b" data-name="なつ"><p>なつの場面</p></div>
-    <div class="scene scene-c" data-name="あき"><p>あきの場面</p></div>
-    <p id="pick-result" class="pick-result" aria-live="polite"></p>
-  </div>
-  <div class="row">
-    <button id="pick" class="primary" type="button">ひとつ選ぶ</button>
-    <button id="scene-next" type="button">画面を切り替える</button>
-  </div>
-  <div class="row">
-    <a class="button-link" href="page2.html">別のページへ移る</a>
-  </div>
-</section>
-
-<section class="card">
-  <h2>5. 記録用</h2>
-  <p class="hint">結果を書く時に、この欄を画面の写真に残すか、写してください。</p>
-  <pre id="diag" class="diag"></pre>
-  <div class="row">
-    <button id="diag-copy" type="button">この欄を写す</button>
-  </div>
-  <h3>出来事</h3>
-  <ol id="events" class="events" reversed></ol>
-</section>
-
-<footer class="foot">
-  <p>このアプリは、遊んだ記録や設定を外へ送りません。読み込むファイルはすべて、このページと同じ住所にあります。</p>
-</footer>
+  <!-- お祝いの葉っぱ -->
+  <div id="fx" class="fx" aria-hidden="true"></div>
+</div>
 </body>
 </html>

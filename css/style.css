@@ -1,0 +1,389 @@
+/* ねこきめ（秋の見本）— 見た目の定義
+   書体は Zen Maru Gothic の1つだけを使う（RS01-S14：書体をそろえる）。
+   色は明るい色だけで組み、画面に大きな暗い面を作らない（RS01-S06）。 */
+
+@font-face {
+  font-family: "NekoMaru";
+  src: url("../fonts/ZenMaruGothic-Medium.woff") format("woff");
+  font-weight: 500;
+  font-style: normal;
+  font-display: block;
+}
+@font-face {
+  font-family: "NekoMaru";
+  src: url("../fonts/ZenMaruGothic-Bold.woff") format("woff");
+  font-weight: 700;
+  font-style: normal;
+  font-display: block;
+}
+
+:root {
+  color-scheme: light;
+  --bg: #fff4e0;
+  --paper: #fffbf2;
+  --paper-2: #fff6e6;
+  --ink: #5a3e2e;
+  --ink-soft: #8c6e5a;
+  --line: #ead3b2;
+  --line-strong: #d9b98e;
+  --momiji: #e8664a;
+  --kaki: #f29a4a;
+  --icho: #f5c451;
+  --olive: #a3bd6e;
+  --sky: #e6f2f2;
+  --chestnut: #b9784e;
+  --rose: #f6bfae;
+  --yellow: #ffd45e;
+  --yellow-edge: #e3a92c;
+  --ok: #4f8a5b;
+  --ng: #b5523b;
+  --font: "NekoMaru", sans-serif;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font);
+  font-weight: 500;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  overscroll-behavior: none;
+}
+body { overflow: hidden; position: fixed; inset: 0; }
+
+button, input { font-family: var(--font); color: var(--ink); }
+svg text { font-family: var(--font); }
+
+.app { position: fixed; inset: 0; background: var(--bg); overflow: hidden; }
+
+/* ---- 画面（ビュー）の切り替え：明るい画面どうしを重ねて切り替える ---- */
+.view {
+  position: absolute;
+  inset: 0;
+  background: var(--bg);
+  opacity: 0;
+  transition: opacity 260ms ease;
+}
+.view.is-shown { opacity: 1; }
+.view[hidden] { display: none; }
+
+.scene { position: absolute; inset: 0; z-index: 0; overflow: hidden; }
+.scene svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.leaves { position: absolute; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
+.leaf-fall { position: absolute; top: -40px; left: 0; width: 26px; height: 26px; will-change: transform; }
+
+.view-body {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: calc(var(--safe-top) + 6px) 16px calc(var(--safe-bottom) + 14px);
+}
+
+/* ---- ホーム ---- */
+.home-body { justify-content: space-between; }
+.home-head { text-align: center; padding-top: 18px; }
+.logo { width: 112px; height: 112px; margin: 0 auto; }
+.logo svg { width: 100%; height: 100%; display: block; }
+.home-title {
+  margin: 4px 0 0;
+  font-size: 46px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--ink);
+}
+.home-sub { margin: 2px 0 0; font-size: 16px; color: var(--ink-soft); letter-spacing: 0.1em; }
+
+.menu { display: flex; flex-direction: column; gap: 14px; margin: 10px 0; }
+.menu-card {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px 12px 12px;
+  border: 3px solid var(--line);
+  border-radius: 26px;
+  background: var(--paper);
+  box-shadow: 0 5px 0 var(--line-strong);
+  text-align: left;
+  touch-action: manipulation;
+  transition: transform 90ms ease, box-shadow 90ms ease;
+}
+.menu-card:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--line-strong); }
+.menu-art {
+  flex: none;
+  width: 72px;
+  height: 72px;
+  border-radius: 20px;
+  background: var(--paper-2);
+  overflow: hidden;
+}
+.menu-art svg { width: 100%; height: 100%; display: block; }
+.menu-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.menu-name { font-size: 20px; font-weight: 700; line-height: 1.25; white-space: nowrap; }
+.menu-desc { font-size: 14px; color: var(--ink-soft); line-height: 1.4; white-space: nowrap; }
+.menu-arrow { flex: none; width: 22px; height: 22px; }
+.menu-arrow svg { width: 100%; height: 100%; display: block; }
+
+.home-foot { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+
+.notice {
+  margin: 0;
+  padding: 8px 14px;
+  border-radius: 14px;
+  background: #fde7df;
+  color: var(--ng);
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+/* 画面の低い端末（iPhone SE など）では、ホームの見出しを小さくして収める */
+@media (max-height: 700px) {
+  .logo { width: 84px; height: 84px; }
+  .home-title { font-size: 38px; }
+  .home-head { padding-top: 4px; }
+  .menu { gap: 10px; margin: 6px 0; }
+  .menu-card { padding: 9px 12px 9px 10px; }
+  .menu-art { width: 62px; height: 62px; }
+}
+
+/* ---- 小さいボタン ---- */
+.sub-button {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 22px;
+  border: 3px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper);
+  box-shadow: 0 4px 0 var(--line-strong);
+  font-size: 17px;
+  font-weight: 700;
+  touch-action: manipulation;
+}
+.sub-button:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--line-strong); }
+.sub-button[disabled] { opacity: 0.45; }
+.icon-gear, .icon-plus { display: inline-block; width: 22px; height: 22px; }
+.icon-gear svg, .icon-plus svg { width: 100%; height: 100%; display: block; }
+
+/* ---- ゲームの画面 ---- */
+.bar { display: flex; align-items: center; gap: 8px; height: 56px; flex: none; }
+.back {
+  appearance: none;
+  flex: none;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: 3px solid var(--line);
+  border-radius: 50%;
+  background: var(--paper);
+  box-shadow: 0 3px 0 var(--line-strong);
+  touch-action: manipulation;
+}
+.back:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--line-strong); }
+.back[disabled] { opacity: 0.4; }
+.icon-back { display: block; width: 24px; height: 24px; margin: 0 auto; }
+.icon-back svg { width: 100%; height: 100%; display: block; }
+.bar-title {
+  flex: 1;
+  margin: 0;
+  text-align: center;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.bar-space { flex: none; width: 48px; }
+
+.stage { position: relative; flex: 1; min-height: 0; }
+.stage > svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; overflow: visible; }
+
+.result {
+  flex: none;
+  position: relative;
+  min-height: 92px;
+  margin: 6px 0 12px;
+  padding: 10px 18px;
+  border: 3px solid var(--line);
+  border-radius: 30px;
+  background: var(--paper);
+  box-shadow: 0 4px 0 var(--line-strong);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.result-hint { font-size: 18px; color: var(--ink-soft); }
+.result-label { font-size: 15px; color: var(--ink-soft); letter-spacing: 0.1em; }
+.result-value { font-size: 36px; font-weight: 700; line-height: 1.2; letter-spacing: 0.04em; }
+.result.is-pop { animation: pop 520ms cubic-bezier(.2,1.6,.4,1); }
+@keyframes pop {
+  0% { transform: scale(0.86); }
+  60% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.actions { flex: none; display: flex; justify-content: center; }
+.play {
+  appearance: none;
+  width: min(100%, 300px);
+  height: 68px;
+  border: none;
+  border-radius: 999px;
+  background: var(--yellow);
+  box-shadow: 0 6px 0 var(--yellow-edge), 0 6px 0 3px rgba(150, 100, 40, 0.12);
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: var(--ink);
+  touch-action: manipulation;
+  transition: transform 90ms ease, box-shadow 90ms ease, opacity 200ms ease;
+}
+.play:active { transform: translateY(5px); box-shadow: 0 1px 0 var(--yellow-edge); }
+.play[disabled] { opacity: 0.55; transform: translateY(5px); box-shadow: 0 1px 0 var(--yellow-edge); }
+
+/* ---- 設定 ---- */
+.settings-body { padding-bottom: 0; }
+.settings-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 4px 2px calc(var(--safe-bottom) + 24px);
+  -webkit-user-select: text;
+  user-select: text;
+}
+.panel {
+  margin: 10px 0 16px;
+  padding: 14px 16px 16px;
+  border: 3px solid var(--line);
+  border-radius: 24px;
+  background: var(--paper);
+}
+.panel-title { margin: 0 0 4px; font-size: 19px; font-weight: 700; }
+.panel-hint { margin: 2px 0 8px; font-size: 13px; color: var(--ink-soft); line-height: 1.5; }
+.choice-list { list-style: none; margin: 8px 0 12px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.choice-row { display: flex; align-items: center; gap: 8px; }
+.choice-num {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--paper-2);
+  border: 2px solid var(--line);
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.choice-input {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  padding: 0 12px;
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+  font-size: 17px;
+  font-weight: 500;
+  -webkit-user-select: text;
+  user-select: text;
+}
+.choice-input:focus { outline: none; border-color: var(--kaki); }
+.choice-del {
+  appearance: none;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 2px solid var(--line);
+  border-radius: 50%;
+  background: var(--paper);
+  touch-action: manipulation;
+}
+.choice-del svg { width: 18px; height: 18px; display: block; margin: 0 auto; }
+.choice-del[disabled] { opacity: 0.35; }
+.choice-note { margin: 0 0 8px; font-size: 13px; color: var(--ng); }
+
+.switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 2px dashed var(--line);
+}
+.switch-row:first-of-type { border-top: none; }
+.switch-label { font-size: 17px; }
+.switch {
+  appearance: none;
+  -webkit-appearance: none;
+  flex: none;
+  position: relative;
+  width: 58px;
+  height: 34px;
+  margin: 0;
+  border-radius: 999px;
+  background: #eadfcf;
+  border: 2px solid var(--line-strong);
+  transition: background 160ms ease;
+}
+.switch::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 0 rgba(150, 100, 40, 0.25);
+  transition: transform 160ms ease;
+}
+.switch:checked { background: var(--olive); }
+.switch:checked::after { transform: translateX(24px); }
+
+.status { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 4px 0 10px; font-size: 14px; }
+.status dt { color: var(--ink-soft); white-space: nowrap; }
+.status dd { margin: 0; font-weight: 700; text-align: right; }
+.is-ok { color: var(--ok); }
+.is-ng { color: var(--ng); }
+
+/* ---- 横向きの時 ---- */
+.rotate {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+.rotate[hidden] { display: none; }
+.rotate-art { width: 140px; height: 140px; }
+.rotate-art svg { width: 100%; height: 100%; display: block; }
+.rotate-text { margin: 0; font-size: 30px; font-weight: 700; letter-spacing: 0.1em; }
+
+/* ---- お祝いの葉っぱ ---- */
+.fx { position: fixed; inset: 0; z-index: 40; pointer-events: none; overflow: hidden; }
+.fx-piece { position: absolute; left: 0; top: 0; width: 30px; height: 30px; will-change: transform, opacity; }
+.fx-piece svg, .leaf-fall svg { width: 100%; height: 100%; display: block; overflow: visible; }
+
+/* ---- ゲームの中の部品 ---- */
+.cell-label { font-weight: 700; }

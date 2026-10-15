@@ -1,14 +1,14 @@
 {
   "id": "./",
-  "name": "ねこ試作",
-  "short_name": "ねこ試作",
+  "name": "ねこきめ",
+  "short_name": "ねこきめ",
   "lang": "ja",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#FFF4DE",
-  "theme_color": "#FFF4DE",
+  "background_color": "#FFF4E0",
+  "theme_color": "#FFF4E0",
   "icons": [
     { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
     { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
