@@ -129,6 +129,80 @@ export function autumnLeaf(i, size = 20) {
   }
 }
 
+// ---- 季節と行事の小さな絵（舞う物・お祝いの物）。どれも明るい色で、白い背景でも見えるよう ふちを付ける ----
+export function sakuraPetal(size = 20, tint = 0) {
+  const s = (v) => f(v * size);
+  const col = ['#f9c6d3', '#fbd9e2', '#f5b8cd'][tint % 3];
+  return `<path d="M0,${s(0.6)} C${s(-0.55)},${s(0.2)} ${s(-0.5)},${s(-0.45)} ${s(-0.14)},${s(-0.6)} L0,${s(-0.42)} L${s(0.14)},${s(-0.6)} C${s(0.5)},${s(-0.45)} ${s(0.55)},${s(0.2)} 0,${s(0.6)} Z" fill="${col}" stroke="#e9a1b8" stroke-width="${s(0.05)}"/>`
+    + `<path d="M0,${s(0.45)} L0,${s(-0.1)}" stroke="#ffffff" stroke-width="${s(0.05)}" opacity="0.8"/>`;
+}
+export function snowflake(size = 20) {
+  const s = (v) => f(v * size);
+  let arms = '';
+  for (let k = 0; k < 6; k++) {
+    const a = (k * 60 * Math.PI) / 180;
+    const x = Math.cos(a);
+    const y = Math.sin(a);
+    arms += `M0,0 L${s(x * 0.62)},${s(y * 0.62)} `;
+    const bx = x * 0.38;
+    const by = y * 0.38;
+    const a1 = a + 0.6;
+    const a2 = a - 0.6;
+    arms += `M${s(bx)},${s(by)} L${s(bx + Math.cos(a1) * 0.2)},${s(by + Math.sin(a1) * 0.2)} M${s(bx)},${s(by)} L${s(bx + Math.cos(a2) * 0.2)},${s(by + Math.sin(a2) * 0.2)} `;
+  }
+  return `<path d="${arms}" stroke="#a9c9dc" stroke-width="${s(0.2)}" stroke-linecap="round" fill="none"/>`
+    + `<path d="${arms}" stroke="#ffffff" stroke-width="${s(0.1)}" stroke-linecap="round" fill="none"/>`;
+}
+export function starShape(size = 20, color = C.icho, edge = C.ichoDeep) {
+  const pts = [];
+  for (let k = 0; k < 10; k++) {
+    const r = (k % 2 ? 0.42 : 1) * size * 0.6;
+    const a = (-90 + k * 36) * (Math.PI / 180);
+    pts.push(`${f(Math.cos(a) * r)},${f(Math.sin(a) * r)}`);
+  }
+  return `<path d="M${pts.join(' L')} Z" fill="${color}" stroke="${edge}" stroke-width="${f(size * 0.05)}" stroke-linejoin="round"/>`;
+}
+export function heartShape(size = 20, color = '#f4a3b4', edge = '#e07a92') {
+  const s = (v) => f(v * size);
+  return `<path d="M0,${s(0.5)} C${s(-0.7)},${s(0)} ${s(-0.5)},${s(-0.6)} 0,${s(-0.25)} C${s(0.5)},${s(-0.6)} ${s(0.7)},${s(0)} 0,${s(0.5)} Z" fill="${color}" stroke="${edge}" stroke-width="${s(0.06)}" stroke-linejoin="round"/>`;
+}
+function bean(size = 20) {
+  const s = (v) => f(v * size);
+  return `<ellipse cx="0" cy="0" rx="${s(0.36)}" ry="${s(0.3)}" fill="#f2dcb0" stroke="#d1b07a" stroke-width="${s(0.06)}"/><path d="M${s(-0.12)},${s(-0.06)} q${s(0.1)},${s(0.1)} ${s(0.22)},0" stroke="#d1b07a" stroke-width="${s(0.05)}" fill="none"/>`;
+}
+function confetti(i, size = 20, cols = [C.momiji, '#ffffff']) {
+  const s = (v) => f(v * size);
+  return `<rect x="${s(-0.3)}" y="${s(-0.18)}" width="${s(0.6)}" height="${s(0.36)}" rx="${s(0.08)}" fill="${cols[i % cols.length]}" stroke="#e6cfae" stroke-width="${s(0.04)}"/>`;
+}
+
+// 舞い落ちる物（季節ごと。行事によっては行事の物）
+export function fallingPiece(i, size, lk) {
+  switch (lk.event) {
+    case 'christmas': return i % 3 === 0 ? starShape(size * 0.8) : snowflake(size);
+    case 'oshogatsu': return confetti(i, size, [C.momiji, '#ffffff', C.icho]);
+    case 'setsubun': return bean(size * 0.8);
+    case 'valentine': return heartShape(size * 0.75, ['#f4a3b4', '#f7c4b4', '#fbd9e2'][i % 3]);
+    case 'nekonohi': return `<g transform="scale(0.8)">${pawPrint(['#f7b4a6', '#e3a3b8', '#f5c451'][i % 3], size * 0.7)}</g>`;
+    default: break;
+  }
+  switch (lk.season) {
+    case 'haru': return sakuraPetal(size * 0.8, i);
+    case 'natsu': return mapleLeaf(['#a9cf7f', '#8fbf6a', '#bfe08f'][i % 3], '#6f9a4f', size * 0.85);
+    case 'fuyu': return snowflake(size * 0.9);
+    default: return autumnLeaf(i, size);
+  }
+}
+
+// お祝いで舞い上がる物
+export function celebratePiece(i, size, lk) {
+  if (lk.event || lk.season !== 'aki') {
+    // 行事と季節の物に、星を まぜる（どの段階も お祝いらしく）
+    if (i % 4 === 3) return starShape(size * 0.9, [C.icho, '#fde3a6', C.rose][i % 3], C.ichoDeep);
+    return fallingPiece(i, size, lk);
+  }
+  return autumnLeaf(i, size);
+}
+
 // ---- 小さな図形の印（絵文字の代わり） ----
 export const icons = {
   back: `<svg viewBox="0 0 24 24"><path d="M15 4 L7 12 L15 20" fill="none" stroke="${C.ink}" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
@@ -146,8 +220,10 @@ export const icons = {
 
 // ---- まとまった絵 ----
 // ホームの見出しの絵：パステル三毛猫とサバトラが並ぶ
-export function logoSVG(mike, saba) {
-  return `<svg viewBox="-110 -62 220 120">${mapleLeaf(C.momiji, C.momijiDeep, 15).replace('<g>', '<g transform="translate(92 -40) rotate(-20)">')}`
+export function logoSVG(mike, saba, lk = { season: 'aki', event: '' }) {
+  // かどの飾り：秋は もみじ、ほかの季節・行事は その季節・行事の物
+  const corner = lk.season === 'aki' && !lk.event ? mapleLeaf(C.momiji, C.momijiDeep, 15) : fallingPiece(0, 17, lk);
+  return `<svg viewBox="-110 -62 220 120"><g transform="translate(92 -40) rotate(-20)">${corner}</g>`
     + `<g transform="translate(48 8) scale(0.92)">${catFace(saba, { mood: 'happy' })}</g>`
     + `<g transform="translate(-48 4)">${catFace(mike)}</g></svg>`;
 }
@@ -355,272 +431,3 @@ export function menuArt(kind, d) {
     + `<circle cx="-2" cy="-26" r="5" fill="${d.paw}" stroke="${d.line}" stroke-width="2"/><circle cx="26" cy="-26" r="5" fill="${d.paw}" stroke="${d.line}" stroke-width="2"/></svg>`;
 }
 
-// ---- 背景（秋）。縦長の画面の下を基準に置き、短い画面では上が少し切れる ----
-function treeRound(x, y, r, color, trunk = C.chestnut) {
-  return `<g><rect x="${f(x - r * 0.12)}" y="${f(y)}" width="${f(r * 0.24)}" height="${f(r * 1.0)}" rx="${f(r * 0.1)}" fill="${trunk}"/>`
-    + `<circle cx="${f(x)}" cy="${f(y)}" r="${f(r)}" fill="${color}"/>`
-    + `<circle cx="${f(x - r * 0.62)}" cy="${f(y + r * 0.28)}" r="${f(r * 0.66)}" fill="${color}"/>`
-    + `<circle cx="${f(x + r * 0.62)}" cy="${f(y + r * 0.28)}" r="${f(r * 0.66)}" fill="${color}"/>`
-    + `<circle cx="${f(x - r * 0.3)}" cy="${f(y - r * 0.3)}" r="${f(r * 0.3)}" fill="#ffffff" opacity="0.18"/></g>`;
-}
-
-function scatter(seed, count, area, sizeMin, sizeMax) {
-  // 決まった並びの散らし方（毎回同じ絵になるよう、簡単な疑似乱数を使う）
-  let s = seed;
-  const rnd = () => ((s = (s * 9301 + 49297) % 233280) / 233280);
-  let out = '';
-  for (let i = 0; i < count; i++) {
-    const x = area.x + rnd() * area.w;
-    const y = area.y + rnd() * area.h;
-    const size = sizeMin + rnd() * (sizeMax - sizeMin);
-    const rot = rnd() * 360;
-    out += `<g transform="translate(${f(x)} ${f(y)}) rotate(${f(rot)})" opacity="0.95">${autumnLeaf(i, size)}</g>`;
-  }
-  return out;
-}
-
-export function sceneSVG(kind) {
-  const id = nextId('sc');
-  const W = 390;
-  const H = 844;
-  const sky = `<defs><linearGradient id="${id}g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${C.skyTop}"/><stop offset="0.6" stop-color="${C.sky}"/><stop offset="1" stop-color="${C.cream}"/></linearGradient></defs>`
-    + `<rect width="${W}" height="${H}" fill="url(#${id}g)"/>`;
-  let body = '';
-  if (kind === 'home') {
-    body = `<g transform="translate(70 150)">${cloud(90)}</g><g transform="translate(320 100)">${cloud(70)}</g>`
-      + `<path d="M0,690 Q100,640 200,670 T390,650 V844 H0 Z" fill="#f6d9a8"/>`
-      + `<path d="M0,740 Q120,700 240,730 T390,720 V844 H0 Z" fill="#f2c98e"/>`
-      + treeRound(36, 660, 34, C.momiji) + treeRound(354, 640, 38, C.icho) + treeRound(300, 690, 26, C.kaki)
-      + treeRound(90, 700, 24, C.icho)
-      + scatter(7, 10, { x: 10, y: 770, w: 370, h: 60 }, 9, 14);
-  } else if (kind === 'roulette') {
-    body = `<g transform="translate(60 110)">${cloud(80)}</g><g transform="translate(330 170)">${cloud(64)}</g>`
-      + `<path d="M0,560 Q90,520 190,548 T390,530 V844 H0 Z" fill="#f7dcae"/>`
-      + treeRound(30, 540, 30, C.icho) + treeRound(366, 520, 34, C.momiji) + treeRound(320, 556, 22, C.kaki) + treeRound(70, 566, 20, C.momiji)
-      + `<path d="M0,640 Q130,600 260,630 T390,620 V844 H0 Z" fill="#f3cf98"/>`
-      + scatter(11, 14, { x: 6, y: 660, w: 378, h: 170 }, 8, 13);
-  } else if (kind === 'stamp') {
-    // 明るい木の机
-    let planks = '';
-    for (let i = 0; i < 6; i++) {
-      const y = i * 150;
-      planks += `<rect x="0" y="${y}" width="${W}" height="150" fill="${i % 2 ? '#f6dcb4' : '#f3d5a8'}"/>`
-        + `<path d="M20,${y + 40} q80,-10 160,4 t180,-2 M40,${y + 100} q90,8 170,-4 t150,6" stroke="#e8c48f" stroke-width="2" fill="none" opacity="0.7"/>`
-        + `<path d="M0,${y + 150} H${W}" stroke="#e2bd87" stroke-width="2"/>`;
-    }
-    body = planks
-      + `<g transform="translate(36 120) rotate(-20)">${acorn(16)}</g><g transform="translate(358 760) rotate(15)">${acorn(18)}</g>`
-      + `<g transform="translate(336 130) rotate(30)">${mapleLeaf(C.momiji, C.momijiDeep, 22)}</g>`
-      + `<g transform="translate(40 780) rotate(-30)">${ginkgoLeaf(C.icho, C.ichoDeep, 22)}</g>`
-      + `<g transform="translate(70 800) rotate(40)">${mapleLeaf(C.kaki, C.kakiDeep, 16)}</g>`;
-    return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice">${body}</svg>`;
-  } else if (kind === 'nobi') {
-    // 縁側：柿の木の枝と、すすきと、赤とんぼ
-    let kaki = '';
-    [[300, 92], [350, 140], [262, 150], [330, 196]].forEach(([x, y], i) => {
-      kaki += `<path d="M${x},${y - 16} L${x - 6},${y - 34}" stroke="#8a5a36" stroke-width="3" stroke-linecap="round"/>`
-        + `<g transform="translate(${x} ${y})">${persimmon(i % 2 ? 15 : 17)}</g>`;
-    });
-    let susuki = '';
-    [[24, 0], [46, 12], [64, -6], [350, 6], [372, -10]].forEach(([x, d]) => {
-      susuki += `<path d="M${x},800 Q${x + d},700 ${x + 22 + d},640" stroke="#c9a670" stroke-width="3" fill="none" stroke-linecap="round"/>`
-        + `<path d="M${x + 22 + d},640 q-4,24 -10,44 M${x + 22 + d},640 q8,20 6,40 M${x + 18 + d},652 q-14,18 -18,32" stroke="#e9d3a8" stroke-width="7" fill="none" stroke-linecap="round"/>`;
-    });
-    body = `<g transform="translate(80 140)">${cloud(80)}</g>`
-      + `<path d="M390,60 Q300,70 230,120" stroke="#8a5a36" stroke-width="9" fill="none" stroke-linecap="round"/>`
-      + `<path d="M330,66 Q340,120 352,128" stroke="#8a5a36" stroke-width="5" fill="none" stroke-linecap="round"/>`
-      + `<g transform="translate(238 108) rotate(-30)">${mapleLeaf(C.oliveDeep, '#6f8a45', 14)}</g>`
-      + `<g transform="translate(372 84) rotate(20)">${mapleLeaf(C.kaki, C.kakiDeep, 14)}</g>`
-      + kaki
-      + `<g transform="translate(300 300) rotate(-12)">${dragonfly(18)}</g><g transform="translate(250 420) rotate(16)">${dragonfly(14)}</g>`
-      + `<rect x="0" y="720" width="${W}" height="124" fill="#efd0a0"/>`
-      + `<path d="M0,720 H${W}" stroke="#ddb37c" stroke-width="4"/>`
-      + `<path d="M0,760 H${W} M0,800 H${W}" stroke="#e2bd87" stroke-width="2"/>`
-      + susuki;
-  } else if (kind === 'hana') {
-    // 秋の野原：遠くの丘と、コスモスの小さな花
-    let field = '';
-    let sd = 5;
-    const rnd = () => ((sd = (sd * 9301 + 49297) % 233280) / 233280);
-    for (let i = 0; i < 26; i++) {
-      const x = rnd() * W;
-      const y = 650 + rnd() * 180;
-      const r = 4 + rnd() * 4;
-      const col = ['#f9c6d3', '#fde3ea', '#f5b8cd', '#ffffff'][i % 4];
-      field += `<path d="M${f(x)},${f(y + r)} q${f(r * 0.4)},${f(r * 3)} ${f(-r * 0.2)},${f(r * 6)}" stroke="${C.oliveDeep}" stroke-width="1.6" fill="none" opacity="0.6"/>`
-        + `<circle cx="${f(x)}" cy="${f(y)}" r="${f(r)}" fill="${col}" stroke="#e9a1b8" stroke-width="1"/><circle cx="${f(x)}" cy="${f(y)}" r="${f(r * 0.32)}" fill="${C.icho}"/>`;
-    }
-    body = `<g transform="translate(70 120)">${cloud(80)}</g><g transform="translate(320 190)">${cloud(60)}</g>`
-      + `<path d="M0,600 Q110,560 220,590 T390,570 V844 H0 Z" fill="#eadfb0"/>`
-      + `<path d="M0,660 Q140,620 270,650 T390,640 V844 H0 Z" fill="#e2d39c"/>`
-      + treeRound(354, 570, 30, C.momiji) + treeRound(28, 590, 24, C.icho)
-      + field
-      + `<g transform="translate(300 300) rotate(-12)">${dragonfly(16)}</g>`;
-  } else if (kind === 'kuji') {
-    // 縁日：上に ちょうちんの列、下に木の床
-    let lanterns = `<path d="M-10,96 Q195,150 400,96" stroke="#9b5f3a" stroke-width="2.5" fill="none"/>`;
-    for (let i = 0; i < 7; i++) {
-      const x = 20 + i * 58;
-      const y = 96 + Math.sin((i / 6) * Math.PI) * 26;
-      lanterns += `<path d="M${x},${y} v10" stroke="#9b5f3a" stroke-width="2"/>`
-        + `<rect x="${x - 7}" y="${y + 8}" width="14" height="5" rx="2" fill="#9b5f3a"/>`
-        + `<ellipse cx="${x}" cy="${y + 30}" rx="16" ry="20" fill="#fff6e4" stroke="#e7b98a" stroke-width="2"/>`
-        + `<path d="M${x - 15},${y + 24} h30 M${x - 15},${y + 36} h30" stroke="${C.momiji}" stroke-width="3" opacity="0.8"/>`
-        + `<rect x="${x - 7}" y="${y + 48}" width="14" height="5" rx="2" fill="#9b5f3a"/>`;
-    }
-    let planks = '';
-    for (let i = 0; i < 4; i++) {
-      planks += `<rect x="0" y="${640 + i * 52}" width="${W}" height="52" fill="${i % 2 ? '#f3d5a8' : '#f6dcb4'}"/>`
-        + `<path d="M0,${640 + i * 52} H${W}" stroke="#e2bd87" stroke-width="2"/>`;
-    }
-    body = lanterns + planks
-      + `<g transform="translate(40 760) rotate(-24)">${mapleLeaf(C.momiji, C.momijiDeep, 16)}</g>`
-      + `<g transform="translate(350 790) rotate(30)">${ginkgoLeaf(C.icho, C.ichoDeep, 18)}</g>`;
-  } else if (kind === 'amida') {
-    // 庭の小道：明るい芝と、落ち葉
-    body = `<g transform="translate(300 120)">${cloud(80)}</g>`
-      + `<path d="M0,560 Q120,520 240,548 T390,536 V844 H0 Z" fill="#e7e5b4"/>`
-      + `<path d="M150,844 Q180,700 260,640 T390,600 V640 Q300,670 250,720 T230,844 Z" fill="#f4e2c0"/>`
-      + treeRound(40, 520, 30, C.kaki) + treeRound(360, 500, 26, C.momiji)
-      + scatter(17, 12, { x: 6, y: 640, w: 378, h: 190 }, 8, 13);
-  } else if (kind === 'race') {
-    // 運動会の原っぱ：上に小さな旗の列、遠くの丘と木
-    let bunting = `<path d="M-10,70 Q195,112 400,70" stroke="#9b5f3a" stroke-width="2" fill="none"/>`;
-    for (let i = 0; i < 14; i++) {
-      const x = 4 + i * 28.5;
-      const y = 70 + Math.sin(((x + 10) / 410) * Math.PI) * 21;
-      const col = [C.momiji, C.icho, C.olive, '#9fc5e8', C.rose][i % 5];
-      bunting += `<path d="M${f(x - 8)},${f(y)} L${f(x + 8)},${f(y + 1)} L${f(x)},${f(y + 18)} Z" fill="${col}" opacity="0.9"/>`;
-    }
-    body = bunting + `<g transform="translate(300 150)">${cloud(70)}</g>`
-      + `<path d="M0,600 Q110,560 220,590 T390,570 V844 H0 Z" fill="#eadfb0"/>`
-      + treeRound(30, 580, 28, C.kaki) + treeRound(362, 560, 30, C.icho)
-      + `<path d="M0,670 Q140,630 270,660 T390,650 V844 H0 Z" fill="#e2d39c"/>`
-      + scatter(29, 12, { x: 6, y: 680, w: 378, h: 150 }, 8, 13);
-  } else if (kind === 'mato') {
-    // 縁日の屋台：上に しま模様の ひさし、下に木の床
-    let awning = '';
-    for (let i = 0; i < 9; i++) {
-      awning += `<path d="M${i * 46 - 10},0 h46 v44 q-23,14 -46,0 Z" fill="${i % 2 ? '#fff6e4' : '#f7c4b4'}"/>`;
-    }
-    let planks = '';
-    for (let i = 0; i < 4; i++) {
-      planks += `<rect x="0" y="${640 + i * 52}" width="${W}" height="52" fill="${i % 2 ? '#f3d5a8' : '#f6dcb4'}"/>`
-        + `<path d="M0,${640 + i * 52} H${W}" stroke="#e2bd87" stroke-width="2"/>`;
-    }
-    body = awning + `<path d="M0,1 H${W}" stroke="#e2bd87" stroke-width="3"/>` + planks
-      + `<g transform="translate(46 770) rotate(-20)">${mapleLeaf(C.kaki, C.kakiDeep, 16)}</g>`
-      + `<g transform="translate(344 800) rotate(24)">${ginkgoLeaf(C.icho, C.ichoDeep, 18)}</g>`;
-  } else if (kind === 'sugoroku') {
-    // 和室：上に しょうじ、下に たたみ
-    let shoji = `<rect x="0" y="0" width="${W}" height="210" fill="#fffaf0"/>`;
-    for (let x = 0; x <= W; x += 65) shoji += `<path d="M${x},0 V210" stroke="#e6c99a" stroke-width="3"/>`;
-    for (let y = 0; y <= 210; y += 52) shoji += `<path d="M0,${y} H${W}" stroke="#e6c99a" stroke-width="3"/>`;
-    shoji += `<path d="M0,212 H${W}" stroke="#c99a62" stroke-width="7"/>`;
-    let tatami = '';
-    for (let i = 0; i < 3; i++) {
-      tatami += `<rect x="${i % 2 ? -100 : 0}" y="${600 + i * 82}" width="${W + 100}" height="82" fill="${i % 2 ? '#e8e3b8' : '#ece8c4'}" stroke="#d5cd98" stroke-width="2"/>`;
-      tatami += `<path d="M${i % 2 ? 160 : 260},${600 + i * 82} V${682 + i * 82}" stroke="#b9a46c" stroke-width="5"/>`;
-    }
-    body = shoji + `<g transform="translate(330 150) rotate(20)">${mapleLeaf(C.momiji, C.momijiDeep, 16)}</g>` + tatami
-      + `<g transform="translate(50 780) rotate(-20)">${mapleLeaf(C.kaki, C.kakiDeep, 15)}</g>`;
-  } else if (kind === 'otoshi') {
-    // 台所の窓辺：上に窓と カーテン、下に チェックの テーブルクロス
-    let cloth = '';
-    for (let i = 0; i < 9; i++) for (let j = 0; j < 4; j++) {
-      if ((i + j) % 2) cloth += `<rect x="${i * 46}" y="${650 + j * 50}" width="46" height="50" fill="#f6c9b8" opacity="0.55"/>`;
-    }
-    body = `<rect x="70" y="60" width="250" height="150" rx="14" fill="#fffaf0" stroke="#e6c99a" stroke-width="5"/>`
-      + `<path d="M195,60 V210 M70,135 H320" stroke="#e6c99a" stroke-width="4"/>`
-      + `<g transform="translate(250 100)">${cloud(60)}</g>`
-      + `<path d="M60,50 Q90,140 70,220 L40,220 L40,50 Z M330,50 Q300,140 320,220 L350,220 L350,50 Z" fill="#f7c4b4" opacity="0.8"/>`
-      + `<rect x="0" y="640" width="${W}" height="210" fill="#fff4e6"/>` + cloth
-      + `<g transform="translate(50 600) rotate(-15)">${persimmon(16)}</g><g transform="translate(340 610) rotate(10)">${persimmon(14)}</g>`;
-  } else if (kind === 'maigo') {
-    // 庭の小道：生け垣の丸い しげみと、落ち葉
-    const bush = (x, y, r, col) => `<g><circle cx="${x}" cy="${y}" r="${r}" fill="${col}"/><circle cx="${x - r * 0.7}" cy="${y + r * 0.3}" r="${r * 0.7}" fill="${col}"/><circle cx="${x + r * 0.7}" cy="${y + r * 0.3}" r="${r * 0.7}" fill="${col}"/><circle cx="${x - r * 0.3}" cy="${y - r * 0.3}" r="${r * 0.3}" fill="#ffffff" opacity="0.18"/></g>`;
-    body = `<g transform="translate(80 120)">${cloud(80)}</g>`
-      + `<path d="M0,590 Q120,560 240,580 T390,570 V844 H0 Z" fill="#dfe6b5"/>`
-      + bush(30, 600, 30, '#b9cc85') + bush(360, 590, 34, '#a9c17a') + bush(300, 640, 22, '#c3d494')
-      + treeRound(70, 560, 26, C.kaki)
-      + `<path d="M150,844 Q170,740 230,700 T330,660" stroke="#f4e2c0" stroke-width="40" fill="none" stroke-linecap="round"/>`
-      + scatter(37, 10, { x: 6, y: 680, w: 378, h: 150 }, 8, 13);
-  } else if (kind === 'tower') {
-    // 引っこしの日の へや：上に窓、かべに 時計、下に木の床
-    body = `<rect x="230" y="70" width="120" height="110" rx="10" fill="#fffaf0" stroke="#e6c99a" stroke-width="5"/>`
-      + `<path d="M290,70 V180 M230,125 H350" stroke="#e6c99a" stroke-width="4"/>`
-      + `<g transform="translate(300 108)">${cloud(46)}</g>`
-      + `<circle cx="70" cy="110" r="26" fill="#fffaf0" stroke="#e6c99a" stroke-width="4"/><path d="M70,110 V94 M70,110 L82,116" stroke="${C.chestnut}" stroke-width="3" stroke-linecap="round"/>`
-      + `<rect x="0" y="720" width="${W}" height="124" fill="#efd0a0"/>`
-      + `<path d="M0,720 H${W}" stroke="#ddb37c" stroke-width="4"/><path d="M0,770 H${W} M0,815 H${W}" stroke="#e2bd87" stroke-width="2"/>`
-      + `<g transform="translate(40 700) rotate(-12)">${mapleLeaf(C.kaki, C.kakiDeep, 14)}</g>`;
-  } else if (kind === 'sagasu') {
-    // 子ども部屋：水玉の かべ紙、丸い窓、木の床と まるい ラグ
-    let dots = '';
-    for (let r = 0; r < 9; r++) for (let k = 0; k < 7; k++) {
-      dots += `<circle cx="${k * 60 + (r % 2 ? 30 : 0)}" cy="${30 + r * 70}" r="5" fill="#f6d2bf" opacity="0.55"/>`;
-    }
-    body = dots
-      + `<circle cx="300" cy="120" r="56" fill="#fffaf0" stroke="#e6c99a" stroke-width="6"/><path d="M300,64 V176 M244,120 H356" stroke="#e6c99a" stroke-width="4"/>`
-      + `<g transform="translate(316 108)">${cloud(40)}</g>`
-      + `<rect x="0" y="720" width="${W}" height="124" fill="#efd0a0"/>`
-      + `<path d="M0,720 H${W}" stroke="#ddb37c" stroke-width="4"/><path d="M0,770 H${W} M0,815 H${W}" stroke="#e2bd87" stroke-width="2"/>`
-      + `<ellipse cx="195" cy="800" rx="150" ry="26" fill="#f7c4b4" opacity="0.7"/><ellipse cx="195" cy="800" rx="118" ry="18" fill="none" stroke="#fffaf0" stroke-width="3" opacity="0.8"/>`
-      + `<g transform="translate(46 700) rotate(-14)">${acorn(15)}</g><g transform="translate(350 705) rotate(18)">${mapleLeaf(C.kaki, C.kakiDeep, 14)}</g>`;
-  } else if (kind === 'saikoro') {
-    // あそびべや：木の床に、星の もようの ラグと つみき
-    let stars = '';
-    [[60, 760], [140, 790], [250, 770], [330, 800], [200, 812]].forEach(([x, y], i) => { stars += `<path d="M${x},${y - 7} L${x + 2},${y - 2} L${x + 7},${y - 2} L${x + 3},${y + 1} L${x + 5},${y + 6} L${x},${y + 3} L${x - 5},${y + 6} L${x - 3},${y + 1} L${x - 7},${y - 2} L${x - 2},${y - 2} Z" fill="${[C.icho, '#fffaf0', C.rose][i % 3]}"/>`; });
-    const block = (x, y, s, col, rot) => `<g transform="translate(${x} ${y}) rotate(${rot})"><rect x="${-s / 2}" y="${-s / 2}" width="${s}" height="${s}" rx="4" fill="${col}" stroke="#d9b98e" stroke-width="2"/></g>`;
-    body = `<g transform="translate(80 130)">${cloud(70)}</g><g transform="translate(310 180)">${cloud(56)}</g>`
-      + `<rect x="0" y="720" width="${W}" height="124" fill="#efd0a0"/><path d="M0,720 H${W}" stroke="#ddb37c" stroke-width="4"/>`
-      + `<ellipse cx="195" cy="790" rx="170" ry="34" fill="#cfe0ea" opacity="0.8"/>` + stars
-      + block(34, 700, 26, '#f7c4b4', -8) + block(60, 706, 20, '#fde3a6', 10) + block(352, 702, 24, '#cfe3c0', 6);
-  } else if (kind === 'negaeri') {
-    // ひるねの へや：レースの カーテン、つりさげの かざり、木の床
-    let mobile = `<path d="M195,0 V60 M150,60 H240" stroke="#c99a62" stroke-width="2"/>`;
-    [[150, 80, C.icho], [195, 96, C.rose], [240, 80, '#cfe0ea']].forEach(([x, y, c]) => { mobile += `<path d="M${x},60 V${y - 10}" stroke="#c99a62" stroke-width="1.5"/><circle cx="${x}" cy="${y}" r="10" fill="${c}" stroke="#e6c99a" stroke-width="2"/>`; });
-    body = `<path d="M0,0 Q40,140 10,300 L0,300 Z M390,0 Q350,140 380,300 L390,300 Z" fill="#fffaf0" opacity="0.9"/>`
-      + `<path d="M0,0 Q40,140 10,300 M390,0 Q350,140 380,300" stroke="#f1d7c2" stroke-width="3" fill="none"/>` + mobile
-      + `<rect x="0" y="720" width="${W}" height="124" fill="#efd0a0"/><path d="M0,720 H${W}" stroke="#ddb37c" stroke-width="4"/><path d="M0,770 H${W} M0,815 H${W}" stroke="#e2bd87" stroke-width="2"/>`
-      + `<g transform="translate(52 702) rotate(-12)">${mapleLeaf(C.kaki, C.kakiDeep, 14)}</g>`;
-  } else if (kind === 'mekuri') {
-    // つくえの ある へや：かべの けいじ板、窓、つくえの はし
-    body = `<rect x="40" y="80" width="150" height="110" rx="10" fill="#f3dcbb" stroke="#e6c99a" stroke-width="5"/>`
-      + `<rect x="58" y="98" width="44" height="34" fill="#fffaf0" transform="rotate(-6 80 115)"/><rect x="116" y="104" width="52" height="40" fill="#fde3d6" transform="rotate(5 142 124)"/><circle cx="80" cy="100" r="4" fill="${C.momiji}"/><circle cx="142" cy="106" r="4" fill="${C.olive}"/>`
-      + `<rect x="240" y="70" width="110" height="120" rx="10" fill="#fffaf0" stroke="#e6c99a" stroke-width="5"/><path d="M295,70 V190 M240,130 H350" stroke="#e6c99a" stroke-width="4"/>`
-      + `<g transform="translate(300 108)">${cloud(40)}</g>`
-      + `<rect x="0" y="720" width="${W}" height="124" fill="#e9c591"/><path d="M0,720 H${W}" stroke="#c99a62" stroke-width="5"/><path d="M0,744 H${W}" stroke="#ddb37c" stroke-width="2"/>`
-      + `<g transform="translate(350 704) rotate(16)">${ginkgoLeaf(C.icho, C.ichoDeep, 15)}</g>`;
-  } else if (kind === 'wanage') {
-    // 縁日の夕方まえ：上に 小さな ちょうちんの列、まわりに 木、下に土の みち
-    let lanterns = `<path d="M-10,70 Q195,104 400,70" stroke="#9b5f3a" stroke-width="2" fill="none"/>`;
-    for (let i = 0; i < 9; i++) { const x = 10 + i * 46; const y = 70 + Math.sin(((x + 10) / 410) * Math.PI) * 17; lanterns += `<path d="M${x},${y} v6" stroke="#9b5f3a" stroke-width="1.6"/><ellipse cx="${x}" cy="${y + 16}" rx="10" ry="12" fill="#fff6e4" stroke="#e7b98a" stroke-width="1.6"/><path d="M${x - 9},${y + 13} h18" stroke="${C.momiji}" stroke-width="2" opacity="0.8"/>`; }
-    body = lanterns + treeRound(30, 560, 30, C.momiji) + treeRound(362, 548, 32, C.icho)
-      + `<rect x="0" y="700" width="${W}" height="144" fill="#efd9b4"/><path d="M0,700 H${W}" stroke="#e2c592" stroke-width="3"/>`
-      + scatter(41, 10, { x: 6, y: 720, w: 378, h: 110 }, 8, 12);
-  } else if (kind === 'tsuri') {
-    // 池の ほとり：遠くの山、すすき、くさ
-    let reeds = '';
-    [[22, 0], [44, 10], [348, -6], [370, 8]].forEach(([x, dd]) => { reeds += `<path d="M${x},844 Q${x + dd},${740} ${x + 18 + dd},${690}" stroke="#c9a670" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M${x + 18 + dd},690 q-4,22 -9,40 M${x + 18 + dd},690 q7,18 5,36" stroke="#e9d3a8" stroke-width="6" fill="none" stroke-linecap="round"/>`; });
-    body = `<g transform="translate(80 110)">${cloud(70)}</g><path d="M0,260 Q100,190 200,240 T390,220 V320 H0 Z" fill="#e7e2c2" opacity="0.8"/>`
-      + `<rect x="0" y="300" width="${W}" height="544" fill="#e2e8bf"/>` + treeRound(40, 280, 26, C.kaki) + treeRound(350, 270, 30, C.momiji) + reeds;
-  } else if (kind === 'tobiishi') {
-    // 川原：遠くの はし、くさ、とんぼ
-    body = `<g transform="translate(70 110)">${cloud(70)}</g>`
-      + `<path d="M210,250 Q290,200 370,250" stroke="#e3a074" stroke-width="8" fill="none"/><path d="M222,250 V262 M250,232 V262 M280,224 V262 M310,224 V262 M340,232 V262 M358,244 V262" stroke="#e3a074" stroke-width="3"/>`
-      + `<rect x="0" y="262" width="${W}" height="582" fill="#e2e8bf"/>` + treeRound(40, 250, 24, C.icho)
-      + `<g transform="translate(320 330) rotate(-14)">${dragonfly(16)}</g><g transform="translate(60 380) rotate(10)">${dragonfly(12)}</g>`;
-  } else if (kind === 'hidamari') {
-    // えんがわ：上に にわの みどりと そら、下に 木の いた
-    let boards = '';
-    for (let i = 0; i < 6; i++) boards += `<rect x="0" y="${560 + i * 48}" width="${W}" height="48" fill="${i % 2 ? '#f3d5a8' : '#f6dcb4'}"/><path d="M0,${560 + i * 48} H${W}" stroke="#e2bd87" stroke-width="2"/>`;
-    body = `<g transform="translate(90 110)">${cloud(80)}</g><g transform="translate(300 160)">${cloud(60)}</g>`
-      + `<circle cx="340" cy="70" r="26" fill="#ffe58a" opacity="0.9"/>`
-      + `<path d="M0,420 Q100,380 200,410 T390,390 V560 H0 Z" fill="#dfe6b5"/>` + treeRound(50, 420, 32, C.kaki) + treeRound(330, 410, 28, C.momiji) + boards
-      + `<path d="M0,556 H${W}" stroke="#c99a62" stroke-width="6"/>`;
-  } else if (kind === 'settings') {
-    body = scatter(23, 8, { x: 0, y: 0, w: W, h: H }, 10, 16).replaceAll('opacity="0.95"', 'opacity="0.18"');
-  }
-  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMax slice">${sky}${body}</svg>`;
-}

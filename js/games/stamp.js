@@ -1,6 +1,7 @@
 // にくきゅうスタンプ（見せ方の部品：並んだ格子）。
 // 猫の手がカードのます目をぴょんぴょん渡り、最後に1つのます目へ肉球を「ぽん」と押す。
-import { C, ginkgoLeaf, mapleLeaf } from '../art.js';
+import { C, ginkgoLeaf, mapleLeaf, fallingPiece } from '../art.js';
+import { look, SEASON_KANA } from '../look.js';
 import { catFace, catPaw, pawPrint } from '../cats.js';
 import { audio } from '../audio.js';
 import { pickWeighted } from '../odds.js';
@@ -77,9 +78,12 @@ export function createStamp({ view, stage, result, play, getChoices, getWeights,
     s += `<rect x="${cardX + 3}" y="${cardY + 6}" width="${cardW}" height="${cardH}" rx="22" fill="#d9b07a" opacity="0.35"/>`;
     s += `<rect x="${cardX}" y="${cardY}" width="${cardW}" height="${cardH}" rx="22" fill="${C.paper}" stroke="${C.woodDeep}" stroke-width="3"/>`;
     s += `<rect x="${cardX + 7}" y="${cardY + 7}" width="${cardW - 14}" height="${cardH - 14}" rx="17" fill="none" stroke="${C.kaki}" stroke-width="2" stroke-dasharray="2 7" stroke-linecap="round" opacity="0.8"/>`;
-    s += `<text x="${W / 2}" y="${cardY + 30}" font-size="19" font-weight="700" fill="${C.chestnutDeep}" text-anchor="middle" letter-spacing="3">あきの スタンプカード</text>`;
-    s += `<g transform="translate(${cardX + 28} ${cardY + 24}) rotate(-24)">${ginkgoLeaf(C.icho, C.ichoDeep, 13)}</g>`;
-    s += `<g transform="translate(${cardX + cardW - 28} ${cardY + 24}) rotate(18)">${mapleLeaf(C.momiji, C.momijiDeep, 12)}</g>`;
+    s += `<text x="${W / 2}" y="${cardY + 30}" font-size="19" font-weight="700" fill="${C.chestnutDeep}" text-anchor="middle" letter-spacing="3">${SEASON_KANA[look.season] || 'あき'}の スタンプカード</text>`;
+    // カードの角の飾り（季節・行事の物。秋は いちょうと もみじ）
+    const cornerL = look.season === 'aki' && !look.event ? ginkgoLeaf(C.icho, C.ichoDeep, 13) : fallingPiece(0, 15, look);
+    const cornerR = look.season === 'aki' && !look.event ? mapleLeaf(C.momiji, C.momijiDeep, 12) : fallingPiece(1, 14, look);
+    s += `<g transform="translate(${cardX + 28} ${cardY + 24}) rotate(-24)">${cornerL}</g>`;
+    s += `<g transform="translate(${cardX + cardW - 28} ${cardY + 24}) rotate(18)">${cornerR}</g>`;
     // ます目
     cells.forEach((cell, i) => {
       const lines = splitLabel(choices[i]);

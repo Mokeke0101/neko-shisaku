@@ -79,6 +79,14 @@ svg text { font-family: var(--font); }
 .scene { position: absolute; inset: 0; z-index: 0; overflow: hidden; }
 .scene svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .leaves { position: absolute; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
+/* 季節と行事の飾り（画面の いちばん上の帯と、下の左右の角）。ゲームの絵や文字より奥に置く（RS01-S13） */
+.decor { position: absolute; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
+.decor-top { position: absolute; left: 0; right: 0; top: var(--safe-top); aspect-ratio: 390 / 64; }
+/* 下の角：遊ぶボタン（幅 300px まで）の左右の すきまに入る大きさ */
+.decor-bl, .decor-br { position: absolute; bottom: calc(var(--safe-bottom) + 18px); width: clamp(28px, calc(50% - 154px), 58px); aspect-ratio: 1; }
+.decor-bl { left: 2px; }
+.decor-br { right: 2px; }
+.decor svg { width: 100%; height: 100%; display: block; overflow: visible; }
 .leaf-fall { position: absolute; top: -40px; left: 0; width: 26px; height: 26px; will-change: transform; }
 
 .view-body {

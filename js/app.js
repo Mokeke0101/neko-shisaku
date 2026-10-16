@@ -4,7 +4,10 @@ import { APP_VERSION } from './version.js';
 import { store, PURPOSES } from './store.js';
 import { audio } from './audio.js';
 import { wake } from './wake.js';
-import { icons, logoSVG, menuArt, rotateSVG, sceneSVG } from './art.js';
+import { icons, logoSVG, menuArt, rotateSVG } from './art.js';
+import { sceneSVG } from './scenes.js';
+import { decorLayers } from './decor.js';
+import { look, setLook, onLook, SEASON_KANA } from './look.js';
 import { setupFalling, clearCelebration } from './fx.js';
 import { setupSettings, refreshSettings, renderStatus, setSchedule } from './settings.js';
 import { CAT_DESIGN, GAME_CAT, designById } from './cats.js';
@@ -66,19 +69,48 @@ function buildGames() {
       + '</div>';
     before.before(v);
   }
-  $('home-sub').textContent = `あきの みほん　${String(GAMES.length).replace(/[0-9]/g, (d) => String.fromCharCode(d.charCodeAt(0) + 0xFEE0))}の あそび`;
+}
+// ホームの小見出し：季節と、あそびの数（全角の数字）
+function paintHomeSub() {
+  $('home-sub').textContent = `${SEASON_KANA[look.season] || 'あき'}の あそび　${String(GAMES.length).replace(/[0-9]/g, (d) => String.fromCharCode(d.charCodeAt(0) + 0xFEE0))}しゅるい`;
 }
 buildGames();
 
 // ---- 絵を置く ----
-for (const kind of ['home', ...GAMES.map((g) => g.id), 'settings']) {
-  $(`${kind}-scene`).innerHTML = sceneSVG(kind);
+// 起動した時は、端末の日付で季節だけを決める（行事は、予定のテキストを読んでから）
+const todayNum = () => { const now = new Date(); return dayNum(now.getFullYear(), now.getMonth() + 1, now.getDate()); };
+setLook(naturalSeason(todayNum()).id, '');
+// 季節と行事の飾り（画面の いちばん上の帯と、下の左右の角。ゲームの絵より奥に置く）
+function paintDecor(kind) {
+  const view = $(`${kind}-scene`).closest('.view');
+  let box = view.querySelector('.decor');
+  if (!box) {
+    box = document.createElement('div');
+    box.className = 'decor';
+    box.setAttribute('aria-hidden', 'true');
+    box.innerHTML = '<div class="decor-top"></div><div class="decor-bl"></div><div class="decor-br"></div>';
+    (view.querySelector('.leaves') || $(`${kind}-scene`)).after(box);
+  }
+  const d = decorLayers(kind, look);
+  box.dataset.key = d.key;
+  box.querySelector('.decor-top').innerHTML = d.top ? `<svg viewBox="0 0 390 64" preserveAspectRatio="xMidYMin meet">${d.top}</svg>` : '';
+  box.querySelector('.decor-bl').innerHTML = d.bl ? `<svg viewBox="0 0 64 64">${d.bl}</svg>` : '';
+  box.querySelector('.decor-br').innerHTML = d.br ? `<svg viewBox="0 0 64 64">${d.br}</svg>` : '';
 }
+// 季節と行事の背景（ゲームごとに描き分ける：RS01-S13）
+function paintScenes() {
+  for (const kind of ['home', ...GAMES.map((g) => g.id), 'settings']) {
+    $(`${kind}-scene`).innerHTML = sceneSVG(kind, look);
+    paintDecor(kind);
+  }
+  paintHomeSub();
+}
+paintScenes();
 // 猫は2匹とも A の案（RS01-S20）
 const catOf = (kind) => designById(CAT_DESIGN[kind]);
 const catForGame = (game) => catOf(GAME_CAT[game]);
 function paintCats() {
-  $('home-logo').innerHTML = logoSVG(catOf('mike'), catOf('saba'));
+  $('home-logo').innerHTML = logoSVG(catOf('mike'), catOf('saba'), look);
   $('rotate-art').innerHTML = rotateSVG(catOf('mike'));
   document.querySelectorAll('.menu-art').forEach((el) => { el.innerHTML = menuArt(el.dataset.art, catForGame(el.dataset.art)); });
 }
@@ -280,9 +312,9 @@ const yotei = { state: 'loading', needsUpdate: false };
 // 予定のテキストを読めない時は、季節と行事を決めない（RS01-S13）。その間のゲームの見た目は、
 // 予定のテキストに依らない境目どおりの四季とし、行事の飾りは出さない（依頼者が AI に任せた決め方。docs/決めたことの記録.md）
 function lookWithoutYotei() {
-  const now = new Date();
-  document.body.dataset.season = naturalSeason(dayNum(now.getFullYear(), now.getMonth() + 1, now.getDate())).id;
+  document.body.dataset.season = naturalSeason(todayNum()).id;
   document.body.dataset.event = '';
+  setLook(document.body.dataset.season, '');
 }
 async function loadYotei() {
   let text;
@@ -311,6 +343,7 @@ async function loadYotei() {
   yotei.needsUpdate = today.needsUpdate;
   document.body.dataset.season = today.season ? today.season.id : '';
   document.body.dataset.event = today.event ? today.event.id : '';
+  setLook(today.season ? today.season.id : naturalSeason(todayNum()).id, today.event ? today.event.id : '');
   setSchedule({ state: 'ok', parsed, overlaps: findOverlaps(parsed) });
   status();
 }
@@ -363,6 +396,14 @@ function refreshCache() {
     ctrl.postMessage({ type: 'status' }, [ch.port2]);
   });
 }
+
+// 季節と行事が決まり直したら、背景・舞う物・いまの画面を描き直す
+onLook(() => {
+  paintScenes();
+  paintCats();
+  views[current].falling.start();
+  if (games[current] && !games[current].isBusy()) openGame(current);
+});
 
 // ---- 起動 ----
 setupSettings();

@@ -8,14 +8,21 @@
 // 結果は先に乱数で決め（RS01-S14）、抜く順は、決めた花びらを最後に残すように並べる。
 // 花びらはどれも同じ大きさ（出やすさは、抜く順で決まり、花びらの大きさには表れない：RS01-S21）。
 import { C } from '../art.js';
+import { look } from '../look.js';
 import { catSitting, catPaw } from '../cats.js';
 import { audio } from '../audio.js';
 import { pickWeighted } from '../odds.js';
 import { celebrate, clearCelebration, ease, frames, wait, levelOf } from '../fx.js';
 import { showHint, showResult, setBusy, centerOf, charCount, svgEl, escapeXml } from '../ui.js';
 
-const PETALS = ['#f9c6d3', '#fde3ea', '#f5b8cd'];
-const PETAL_EDGE = '#e9a1b8';
+// 季節の花（どれも明るい色で、花びらの文字が読める）：春 さくら・夏 ひまわり・秋 コスモス・冬 さざんか
+const FLOWERS = {
+  haru: { petals: ['#fbd9e2', '#fde8ee', '#f9cdd8'], edge: '#eaa7ba', center: '#f6d55e', centerDeep: '#e0b43c' },
+  natsu: { petals: ['#fde58a', '#fdeca6', '#fbdc74'], edge: '#e0b43c', center: '#c99a62', centerDeep: '#9b6a42' },
+  aki: { petals: ['#f9c6d3', '#fde3ea', '#f5b8cd'], edge: '#e9a1b8', center: C.icho, centerDeep: C.ichoDeep },
+  fuyu: { petals: ['#ffffff', '#fdf1f4', '#fbe6ec'], edge: '#e7b3c2', center: '#f6d55e', centerDeep: '#e0b43c' },
+};
+const flower = () => FLOWERS[look.season] || FLOWERS.aki;
 
 // 花びらを抜く順。決めた花びら（decided）を最後に残す。rand(k) は 0〜k-1 の整数を返す
 export function pluckOrder(n, decided, rand = (k) => Math.floor(Math.random() * k)) {
@@ -90,15 +97,16 @@ export function createHana({ view, stage, result, play, getChoices, getWeights, 
       const a = i * step;
       const flip = a > 180;
       // 最後と最初が同じ色で隣り合わないように
-      const fill = i === n - 1 && n % PETALS.length === 1 ? PETALS[1] : PETALS[i % PETALS.length];
+      const FL = flower();
+      const fill = i === n - 1 && n % FL.petals.length === 1 ? FL.petals[1] : FL.petals[i % FL.petals.length];
       s += `<g class="petal" data-i="${i}" transform="translate(${fx} ${fy}) rotate(${a.toFixed(2)})">`
-        + `<path class="petal-bg" d="${petalD}" fill="${fill}" stroke="${PETAL_EDGE}" stroke-width="2" stroke-linejoin="round"/>`
-        + `<path d="M0,${-r0 - 4} L0,${-Rf * 0.36}" stroke="${PETAL_EDGE}" stroke-width="1.6" stroke-linecap="round" opacity="0.55"/>`
+        + `<path class="petal-bg" d="${petalD}" fill="${fill}" stroke="${FL.edge}" stroke-width="2" stroke-linejoin="round"/>`
+        + `<path d="M0,${-r0 - 4} L0,${-Rf * 0.36}" stroke="${FL.edge}" stroke-width="1.6" stroke-linecap="round" opacity="0.55"/>`
         + `<text class="cell-label" x="0" y="${-rText}" font-size="${sizes[i].toFixed(1)}" fill="${C.ink}" text-anchor="middle" dominant-baseline="central" transform="rotate(${flip ? 90 : -90} 0 ${-rText})">${escapeXml(choices[i])}</text>`
         + `</g>`;
     }
     // 花の真ん中
-    s += `<circle cx="${fx}" cy="${fy}" r="${r0}" fill="${C.icho}" stroke="${C.ichoDeep}" stroke-width="3"/>`;
+    s += `<circle cx="${fx}" cy="${fy}" r="${r0}" fill="${flower().center}" stroke="${flower().centerDeep}" stroke-width="3"/>`;
     for (let k = 0; k < 14; k++) {
       const a = k * 2.4;
       const rr = r0 * 0.62 * Math.sqrt((k + 0.5) / 14);

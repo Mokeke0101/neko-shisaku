@@ -1,6 +1,7 @@
 // 舞う葉っぱと、お祝いの葉っぱ。
 // 画面の中で同時に動く物は数十個までにする（RS01-S14）。
-import { autumnLeaf } from './art.js';
+import { fallingPiece, celebratePiece } from './art.js';
+import { look } from './look.js';
 import { jitter } from './random.js';
 
 const FALL_COUNT = 7;
@@ -13,7 +14,6 @@ export function setupFalling(view) {
   for (let i = 0; i < FALL_COUNT; i++) {
     const el = document.createElement('div');
     el.className = 'leaf-fall';
-    el.innerHTML = `<svg viewBox="-24 -24 48 48">${autumnLeaf(i, 18)}</svg>`;
     layer.appendChild(el);
     pieces.push(el);
   }
@@ -21,6 +21,8 @@ export function setupFalling(view) {
   return {
     start() {
       this.stop();
+      // 季節と行事の舞う物（look が変わっていれば描き直す）
+      pieces.forEach((el, i) => { el.innerHTML = `<svg viewBox="-24 -24 48 48">${fallingPiece(i, 18, look)}</svg>`; });
       const w = layer.clientWidth || window.innerWidth;
       const h = layer.clientHeight || window.innerHeight;
       anims = pieces.map((el, i) => {
@@ -54,7 +56,7 @@ export function celebrate(level, x, y) {
   for (let i = 0; i < count; i++) {
     const el = document.createElement('div');
     el.className = 'fx-piece';
-    el.innerHTML = `<svg viewBox="-24 -24 48 48">${autumnLeaf(i, 16 + (i % 3) * 3)}</svg>`;
+    el.innerHTML = `<svg viewBox="-24 -24 48 48">${celebratePiece(i, 16 + (i % 3) * 3, look)}</svg>`;
     layer.appendChild(el);
     const ang = jitter(-Math.PI * 0.95, -Math.PI * 0.05);
     const v = jitter(160, 330) * spread;
