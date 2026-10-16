@@ -212,6 +212,28 @@ export const audio = {
     this.tone(NOTE(PENTA[(i + (dir > 0 ? 2 : 0)) % PENTA.length]), { type: 'triangle', decay: 0.09, gain: 0.08 });
   },
 
+  // おもちゃ さがし：猫が箱の中で ごそごそ（やわらかい雑音を短く3つ）
+  rustle() {
+    if (!this.ready()) return;
+    const ctx = this.ctx;
+    const len = Math.floor(ctx.sampleRate * 0.09);
+    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.sin((Math.PI * i) / len);
+    for (let k = 0; k < 3; k++) {
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      const f = ctx.createBiquadFilter();
+      f.type = 'bandpass';
+      f.frequency.value = 1300 + Math.random() * 900;
+      f.Q.value = 0.8;
+      const g = ctx.createGain();
+      g.gain.value = 0.12;
+      src.connect(f).connect(g).connect(this.master);
+      src.start(ctx.currentTime + k * 0.08 + Math.random() * 0.03);
+    }
+  },
+
   // お祝い：level は 1〜3。どの段階もお祝いし、段階が上がるほど音を足す（RS01-S15）
   fanfare(level = 1) {
     if (!this.ready()) return;

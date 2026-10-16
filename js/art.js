@@ -274,6 +274,18 @@ export function menuArt(kind, d) {
     s += [26, 12, -2, -16].map((y) => `<path d="M20,${y} h10" stroke="${C.chestnut}" stroke-width="2" stroke-linecap="round" opacity="0.6"/>`).join('');
     return `<svg viewBox="-36 -36 72 72">${s}<g transform="translate(0 -22) scale(0.15)">${catSitting(d, { mood: 'happy' })}</g></svg>`;
   }
+  if (kind === 'sagasu') {
+    // たなの2つの箱。左の箱から猫のしっぽ、右の箱から ねずみの おもちゃ
+    const boxAt = (x, col) => `<path d="M${x - 12},-2 l-5,-9 l9,0 Z M${x + 12},-2 l5,-9 l-9,0 Z" fill="#f0d19f" stroke="#b98a52" stroke-width="1.2" stroke-linejoin="round"/>`
+      + `<rect x="${x - 13}" y="-2" width="26" height="24" rx="2.5" fill="${col}" stroke="#b98a52" stroke-width="1.4"/>`
+      + `<rect x="${x - 9}" y="5" width="18" height="10" rx="2" fill="${C.paper}" stroke="${C.woodDeep}" stroke-width="1"/>`;
+    return `<svg viewBox="-36 -36 72 72"><rect x="-34" y="22" width="68" height="4" rx="2" fill="${C.woodDeep}"/>`
+      + `<path d="M-17,0 C-17,-12 -11,-12 -12,-20" stroke="${d.line}" stroke-width="6.5" fill="none" stroke-linecap="round"/><path d="M-17,0 C-17,-12 -11,-12 -12,-20" stroke="${d.tail}" stroke-width="3.6" fill="none" stroke-linecap="round"/>`
+      + boxAt(-16, '#e9c591')
+      + `<g transform="translate(17 -6)"><path d="M5,1 q4,-4 8,0" stroke="#8f8499" stroke-width="1.2" fill="none" stroke-linecap="round"/><ellipse rx="6" ry="4.2" fill="#e3dde9" stroke="#8f8499" stroke-width="1"/><circle cx="-2" cy="-4" r="2.2" fill="#e3dde9" stroke="#8f8499" stroke-width="0.9"/><circle cx="-3.4" cy="-0.6" r="0.7" fill="#4a3a33"/><circle cx="-6" cy="0.4" r="0.9" fill="#f19bb0"/></g>`
+      + boxAt(16, '#eecd9d')
+      + `<g transform="translate(-20 -24) scale(0.15)">${catFace(d, { look: { x: 1, y: 0.6 } })}</g></svg>`;
+  }
   // nobi
   return `<svg viewBox="-36 -36 72 72"><rect x="-26" y="-34" width="14" height="70" rx="3" fill="${C.wood}" stroke="${C.woodDeep}" stroke-width="1.5"/>`
     + `<path d="M-26,-18 h14 M-26,-2 h14 M-26,14 h14" stroke="${C.momiji}" stroke-width="2.4" stroke-linecap="round"/>`
@@ -482,6 +494,19 @@ export function sceneSVG(kind) {
       + `<rect x="0" y="720" width="${W}" height="124" fill="#efd0a0"/>`
       + `<path d="M0,720 H${W}" stroke="#ddb37c" stroke-width="4"/><path d="M0,770 H${W} M0,815 H${W}" stroke="#e2bd87" stroke-width="2"/>`
       + `<g transform="translate(40 700) rotate(-12)">${mapleLeaf(C.kaki, C.kakiDeep, 14)}</g>`;
+  } else if (kind === 'sagasu') {
+    // 子ども部屋：水玉の かべ紙、丸い窓、木の床と まるい ラグ
+    let dots = '';
+    for (let r = 0; r < 9; r++) for (let k = 0; k < 7; k++) {
+      dots += `<circle cx="${k * 60 + (r % 2 ? 30 : 0)}" cy="${30 + r * 70}" r="5" fill="#f6d2bf" opacity="0.55"/>`;
+    }
+    body = dots
+      + `<circle cx="300" cy="120" r="56" fill="#fffaf0" stroke="#e6c99a" stroke-width="6"/><path d="M300,64 V176 M244,120 H356" stroke="#e6c99a" stroke-width="4"/>`
+      + `<g transform="translate(316 108)">${cloud(40)}</g>`
+      + `<rect x="0" y="720" width="${W}" height="124" fill="#efd0a0"/>`
+      + `<path d="M0,720 H${W}" stroke="#ddb37c" stroke-width="4"/><path d="M0,770 H${W} M0,815 H${W}" stroke="#e2bd87" stroke-width="2"/>`
+      + `<ellipse cx="195" cy="800" rx="150" ry="26" fill="#f7c4b4" opacity="0.7"/><ellipse cx="195" cy="800" rx="118" ry="18" fill="none" stroke="#fffaf0" stroke-width="3" opacity="0.8"/>`
+      + `<g transform="translate(46 700) rotate(-14)">${acorn(15)}</g><g transform="translate(350 705) rotate(18)">${mapleLeaf(C.kaki, C.kakiDeep, 14)}</g>`;
   } else if (kind === 'settings') {
     body = scatter(23, 8, { x: 0, y: 0, w: W, h: H }, 10, 16).replaceAll('opacity="0.95"', 'opacity="0.18"');
   }

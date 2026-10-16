@@ -14,6 +14,7 @@ import { createSugoroku } from './sugoroku.js';
 import { createOtoshi } from './otoshi.js';
 import { createMaigo } from './maigo.js';
 import { createTower } from './tower.js';
+import { createSagasu } from './sagasu.js';
 
 export const GAMES = [
   { id: 'roulette', name: 'にくきゅうルーレット', lines: ['にくきゅう', 'ルーレット'], desc: 'はりが とまった ところ', play: 'まわす', kind: '回って止まる', use: '2〜12こ', create: createRoulette },
@@ -28,4 +29,5 @@ export const GAMES = [
   { id: 'otoshi', name: 'カリカリ おとし', lines: ['カリカリ', 'おとし'], desc: 'おさらに はいった ところ', play: 'おとす', kind: '上から落ちて入る', use: '2〜12こ', create: createOtoshi },
   { id: 'maigo', name: 'まいごの こねこ', lines: ['まいごの', 'こねこ'], desc: 'わかれみちの さきの でぐち', play: 'あるく', kind: '線をたどる（分かれ道）', use: '2〜12こ', create: createMaigo },
   { id: 'tower', name: 'だんボール タワー', lines: ['だんボール', 'タワー'], desc: 'つみあがった たかさ', play: 'つむ', kind: '高さへ届く（積む）', use: '2〜12こ', create: createTower },
+  { id: 'sagasu', name: 'おもちゃ さがし', lines: ['おもちゃ', 'さがし'], desc: 'おもちゃが あった はこ', play: 'さがす', kind: '隠して当てる（さがす）', use: '2〜12こ', create: createSagasu },
 ];
