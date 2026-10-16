@@ -192,7 +192,7 @@ wake.onChange = status;
 // ---- 予定のテキスト（RS01-S13）。最初に開く時に端末へ保存し、その後は通信しない ----
 const yotei = { state: 'loading', needsUpdate: false };
 // 予定のテキストを読めない時は、季節と行事を決めない（RS01-S13）。その間のゲームの見た目は、
-// 予定のテキストに依らない境目どおりの四季とし、行事の飾りは出さない（仮に決めた。判断依頼 017）
+// 予定のテキストに依らない境目どおりの四季とし、行事の飾りは出さない（依頼者が AI に任せた決め方。docs/決めたことの記録.md）
 function lookWithoutYotei() {
   const now = new Date();
   document.body.dataset.season = naturalSeason(dayNum(now.getFullYear(), now.getMonth() + 1, now.getDate())).id;

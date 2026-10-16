@@ -1,7 +1,7 @@
 // 絵（すべてコードで描く SVG。外部の画像・素材集は使わない：RS01-S18）。
 // 絵文字は使わない。記号が要る所も図形で描く（RS01-S14）。
 // 猫は cats.js が描く（RS01-S20）。
-import { catFace, catPaw, pawPrint } from './cats.js';
+import { catFace, catPaw, pawPrint, catSitting } from './cats.js';
 
 export const C = {
   fur: '#f7c48b',
@@ -214,6 +214,66 @@ export function menuArt(kind, d) {
     lines += rows.map((y) => `<rect x="22" y="${y - 5}" width="11" height="10" rx="3" fill="#ffffff" stroke="${C.woodDeep}" stroke-width="1.4"/>`).join('');
     return `<svg viewBox="-36 -36 72 72">${lines}<g transform="translate(22 -4) scale(0.18)">${catFace(d)}</g></svg>`;
   }
+  if (kind === 'race') {
+    // 3つの毛糸玉と、のこした糸。右はしに ゴールの旗
+    const balls = [{ y: -16, x: 12, fill: '#f4a7a3', deep: '#d97f7a' }, { y: 2, x: 2, fill: '#9fc5e8', deep: '#6f9fcb' }, { y: 20, x: -6, fill: '#f3d36b', deep: '#d4b043' }];
+    let s = `<path d="M24,-32 V34" stroke="${C.momiji}" stroke-width="2.6" stroke-linecap="round"/>`
+      + [-24, -8, 8, 24].map((y, k) => `<path d="M25,${y - 4} l7,4 l-7,4 Z" fill="${[C.momiji, C.icho, C.olive][k % 3]}"/>`).join('');
+    for (const { y, x, fill, deep } of balls) {
+      s += `<path d="M-30,${y + 5} H${x - 4}" stroke="${deep}" stroke-width="2" stroke-linecap="round"/>`
+        + `<circle cx="${x}" cy="${y}" r="7.5" fill="${fill}" stroke="${deep}" stroke-width="1.4"/>`
+        + `<path d="M${x - 6},${y - 2} Q${x},${y - 8} ${x + 6},${y - 2} M${x - 6},${y + 3} Q${x},${y - 3} ${x + 6},${y + 3}" stroke="${deep}" stroke-width="1.1" fill="none" opacity="0.8"/>`;
+    }
+    return `<svg viewBox="-36 -36 72 72">${s}<g transform="translate(17 -22) scale(0.17)">${catFace(d, { look: { x: -1, y: 0.4 } })}</g></svg>`;
+  }
+  if (kind === 'mato') {
+    // 棚に立つ2つの的と、肉球の ねらい
+    const plate = (x, y, rim) => `<rect x="${x}" y="${y}" width="30" height="16" rx="5" fill="#ffffff" stroke="${rim}" stroke-width="1.8"/>`
+      + `<circle cx="${x + 8}" cy="${y + 8}" r="5" fill="${rim}" opacity="0.85"/><circle cx="${x + 8}" cy="${y + 8}" r="2" fill="#ffffff"/>`
+      + `<path d="M${x + 14},${y + 8} h12" stroke="${C.inkSoft}" stroke-width="2" stroke-linecap="round" opacity="0.5"/>`;
+    return `<svg viewBox="-36 -36 72 72"><rect x="-32" y="-12" width="64" height="4" rx="2" fill="${C.woodDeep}"/><rect x="-32" y="12" width="64" height="4" rx="2" fill="${C.woodDeep}"/>`
+      + plate(-30, -29, C.momiji) + plate(2, -29, C.olive) + plate(-30, -5, '#6f9fcb') + plate(2, -5, C.kaki)
+      + `<g transform="translate(-22 -21)"><circle r="9" fill="#ffffff" opacity="0.7"/><circle r="9" fill="none" stroke="${C.momiji}" stroke-width="1.6" stroke-dasharray="3 2"/>${pawPrint(C.momiji, 7)}</g>`
+      + `<g transform="translate(14 25) scale(0.2)">${catFace(d, { look: { x: -0.4, y: -1 } })}</g><circle cx="-6" cy="26" r="5" fill="#fff6e4" stroke="${C.momiji}" stroke-width="1.4"/></svg>`;
+  }
+  if (kind === 'sugoroku') {
+    // つづら折りの ますと、さいころ
+    const sq = [[-30, 6, '#fde2d6', '#e8664a'], [-8, 6, '#fdefc8', '#e0a93a'], [14, 6, '#e4efd2', '#86a256'], [14, -16, '#dde9f6', '#6f9fcb'], [-8, -16, '#ece2f4', '#a985c9'], [-30, -16, '#fbe3ea', '#e391ad']];
+    let s = `<path d="M-21,15 H23 V-7 H-21" stroke="#f1dcb8" stroke-width="8" fill="none" stroke-linejoin="round"/>`;
+    for (const [x, y, fill, edge] of sq) s += `<rect x="${x}" y="${y}" width="18" height="18" rx="4" fill="${fill}" stroke="${edge}" stroke-width="1.6"/>`;
+    s += `<g transform="translate(18 26) rotate(-12)"><rect x="-8" y="-8" width="16" height="16" rx="3.5" fill="#ffffff" stroke="${C.line}" stroke-width="1.6"/><circle r="2.6" fill="${C.momiji}"/></g>`;
+    return `<svg viewBox="-36 -36 72 72">${s}<g transform="translate(-21 -7) scale(0.15)">${catFace(d)}</g></svg>`;
+  }
+  if (kind === 'otoshi') {
+    // くぎの板と、お皿に入るカリカリ
+    let s = '';
+    for (let r = 0; r < 4; r++) for (let k = 0; k < 5; k++) {
+      const x = -24 + k * 12 + (r % 2 ? 6 : 0);
+      if (x > 26) continue;
+      s += `<circle cx="${x}" cy="${-22 + r * 9}" r="1.8" fill="${C.woodDeep}"/>`;
+    }
+    const bowls = ['#fde2d6', '#fdefc8', '#e4efd2', '#dde9f6'];
+    bowls.forEach((col, k) => { s += `<rect x="${-28 + k * 14.5}" y="14" width="12.5" height="18" rx="3.5" fill="${col}" stroke="${['#e8664a', '#e0a93a', '#86a256', '#6f9fcb'][k]}" stroke-width="1.4"/>`; });
+    s += `<path d="M-2,-30 q-4,8 2,13 q6,6 -2,13 q-5,6 1,12" stroke="${C.momiji}" stroke-width="1.4" fill="none" stroke-dasharray="2 2" opacity="0.7"/>`;
+    s += `<g transform="translate(1 24) rotate(20)"><path d="M-5,0 Q-1,-5 3,-1 L5,-3 L5,3 L3,1 Q-1,5 -5,0 Z" fill="${C.chestnut}" stroke="${C.chestnutDeep}" stroke-width="0.8"/></g>`;
+    return `<svg viewBox="-36 -36 72 72">${s}<g transform="translate(22 -24) scale(0.16)">${catFace(d, { look: { x: -1, y: 0.6 } })}</g></svg>`;
+  }
+  if (kind === 'maigo') {
+    // 枝分かれする小道と、出口の札
+    const road = 'M-32,2 L-20,2 C-10,2 -12,-16 0,-16 L6,-16 M-20,2 C-10,2 -12,20 0,20 M0,-16 C8,-16 6,-26 16,-26 L22,-26 M0,-16 C8,-16 6,-8 16,-8 L22,-8 M0,20 L22,20';
+    let s = `<path d="${road}" stroke="#e6c99a" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="${road}" stroke="#fbf1dc" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+    s += [-26, -8, 20].map((y) => `<rect x="22" y="${y - 5}" width="11" height="10" rx="3" fill="#ffffff" stroke="${C.woodDeep}" stroke-width="1.4"/>`).join('');
+    return `<svg viewBox="-36 -36 72 72">${s}<g transform="translate(-22 -6) scale(0.13)">${catSitting(d, { look: { x: 1, y: 0 } })}</g></svg>`;
+  }
+  if (kind === 'tower') {
+    // 積み上がった だんボール箱と、てっぺんの猫
+    let s = '';
+    [[0, 22, '#e9c591'], [2, 8, '#e3bb84'], [-1, -6, '#eecd9d']].forEach(([dx, y, col]) => {
+      s += `<rect x="${-14 + dx}" y="${y - 6}" width="28" height="13" rx="2" fill="${col}" stroke="#b98a52" stroke-width="1.4"/><rect x="${-2.5 + dx}" y="${y - 6}" width="5" height="13" fill="#f6dfb8"/>`;
+    });
+    s += [26, 12, -2, -16].map((y) => `<path d="M20,${y} h10" stroke="${C.chestnut}" stroke-width="2" stroke-linecap="round" opacity="0.6"/>`).join('');
+    return `<svg viewBox="-36 -36 72 72">${s}<g transform="translate(0 -22) scale(0.15)">${catSitting(d, { mood: 'happy' })}</g></svg>`;
+  }
   // nobi
   return `<svg viewBox="-36 -36 72 72"><rect x="-26" y="-34" width="14" height="70" rx="3" fill="${C.wood}" stroke="${C.woodDeep}" stroke-width="1.5"/>`
     + `<path d="M-26,-18 h14 M-26,-2 h14 M-26,14 h14" stroke="${C.momiji}" stroke-width="2.4" stroke-linecap="round"/>`
@@ -351,6 +411,77 @@ export function sceneSVG(kind) {
       + `<path d="M150,844 Q180,700 260,640 T390,600 V640 Q300,670 250,720 T230,844 Z" fill="#f4e2c0"/>`
       + treeRound(40, 520, 30, C.kaki) + treeRound(360, 500, 26, C.momiji)
       + scatter(17, 12, { x: 6, y: 640, w: 378, h: 190 }, 8, 13);
+  } else if (kind === 'race') {
+    // 運動会の原っぱ：上に小さな旗の列、遠くの丘と木
+    let bunting = `<path d="M-10,70 Q195,112 400,70" stroke="#9b5f3a" stroke-width="2" fill="none"/>`;
+    for (let i = 0; i < 14; i++) {
+      const x = 4 + i * 28.5;
+      const y = 70 + Math.sin(((x + 10) / 410) * Math.PI) * 21;
+      const col = [C.momiji, C.icho, C.olive, '#9fc5e8', C.rose][i % 5];
+      bunting += `<path d="M${f(x - 8)},${f(y)} L${f(x + 8)},${f(y + 1)} L${f(x)},${f(y + 18)} Z" fill="${col}" opacity="0.9"/>`;
+    }
+    body = bunting + `<g transform="translate(300 150)">${cloud(70)}</g>`
+      + `<path d="M0,600 Q110,560 220,590 T390,570 V844 H0 Z" fill="#eadfb0"/>`
+      + treeRound(30, 580, 28, C.kaki) + treeRound(362, 560, 30, C.icho)
+      + `<path d="M0,670 Q140,630 270,660 T390,650 V844 H0 Z" fill="#e2d39c"/>`
+      + scatter(29, 12, { x: 6, y: 680, w: 378, h: 150 }, 8, 13);
+  } else if (kind === 'mato') {
+    // 縁日の屋台：上に しま模様の ひさし、下に木の床
+    let awning = '';
+    for (let i = 0; i < 9; i++) {
+      awning += `<path d="M${i * 46 - 10},0 h46 v44 q-23,14 -46,0 Z" fill="${i % 2 ? '#fff6e4' : '#f7c4b4'}"/>`;
+    }
+    let planks = '';
+    for (let i = 0; i < 4; i++) {
+      planks += `<rect x="0" y="${640 + i * 52}" width="${W}" height="52" fill="${i % 2 ? '#f3d5a8' : '#f6dcb4'}"/>`
+        + `<path d="M0,${640 + i * 52} H${W}" stroke="#e2bd87" stroke-width="2"/>`;
+    }
+    body = awning + `<path d="M0,1 H${W}" stroke="#e2bd87" stroke-width="3"/>` + planks
+      + `<g transform="translate(46 770) rotate(-20)">${mapleLeaf(C.kaki, C.kakiDeep, 16)}</g>`
+      + `<g transform="translate(344 800) rotate(24)">${ginkgoLeaf(C.icho, C.ichoDeep, 18)}</g>`;
+  } else if (kind === 'sugoroku') {
+    // 和室：上に しょうじ、下に たたみ
+    let shoji = `<rect x="0" y="0" width="${W}" height="210" fill="#fffaf0"/>`;
+    for (let x = 0; x <= W; x += 65) shoji += `<path d="M${x},0 V210" stroke="#e6c99a" stroke-width="3"/>`;
+    for (let y = 0; y <= 210; y += 52) shoji += `<path d="M0,${y} H${W}" stroke="#e6c99a" stroke-width="3"/>`;
+    shoji += `<path d="M0,212 H${W}" stroke="#c99a62" stroke-width="7"/>`;
+    let tatami = '';
+    for (let i = 0; i < 3; i++) {
+      tatami += `<rect x="${i % 2 ? -100 : 0}" y="${600 + i * 82}" width="${W + 100}" height="82" fill="${i % 2 ? '#e8e3b8' : '#ece8c4'}" stroke="#d5cd98" stroke-width="2"/>`;
+      tatami += `<path d="M${i % 2 ? 160 : 260},${600 + i * 82} V${682 + i * 82}" stroke="#b9a46c" stroke-width="5"/>`;
+    }
+    body = shoji + `<g transform="translate(330 150) rotate(20)">${mapleLeaf(C.momiji, C.momijiDeep, 16)}</g>` + tatami
+      + `<g transform="translate(50 780) rotate(-20)">${mapleLeaf(C.kaki, C.kakiDeep, 15)}</g>`;
+  } else if (kind === 'otoshi') {
+    // 台所の窓辺：上に窓と カーテン、下に チェックの テーブルクロス
+    let cloth = '';
+    for (let i = 0; i < 9; i++) for (let j = 0; j < 4; j++) {
+      if ((i + j) % 2) cloth += `<rect x="${i * 46}" y="${650 + j * 50}" width="46" height="50" fill="#f6c9b8" opacity="0.55"/>`;
+    }
+    body = `<rect x="70" y="60" width="250" height="150" rx="14" fill="#fffaf0" stroke="#e6c99a" stroke-width="5"/>`
+      + `<path d="M195,60 V210 M70,135 H320" stroke="#e6c99a" stroke-width="4"/>`
+      + `<g transform="translate(250 100)">${cloud(60)}</g>`
+      + `<path d="M60,50 Q90,140 70,220 L40,220 L40,50 Z M330,50 Q300,140 320,220 L350,220 L350,50 Z" fill="#f7c4b4" opacity="0.8"/>`
+      + `<rect x="0" y="640" width="${W}" height="210" fill="#fff4e6"/>` + cloth
+      + `<g transform="translate(50 600) rotate(-15)">${persimmon(16)}</g><g transform="translate(340 610) rotate(10)">${persimmon(14)}</g>`;
+  } else if (kind === 'maigo') {
+    // 庭の小道：生け垣の丸い しげみと、落ち葉
+    const bush = (x, y, r, col) => `<g><circle cx="${x}" cy="${y}" r="${r}" fill="${col}"/><circle cx="${x - r * 0.7}" cy="${y + r * 0.3}" r="${r * 0.7}" fill="${col}"/><circle cx="${x + r * 0.7}" cy="${y + r * 0.3}" r="${r * 0.7}" fill="${col}"/><circle cx="${x - r * 0.3}" cy="${y - r * 0.3}" r="${r * 0.3}" fill="#ffffff" opacity="0.18"/></g>`;
+    body = `<g transform="translate(80 120)">${cloud(80)}</g>`
+      + `<path d="M0,590 Q120,560 240,580 T390,570 V844 H0 Z" fill="#dfe6b5"/>`
+      + bush(30, 600, 30, '#b9cc85') + bush(360, 590, 34, '#a9c17a') + bush(300, 640, 22, '#c3d494')
+      + treeRound(70, 560, 26, C.kaki)
+      + `<path d="M150,844 Q170,740 230,700 T330,660" stroke="#f4e2c0" stroke-width="40" fill="none" stroke-linecap="round"/>`
+      + scatter(37, 10, { x: 6, y: 680, w: 378, h: 150 }, 8, 13);
+  } else if (kind === 'tower') {
+    // 引っこしの日の へや：上に窓、かべに 時計、下に木の床
+    body = `<rect x="230" y="70" width="120" height="110" rx="10" fill="#fffaf0" stroke="#e6c99a" stroke-width="5"/>`
+      + `<path d="M290,70 V180 M230,125 H350" stroke="#e6c99a" stroke-width="4"/>`
+      + `<g transform="translate(300 108)">${cloud(46)}</g>`
+      + `<circle cx="70" cy="110" r="26" fill="#fffaf0" stroke="#e6c99a" stroke-width="4"/><path d="M70,110 V94 M70,110 L82,116" stroke="${C.chestnut}" stroke-width="3" stroke-linecap="round"/>`
+      + `<rect x="0" y="720" width="${W}" height="124" fill="#efd0a0"/>`
+      + `<path d="M0,720 H${W}" stroke="#ddb37c" stroke-width="4"/><path d="M0,770 H${W} M0,815 H${W}" stroke="#e2bd87" stroke-width="2"/>`
+      + `<g transform="translate(40 700) rotate(-12)">${mapleLeaf(C.kaki, C.kakiDeep, 14)}</g>`;
   } else if (kind === 'settings') {
     body = scatter(23, 8, { x: 0, y: 0, w: W, h: H }, 10, 16).replaceAll('opacity="0.95"', 'opacity="0.18"');
   }

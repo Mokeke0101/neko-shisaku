@@ -8,8 +8,8 @@ import { DEFAULT_LEVEL, isLevel, weightsOf } from './odds.js';
 
 const KEY = 'nekokime.settings.v3';
 // 前の版の保存。v3 の保存がまだ無い時だけ、新しい版から順に探して引き継ぐ。前の版の保存は消さない
-const KEY_V2 = 'nekokime.settings.v2'; // 作業回 02 の版 v2
-const KEY_V1 = 'nekokime.settings.v1'; // 作業回 01 の版 v1
+const KEY_V2 = 'nekokime.settings.v2'; // 版 v2
+const KEY_V1 = 'nekokime.settings.v1'; // 版 v1
 
 export const LIMITS = { min: 2, max: 12, maxChars: 8 };
 export const PURPOSES = {

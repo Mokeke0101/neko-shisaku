@@ -184,6 +184,34 @@ export const audio = {
     this.tone(i % 2 ? 520 : 470, { decay: 0.05, gain: 0.07, glideTo: 380 });
   },
 
+  // けいとだま レース：「よーい」（k = 0）と「どん」（k = 1）
+  readyGo(k) {
+    if (k === 0) this.marimba(67, 0, 0.2);
+    else { this.marimba(79, 0, 0.28); this.bell(91, 0.02, 0.1); }
+  },
+  // けいとだま レース：毛糸玉が転がる「ころころ」
+  roll(i) {
+    this.tone(NOTE(PENTA[i % 5] - 12), { type: 'triangle', decay: 0.05, gain: 0.05 });
+    this.tone(NOTE(PENTA[(i + 2) % 5] - 12), { type: 'triangle', at: 0.07, decay: 0.05, gain: 0.04 });
+  },
+
+  // ねこパンチ まとあて：ねらいが移る音（だんだん上がる）・パンチ・当たった音
+  aim(i) {
+    this.marimba(PENTA[i % PENTA.length] - 12, 0, 0.16);
+  },
+  toss() {
+    this.tone(320, { type: 'triangle', attack: 0.01, decay: 0.22, gain: 0.12, glideTo: 900 });
+  },
+  hit() {
+    this.stamp();
+    this.bell(88, 0.03, 0.14);
+  },
+
+  // カリカリ おとし：くぎに当たる「ちん」（はねた向きで音を変える）
+  ping(i, dir) {
+    this.tone(NOTE(PENTA[(i + (dir > 0 ? 2 : 0)) % PENTA.length]), { type: 'triangle', decay: 0.09, gain: 0.08 });
+  },
+
   // お祝い：level は 1〜3。どの段階もお祝いし、段階が上がるほど音を足す（RS01-S15）
   fanfare(level = 1) {
     if (!this.ready()) return;

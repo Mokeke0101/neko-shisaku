@@ -4,7 +4,7 @@
 // 公開し直す時は VERSION を上げる（js/version.js の APP_VERSION と同じ値にする）。
 'use strict';
 
-const VERSION = 'v4';
+const VERSION = 'v5';
 const CACHE = `nekokime-${VERSION}`;
 const FILES = [
   './',
@@ -32,6 +32,12 @@ const FILES = [
   './js/games/hana.js',
   './js/games/kuji.js',
   './js/games/amida.js',
+  './js/games/race.js',
+  './js/games/mato.js',
+  './js/games/sugoroku.js',
+  './js/games/otoshi.js',
+  './js/games/maigo.js',
+  './js/games/tower.js',
   './js/games/list.js',
   './fonts/ZenMaruGothic-Medium.woff',
   './fonts/ZenMaruGothic-Bold.woff',

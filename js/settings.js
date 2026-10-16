@@ -182,7 +182,7 @@ export function renderSchedule() {
   if (schedule.state === 'loading') { set('st-yotei', '読んでいます'); return; }
   if (schedule.state === 'error') {
     set('st-yotei', '読めません', false);
-    // 季節と行事は決めない。ゲームは境目どおりの季節の見た目で、行事の飾りは出さない（仮に決めた。判断依頼 017）
+    // 季節と行事は決めない。ゲームは境目どおりの季節の見た目で、行事の飾りは出さない（依頼者が AI に任せた決め方。docs/決めたことの記録.md）
     set('st-season', `わかりません（ゲームは境目どおりの「${naturalSeason(today).name}」）`, false);
     set('st-event', 'わかりません（飾りは出さない）', false);
     set('st-overlap', '-');
