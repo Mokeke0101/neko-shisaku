@@ -148,6 +148,42 @@ export const audio = {
     this.tone(1200, { decay: 0.04, gain: 0.08 });
   },
 
+  // はなびら うらない：花びらを抜いた時（抜くたびに音が上がる）
+  pluck(i) {
+    this.tone(NOTE(PENTA[i % PENTA.length]), { decay: 0.22, gain: 0.14, glideTo: NOTE(PENTA[i % PENTA.length]) * 0.8 });
+    this.tone(2400, { type: 'triangle', decay: 0.03, gain: 0.05 });
+  },
+
+  // はなびら うらない：のこり2枚の間で まよう時
+  hover(i) {
+    this.marimba(i % 2 ? 76 : 72, 0, 0.12);
+  },
+
+  // まねきねこ おみくじ：箱の中で棒が当たる「からから」
+  rattle() {
+    for (let k = 0; k < 3; k++) {
+      const f = 900 + Math.random() * 700;
+      this.tone(f, { type: 'triangle', at: k * 0.045 + Math.random() * 0.02, decay: 0.035, gain: 0.09 });
+    }
+  },
+
+  // まねきねこ おみくじ：棒がすべり出る音と、番号が出た「ぽん」
+  slide(seconds) {
+    if (!this.ready()) return;
+    this.tone(340, { type: 'triangle', attack: 0.05, decay: seconds, gain: 0.05, glideTo: 620 });
+  },
+  pop() {
+    this.tone(660, { decay: 0.12, gain: 0.22, glideTo: 990 });
+  },
+
+  // あしあと あみだ：横の線が出る音と、足あと
+  rung(i) {
+    this.tone(NOTE(PENTA[i % 5] + 12), { type: 'triangle', decay: 0.06, gain: 0.07 });
+  },
+  step(i) {
+    this.tone(i % 2 ? 520 : 470, { decay: 0.05, gain: 0.07, glideTo: 380 });
+  },
+
   // お祝い：level は 1〜3。どの段階もお祝いし、段階が上がるほど音を足す（RS01-S15）
   fanfare(level = 1) {
     if (!this.ready()) return;

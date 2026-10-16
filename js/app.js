@@ -10,16 +10,51 @@ import { setupSettings, refreshSettings, renderStatus, setSchedule } from './set
 import { CAT_DESIGN, GAME_CAT, designById } from './cats.js';
 import { parseYotei, findOverlaps, lookup, dayNum, naturalSeason } from './schedule.js';
 import { LAST_YEAR } from './calendar.js';
-import { createRoulette } from './games/roulette.js';
-import { createStamp } from './games/stamp.js';
-import { createNobi } from './games/nobi.js';
+import { GAMES } from './games/list.js';
 
 const $ = (id) => document.getElementById(id);
 
 store.load();
 
+// ---- あそびの一覧と画面を作る（js/games/list.js の順） ----
+function buildGames() {
+  const menu = $('menu');
+  const before = $('view-settings');
+  for (const g of GAMES) {
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'menu-card';
+    card.dataset.go = g.id;
+    card.setAttribute('aria-label', g.name);
+    card.innerHTML = `<span class="menu-art" data-art="${g.id}" aria-hidden="true"></span>`
+      + `<span class="menu-name">${g.lines.map((l) => `<span>${l}</span>`).join('')}</span>`
+      + `<span class="menu-desc">${g.desc}</span>`;
+    menu.appendChild(card);
+    const v = document.createElement('section');
+    v.id = `view-${g.id}`;
+    v.className = 'view game-view';
+    v.dataset.view = g.id;
+    v.hidden = true;
+    v.innerHTML = `<div class="scene" id="${g.id}-scene" aria-hidden="true"></div>`
+      + '<div class="leaves" aria-hidden="true"></div>'
+      + '<div class="view-body">'
+      + '<header class="bar"><button type="button" class="back" data-go="home" aria-label="もどる"><span class="icon-back" aria-hidden="true"></span></button>'
+      + `<h2 class="bar-title">${g.name}</h2><span class="bar-space"></span></header>`
+      + '<div class="purpose" role="group" aria-label="きめるもの">'
+      + Object.entries(PURPOSES).map(([k, p]) => `<button type="button" class="purpose-btn" data-purpose="${k}">${p.name}</button>`).join('')
+      + '</div>'
+      + `<div class="stage" id="${g.id}-stage"></div>`
+      + `<div class="result" id="${g.id}-result" aria-live="polite"></div>`
+      + `<div class="actions"><button type="button" class="play" id="${g.id}-play">${g.play}</button></div>`
+      + '</div>';
+    before.before(v);
+  }
+  $('home-sub').textContent = `あきの みほん　${String(GAMES.length).replace(/[0-9]/g, (d) => String.fromCharCode(d.charCodeAt(0) + 0xFEE0))}つの あそび`;
+}
+buildGames();
+
 // ---- 絵を置く ----
-for (const kind of ['home', 'roulette', 'stamp', 'nobi', 'settings']) {
+for (const kind of ['home', ...GAMES.map((g) => g.id), 'settings']) {
   $(`${kind}-scene`).innerHTML = sceneSVG(kind);
 }
 // 猫は2匹とも A の案（RS01-S20）
@@ -31,17 +66,19 @@ function paintCats() {
   document.querySelectorAll('.menu-art').forEach((el) => { el.innerHTML = menuArt(el.dataset.art, catForGame(el.dataset.art)); });
 }
 paintCats();
-document.querySelectorAll('.menu-arrow').forEach((el) => { el.innerHTML = icons.chevron; });
 document.querySelectorAll('.icon-back').forEach((el) => { el.innerHTML = icons.back; });
 document.querySelectorAll('.icon-gear').forEach((el) => { el.innerHTML = icons.gear; });
 document.querySelectorAll('.icon-plus').forEach((el) => { el.innerHTML = icons.plus; });
 
 // ---- ゲーム ----
-const games = {
-  roulette: createRoulette({ view: $('view-roulette'), stage: $('roulette-stage'), result: $('roulette-result'), play: $('roulette-play'), getChoices: () => store.list(), getWeights: () => store.weights(), getCat: () => catForGame('roulette') }),
-  stamp: createStamp({ view: $('view-stamp'), stage: $('stamp-stage'), result: $('stamp-result'), play: $('stamp-play'), getChoices: () => store.list(), getWeights: () => store.weights(), getCat: () => catForGame('stamp') }),
-  nobi: createNobi({ view: $('view-nobi'), stage: $('nobi-stage'), result: $('nobi-result'), play: $('nobi-play'), getStages: () => store.list(), getWeights: () => store.weights(), getCat: () => catForGame('nobi') }),
-};
+const games = {};
+for (const g of GAMES) {
+  const getChoices = () => store.list();
+  games[g.id] = g.create({
+    view: $(`view-${g.id}`), stage: $(`${g.id}-stage`), result: $(`${g.id}-result`), play: $(`${g.id}-play`),
+    getChoices, getStages: getChoices, getWeights: () => store.weights(), getCat: () => catForGame(g.id), getPurpose: () => store.data.purpose,
+  });
+}
 
 // ---- 決めるもの（おやつ・お楽しみ袋）の切り替え。ゲームの間で共有する（RS01-S10） ----
 function paintPurpose() {

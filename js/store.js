@@ -18,7 +18,7 @@ export const PURPOSES = {
 };
 
 const DEFAULTS = {
-  snack: ['カリカリ', 'ちゅるちゅる', 'かつおぶし', 'ささみ', 'にぼし', 'おさかな'],
+  snack: ['カリカリ', 'ちゅーる', 'かつおぶし', 'ささみ', 'にぼし', 'どーにゃつ'],
   coin: ['20まい', '50まい', '100まい'],
   coinLevels: [DEFAULT_LEVEL, DEFAULT_LEVEL, DEFAULT_LEVEL],
   purpose: 'snack',

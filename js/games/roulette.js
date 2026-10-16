@@ -6,12 +6,60 @@ import { catFace, catPaw } from '../cats.js';
 import { audio } from '../audio.js';
 import { pickIndex, jitter } from '../random.js';
 import { pickWeighted } from '../odds.js';
-import { celebrate, clearCelebration, ease, frames, wait } from '../fx.js';
+import { celebrate, clearCelebration, ease, frames, wait, levelOf } from '../fx.js';
 import { showHint, showResult, setBusy, centerOf, charCount, svgEl, escapeXml } from '../ui.js';
 
 const FILLS = ['#fbd6a2', '#fde8b2', '#f8cbbb', '#e2ecc0', '#fbe0c6', '#f5d09a'];
 
-export function createRoulette({ view, stage, result, play, getChoices, getWeights, getCat }) {
+// 選択肢の文字の大きさと置き場（RS01-S01・S21）。
+// 文字は、扇の真ん中の線の上に、中心から外へ向けて並べる。文字の太さ（文字の大きさ）に使える角度は、
+// 扇の大きさそのものではなく、隣どうしの扇の真ん中の線の中間で区切った角度にする。
+// どの扇も同じ大きさなら、扇の大きさと同じ。小さい扇（比 6・3・1 で 12個のうち1つだけ出にくい時、約5度）は、
+// 両どなりの大きい扇から角度を借りて、文字を読める大きさに保つ（扇の大きさ＝出やすさは変えない）。
+// 角度が足りない文字は、外側（角度の幅が広い所）へ寄せて置く。
+const LABEL_MAX = 26;
+const LABEL_MIN = 12;
+const LABEL_FILL = 0.8; // 区切った角度の幅のうち、文字の太さに使う割合（残りは隣の文字とのすき間）
+export function labelLayout({ choices, spans, hub, rs, R }) {
+  const n = spans.length;
+  const rIn = hub + 12;
+  const rOut = rs - Math.max(11, R * 0.075) * 2 - 6; // 肉球の下に文字が隠れないように
+  const along = rOut - rIn;
+  const rMid = (rIn + rOut) / 2;
+  // 角度の幅 room（度）に収まる文字の大きさと、置く半径
+  const fit = (room, len, byLen) => {
+    const k = (LABEL_FILL * Math.min(room, 180) * Math.PI) / 180;
+    // 文字の太さ s が、文字の内側の端の半径での角度の幅に収まる大きさ。真ん中に置く時と、外側の端に寄せる時
+    // 真ん中に置く時は、前の版（v3）の決め方（真ん中の半径での弧の長さの 0.62 倍）も認める。どの扇も同じ大きさなら v3 と同じ大きさになる
+    const centered = Math.max((k * rMid) / (1 + (k * len) / 2), (0.62 * Math.PI * rMid * Math.min(room, 180)) / 180);
+    const outer = (k * rOut) / (1 + k * len);
+    if (centered >= Math.min(byLen, outer)) return { raw: Math.min(byLen, centered), r: rMid };
+    const raw = Math.min(byLen, outer);
+    return { raw, r: rOut - (len * Math.max(LABEL_MIN, raw)) / 2 };
+  };
+  return spans.map((span, i) => {
+    const len = Math.max(charCount(choices[i]), 1);
+    const byLen = Math.min(LABEL_MAX, (along / len) * 0.96);
+    // 文字の置き場の角度：前（反時計回り）の隣との中間から、次（時計回り）の隣との中間まで
+    const before = n === 1 ? 180 : (span + spans[(i - 1 + n) % n]) / 4;
+    const after = n === 1 ? 180 : (span + spans[(i + 1) % n]) / 4;
+    // ふつうは扇の真ん中の線の上に置く（置き場は、狭い側の2倍）
+    let L = fit(2 * Math.min(before, after), len, byLen);
+    let shift = 0;
+    // 小さい扇が続く時は、真ん中の線の上では狭すぎる。置き場の全体（大きい隣の側へ広い）の真ん中へ、文字をずらして置く
+    if (L.raw < LABEL_MIN + 2) {
+      const wide = fit(before + after, len, byLen);
+      if (wide.raw > L.raw + 0.5) { L = wide; shift = (after - before) / 2; }
+    }
+    const size = Math.max(LABEL_MIN, L.raw);
+    // 文字の内側の端で、文字の太さが自分の扇の幅を越えるか（越える時は白いふちを付ける）
+    const inner = L.r - (len * size) / 2;
+    const spill = shift !== 0 || size > inner * ((span * Math.PI) / 180) * 0.9;
+    return { size, r: L.r, spill, shift };
+  });
+}
+
+export function createRoulette({ view, stage, result, play, getChoices, getWeights, getCat, getPurpose }) {
   let angle = 0; // 針の向き（度。0 が真上、時計回り）
   let geo = null;
   let busy = false;
@@ -63,23 +111,19 @@ export function createRoulette({ view, stage, result, play, getChoices, getWeigh
     // 選ばれた扇を示す縁（最初は隠す）
     s += `<path class="pick-ring" d="" fill="#ffffff" fill-opacity="0.35" stroke="${C.momiji}" stroke-width="5" stroke-linejoin="round" opacity="0"/>`;
     // 文字
+    const labels = labelLayout({ choices, spans, hub, rs, R });
     for (let i = 0; i < n; i++) {
-      const mid = starts[i] + spans[i] / 2; // 真上から時計回り
-      const len = charCount(choices[i]);
-      const rIn = hub + 12;
-      const rOut = rs - Math.max(11, R * 0.075) * 2 - 6; // 肉球の下に文字が隠れないように
-      const along = rOut - rIn;
-      const rMid = (rIn + rOut) / 2;
-      const arc = (2 * Math.PI * rMid * spans[i]) / 360;
-      let size = Math.min(26, (along / Math.max(len, 1)) * 0.96, arc * 0.62);
-      size = Math.max(12, size);
-      minLabel = Math.min(minLabel, size);
+      const L = labels[i];
+      const mid = starts[i] + spans[i] / 2 + L.shift; // 真上から時計回り（小さい扇が続く時だけ、少しずらす）
+      minLabel = Math.min(minLabel, L.size);
       // 文字は中心から外へ向けて並べ、左半分では上下が逆にならないよう向きを返す
       const flip = mid > 180;
       const rot = flip ? mid + 90 : mid - 90;
-      const tx = cx + Math.cos(((mid - 90) * Math.PI) / 180) * rMid;
-      const ty = cy + Math.sin(((mid - 90) * Math.PI) / 180) * rMid;
-      s += `<text class="cell-label" x="${tx}" y="${ty}" font-size="${size.toFixed(1)}" fill="${C.ink}" text-anchor="middle" dominant-baseline="central" transform="rotate(${rot.toFixed(2)} ${tx.toFixed(2)} ${ty.toFixed(2)})">${escapeXml(choices[i])}</text>`;
+      const tx = cx + Math.cos(((mid - 90) * Math.PI) / 180) * L.r;
+      const ty = cy + Math.sin(((mid - 90) * Math.PI) / 180) * L.r;
+      // 小さい場所の文字は場所の幅からはみ出すので、白いふちを付けて、隣の場所の色の上でも読めるようにする
+      const halo = L.spill ? ` stroke="#fffaf0" stroke-width="${(L.size * 0.32).toFixed(1)}" stroke-linejoin="round" paint-order="stroke"` : '';
+      s += `<text class="cell-label${L.spill ? ' is-spill' : ''}" data-i="${i}" x="${tx}" y="${ty}" font-size="${L.size.toFixed(1)}" fill="${C.ink}"${halo} text-anchor="middle" dominant-baseline="central" transform="rotate(${rot.toFixed(2)} ${tx.toFixed(2)} ${ty.toFixed(2)})">${escapeXml(choices[i])}</text>`;
     }
     // 縁の鋲
     for (let i = 0; i < n; i++) {
@@ -213,11 +257,14 @@ export function createRoulette({ view, stage, result, play, getChoices, getWeigh
     stage.dataset.landed = String(landed);
     showRing(landed);
     setCat('happy');
-    audio.fanfare(2);
+    // お祝いの大きさ：お楽しみ袋では段階の並びの位置で変える（RS01-S15）。おやつでは真ん中の大きさ
+    const level = getPurpose() === 'coin' ? levelOf(landed, geo.n) : 2;
+    stage.dataset.level = String(level);
+    audio.fanfare(level);
     const choices = getChoices();
     showResult(result, 'きまったよ', choices[landed]);
     const c = centerOf(result);
-    celebrate(2, c.x, c.y - 30);
+    celebrate(level, c.x, c.y - 30);
     await wait(500);
     play.textContent = 'もういちど';
     busy = false;

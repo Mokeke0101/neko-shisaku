@@ -4,10 +4,10 @@ import { C, ginkgoLeaf, mapleLeaf } from '../art.js';
 import { catFace, catPaw, pawPrint } from '../cats.js';
 import { audio } from '../audio.js';
 import { pickWeighted } from '../odds.js';
-import { celebrate, clearCelebration, ease, frames, wait } from '../fx.js';
+import { celebrate, clearCelebration, ease, frames, wait, levelOf } from '../fx.js';
 import { showHint, showResult, setBusy, centerOf, charCount, svgEl, escapeXml } from '../ui.js';
 
-export function createStamp({ view, stage, result, play, getChoices, getWeights, getCat }) {
+export function createStamp({ view, stage, result, play, getChoices, getWeights, getCat, getPurpose }) {
   let geo = null;
   let busy = false;
   let refs = {};
@@ -239,11 +239,14 @@ export function createStamp({ view, stage, result, play, getChoices, getWeights,
     pawPos = r;
     stage.dataset.landed = String(landed);
     setFace('happy');
-    audio.fanfare(2);
+    // お祝いの大きさ：お楽しみ袋では段階の並びの位置で変える（RS01-S15）。おやつでは真ん中の大きさ
+    const level = getPurpose() === 'coin' ? levelOf(landed, geo.n) : 2;
+    stage.dataset.level = String(level);
+    audio.fanfare(level);
     const choices = getChoices();
     showResult(result, 'きまったよ', choices[landed]);
     const pc = centerOf(result);
-    celebrate(2, pc.x, pc.y - 30);
+    celebrate(level, pc.x, pc.y - 30);
     await wait(500);
     play.textContent = 'もういちど';
     busy = false;

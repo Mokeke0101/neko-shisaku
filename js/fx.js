@@ -74,6 +74,12 @@ export function celebrate(level, x, y) {
   }
 }
 
+// お祝いの大きさ（1〜3）を、段階の並びの位置で決める（RS01-S15：段階によってお祝いを変える）。
+// 一番下の段階は 1、真ん中は 2、一番上は 3。のびのび せいくらべ と同じ分け方
+export function levelOf(index, n) {
+  return n <= 1 ? 3 : 1 + Math.round((2 * index) / (n - 1));
+}
+
 export function clearCelebration() {
   const layer = document.getElementById('fx');
   layer.getAnimations({ subtree: true }).forEach((a) => a.cancel());

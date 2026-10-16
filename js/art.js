@@ -184,6 +184,36 @@ export function menuArt(kind, d) {
       + `<g transform="translate(10 7)">${pawPrint(C.momiji, 6)}</g>`
       + `<g transform="translate(20 26) scale(0.62)">${catPaw(d, 16)}</g></svg>`;
   }
+  if (kind === 'hana') {
+    // コスモスの花と、花びらを1枚つまむ猫の手
+    const petals = Array.from({ length: 7 }, (_, i) => {
+      const a = (i / 7) * 360;
+      const col = ['#f9c6d3', '#fde3ea', '#f5b8cd'][i % 3];
+      return `<ellipse cx="0" cy="-15" rx="7.5" ry="13" fill="${col}" stroke="#e9a1b8" stroke-width="1.2" transform="rotate(${f(a)})"/>`;
+    }).join('');
+    return `<svg viewBox="-36 -36 72 72"><path d="M-2,8 Q2,22 -4,36" stroke="${C.oliveDeep}" stroke-width="2.6" fill="none" stroke-linecap="round"/>`
+      + `<g transform="translate(-4 -4)">${petals}<circle r="6.5" fill="${C.icho}" stroke="${C.ichoDeep}" stroke-width="1.4"/></g>`
+      + `<g transform="translate(24 -22) rotate(30)"><ellipse cx="0" cy="0" rx="5" ry="9" fill="#f5b8cd" stroke="#e9a1b8" stroke-width="1.2"/></g>`
+      + `<g transform="translate(22 24) scale(0.2)">${catFace(d)}</g></svg>`;
+  }
+  if (kind === 'kuji') {
+    // おみくじの箱と、出てきた棒の番号
+    return `<svg viewBox="-36 -36 72 72"><g transform="rotate(-14)">`
+      + `<rect x="1" y="-30" width="6" height="26" rx="2.5" fill="#f6e3c3" stroke="#c99a62" stroke-width="1.4"/>`
+      + `<rect x="-10" y="-8" width="28" height="40" rx="6" fill="#f3d9b0" stroke="#c99a62" stroke-width="2"/>`
+      + `<rect x="-9" y="2" width="26" height="12" fill="${C.momiji}"/>`
+      + `<circle cx="4" cy="-30" r="8" fill="${C.paper}" stroke="${C.momiji}" stroke-width="2"/></g>`
+      + `<g transform="translate(-21 16) scale(0.24)">${catFace(d, { mood: 'happy' })}</g></svg>`;
+  }
+  if (kind === 'amida') {
+    // あみだくじの線と、足あと
+    const rows = [-20, -4, 12, 28];
+    let lines = rows.map((y) => `<path d="M-28,${y} H22" stroke="${C.chestnut}" stroke-width="2.4" stroke-linecap="round"/>`).join('');
+    lines += `<path d="M-12,-20 V-4 M6,-4 V12 M-4,12 V28 M14,-20 V-4" stroke="${C.chestnut}" stroke-width="2.4" stroke-linecap="round"/>`;
+    lines += `<path d="M-28,-4 H-12 V-20 H14 V-4 H22" stroke="${C.momiji}" stroke-width="3.4" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>`;
+    lines += rows.map((y) => `<rect x="22" y="${y - 5}" width="11" height="10" rx="3" fill="#ffffff" stroke="${C.woodDeep}" stroke-width="1.4"/>`).join('');
+    return `<svg viewBox="-36 -36 72 72">${lines}<g transform="translate(22 -4) scale(0.18)">${catFace(d)}</g></svg>`;
+  }
   // nobi
   return `<svg viewBox="-36 -36 72 72"><rect x="-26" y="-34" width="14" height="70" rx="3" fill="${C.wood}" stroke="${C.woodDeep}" stroke-width="1.5"/>`
     + `<path d="M-26,-18 h14 M-26,-2 h14 M-26,14 h14" stroke="${C.momiji}" stroke-width="2.4" stroke-linecap="round"/>`
@@ -275,6 +305,52 @@ export function sceneSVG(kind) {
       + `<path d="M0,720 H${W}" stroke="#ddb37c" stroke-width="4"/>`
       + `<path d="M0,760 H${W} M0,800 H${W}" stroke="#e2bd87" stroke-width="2"/>`
       + susuki;
+  } else if (kind === 'hana') {
+    // 秋の野原：遠くの丘と、コスモスの小さな花
+    let field = '';
+    let sd = 5;
+    const rnd = () => ((sd = (sd * 9301 + 49297) % 233280) / 233280);
+    for (let i = 0; i < 26; i++) {
+      const x = rnd() * W;
+      const y = 650 + rnd() * 180;
+      const r = 4 + rnd() * 4;
+      const col = ['#f9c6d3', '#fde3ea', '#f5b8cd', '#ffffff'][i % 4];
+      field += `<path d="M${f(x)},${f(y + r)} q${f(r * 0.4)},${f(r * 3)} ${f(-r * 0.2)},${f(r * 6)}" stroke="${C.oliveDeep}" stroke-width="1.6" fill="none" opacity="0.6"/>`
+        + `<circle cx="${f(x)}" cy="${f(y)}" r="${f(r)}" fill="${col}" stroke="#e9a1b8" stroke-width="1"/><circle cx="${f(x)}" cy="${f(y)}" r="${f(r * 0.32)}" fill="${C.icho}"/>`;
+    }
+    body = `<g transform="translate(70 120)">${cloud(80)}</g><g transform="translate(320 190)">${cloud(60)}</g>`
+      + `<path d="M0,600 Q110,560 220,590 T390,570 V844 H0 Z" fill="#eadfb0"/>`
+      + `<path d="M0,660 Q140,620 270,650 T390,640 V844 H0 Z" fill="#e2d39c"/>`
+      + treeRound(354, 570, 30, C.momiji) + treeRound(28, 590, 24, C.icho)
+      + field
+      + `<g transform="translate(300 300) rotate(-12)">${dragonfly(16)}</g>`;
+  } else if (kind === 'kuji') {
+    // 縁日：上に ちょうちんの列、下に木の床
+    let lanterns = `<path d="M-10,96 Q195,150 400,96" stroke="#9b5f3a" stroke-width="2.5" fill="none"/>`;
+    for (let i = 0; i < 7; i++) {
+      const x = 20 + i * 58;
+      const y = 96 + Math.sin((i / 6) * Math.PI) * 26;
+      lanterns += `<path d="M${x},${y} v10" stroke="#9b5f3a" stroke-width="2"/>`
+        + `<rect x="${x - 7}" y="${y + 8}" width="14" height="5" rx="2" fill="#9b5f3a"/>`
+        + `<ellipse cx="${x}" cy="${y + 30}" rx="16" ry="20" fill="#fff6e4" stroke="#e7b98a" stroke-width="2"/>`
+        + `<path d="M${x - 15},${y + 24} h30 M${x - 15},${y + 36} h30" stroke="${C.momiji}" stroke-width="3" opacity="0.8"/>`
+        + `<rect x="${x - 7}" y="${y + 48}" width="14" height="5" rx="2" fill="#9b5f3a"/>`;
+    }
+    let planks = '';
+    for (let i = 0; i < 4; i++) {
+      planks += `<rect x="0" y="${640 + i * 52}" width="${W}" height="52" fill="${i % 2 ? '#f3d5a8' : '#f6dcb4'}"/>`
+        + `<path d="M0,${640 + i * 52} H${W}" stroke="#e2bd87" stroke-width="2"/>`;
+    }
+    body = lanterns + planks
+      + `<g transform="translate(40 760) rotate(-24)">${mapleLeaf(C.momiji, C.momijiDeep, 16)}</g>`
+      + `<g transform="translate(350 790) rotate(30)">${ginkgoLeaf(C.icho, C.ichoDeep, 18)}</g>`;
+  } else if (kind === 'amida') {
+    // 庭の小道：明るい芝と、落ち葉
+    body = `<g transform="translate(300 120)">${cloud(80)}</g>`
+      + `<path d="M0,560 Q120,520 240,548 T390,536 V844 H0 Z" fill="#e7e5b4"/>`
+      + `<path d="M150,844 Q180,700 260,640 T390,600 V640 Q300,670 250,720 T230,844 Z" fill="#f4e2c0"/>`
+      + treeRound(40, 520, 30, C.kaki) + treeRound(360, 500, 26, C.momiji)
+      + scatter(17, 12, { x: 6, y: 640, w: 378, h: 190 }, 8, 13);
   } else if (kind === 'settings') {
     body = scatter(23, 8, { x: 0, y: 0, w: W, h: H }, 10, 16).replaceAll('opacity="0.95"', 'opacity="0.18"');
   }
