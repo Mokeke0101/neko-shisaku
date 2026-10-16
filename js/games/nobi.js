@@ -1,6 +1,6 @@
 // のびのび せいくらべ（見せ方の部品：たまっていくゲージ）。
 // 柱の「せいくらべ」の印へ向かって、猫がばんざいの形で上へのびる。届いた印が結果になる。
-// どの段階も同じ出やすさで、どの段階もお祝いし、段階が上がるほどお祝いを大きくする（RS01-S09・S15）。
+// 段階の出やすさは、お楽しみ袋の選択肢ごとに選んだもの（RS01-S21）。どの段階もお祝いし、段階が上がるほどお祝いを大きくする（RS01-S09・S15）。
 //
 // 結果が出るまでの「どうなるんだろう？」と思わせる時間（RS01-S19）
 // 1. じゅんび：かがんで、おしりを ふりふりする（飛びつく前の猫のしぐさ）。
@@ -12,7 +12,7 @@
 import { C } from '../art.js';
 import { catFace, pawPrint, torsoPattern, tail } from '../cats.js';
 import { audio } from '../audio.js';
-import { pickIndex } from '../random.js';
+import { pickWeighted } from '../odds.js';
 import { celebrate, clearCelebration, ease, frames, wait } from '../fx.js';
 import { showHint, showResult, setBusy, charCount, svgEl, escapeXml } from '../ui.js';
 
@@ -34,7 +34,7 @@ export function nobiTiming(n) {
   };
 }
 
-export function createNobi({ view, stage, result, play, getStages, getCat }) {
+export function createNobi({ view, stage, result, play, getStages, getWeights, getCat }) {
   let geo = null;
   let busy = false;
   let refs = {};
@@ -202,7 +202,9 @@ export function createNobi({ view, stage, result, play, getStages, getCat }) {
     render();
     const { n, marks, restReach, k } = geo;
     const T = nobiTiming(n);
-    const decided = pickIndex(n); // 結果を先に決める
+    const weights = getWeights();
+    if (weights.length !== n) throw new Error(`選択肢と重みの数が合わない: ${n}・${weights.length}`);
+    const decided = pickWeighted(weights); // 結果を先に決める（出やすさ：RS01-S21）
     stage.dataset.decided = String(decided);
     delete stage.dataset.landed;
     const t0 = performance.now();

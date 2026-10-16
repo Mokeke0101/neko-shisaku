@@ -8,7 +8,9 @@
 //
 // 重なった時の扱い（重ならないように書くのは依頼者。アプリは重なりを知らせる）
 // - 季節どうしが重なった日：境目どおりの季節を出す。
-// - 行事どうしが重なった日：どの行事の飾りも出さない（季節の見た目だけ）。
+// - 行事どうしが重なった日：重なった行事のうち、期間の短い行事の飾りを出す（期間の短い行事は特別日のため）。
+//   期間が同じ長さの時は、要求仕様で決まっていない（RS01-S13 の保留）。仮に、行事の日がその日に近い行事を出し、
+//   それも同じなら、カレンダーの一覧（js/calendar.js の EVENTS）で先にある行事を出す（判断依頼 017）。
 // - 年で日付が動く行事は、カレンダーの範囲（2026〜2030年）の外の年では出さない。範囲の外の日付では、
 //   アップデートが必要だと知らせる。
 import { SEASONS, EVENTS, YEARS, FIRST_YEAR, LAST_YEAR, eventDate } from './calendar.js';
@@ -107,6 +109,25 @@ export function periodsOfYear(parsed, year) {
   return out;
 }
 
+// 予定のテキストに依らない、境目どおりの季節（予定のテキストを読めない時のゲームの見た目に使う）
+export function naturalSeason(n) {
+  const { y } = fromDayNum(n);
+  for (const yy of [y - 1, y]) {
+    for (let idx = 0; idx < SEASONS.length; idx++) {
+      const sp = seasonSpan(SEASONS[idx], idx, yy);
+      if (sp.start <= n && n <= sp.end) return SEASONS[idx];
+    }
+  }
+  throw new Error(`季節を決められない日付: ${n}`);
+}
+
+const EVENT_ORDER = new Map(EVENTS.map((e, i) => [e.id, i]));
+// 重なった行事のうち、飾りを出す行事。期間の短い順、行事の日が近い順、カレンダーの一覧の順
+function pickOverlapped(events, n) {
+  const len = (p) => p.to - p.from + 1;
+  return [...events].sort((a, b) => (len(a) - len(b)) || (Math.abs(n - a.day) - Math.abs(n - b.day)) || (EVENT_ORDER.get(a.id) - EVENT_ORDER.get(b.id)))[0];
+}
+
 // その日の季節と行事
 export function lookup(parsed, n) {
   if (!parsed.ok) return { ok: false };
@@ -119,7 +140,7 @@ export function lookup(parsed, n) {
     ok: true,
     season: natural,
     seasonOverlap: seasons.length > 1 ? seasons : null,
-    event: events.length === 1 ? events[0] : null,
+    event: events.length === 1 ? events[0] : (events.length > 1 ? pickOverlapped(events, n) : null),
     eventOverlap: events.length > 1 ? events : null,
     needsUpdate: y < FIRST_YEAR || y > LAST_YEAR,
   };

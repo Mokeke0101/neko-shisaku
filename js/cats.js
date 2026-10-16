@@ -1,11 +1,12 @@
 // 猫のキャラクター（RS01-S20）：パステル三毛猫とサバトラ。
-// 見た目は、描いた案（下の DESIGNS）の中から依頼者が選ぶ。選ぶまでの間は、それぞれ A の案を使う。
+// 見た目は、描いた案（下の DESIGNS）の中から依頼者が選んだ A の案に決まった（判断依頼 015）。アプリは CAT_DESIGN の案だけを使う。
+// B・C の案は、見比べの絵を描く道具（tools/render-cats.mjs）のために残している。アプリの画面には出ない。
 // どのゲームにも2匹のどちらか1匹を出す。どちらが出るかは GAME_CAT が決める。
 // 絵はすべてコードで描く SVG（RS01-S18）。絵文字は使わない（RS01-S14）。
 
 export const GAME_CAT = { roulette: 'mike', stamp: 'mike', nobi: 'saba' };
 export const CAT_NAMES = { mike: 'パステル三毛猫', saba: 'サバトラ' };
-export const DEFAULT_DESIGN = { mike: 'mike-a', saba: 'saba-a' };
+export const CAT_DESIGN = { mike: 'mike-a', saba: 'saba-a' };
 
 const PINK = '#f7b4a6';
 const EYE = '#4a3a33';

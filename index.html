@@ -94,7 +94,7 @@
       </header>
       <div class="purpose" role="group" aria-label="きめるもの">
         <button type="button" class="purpose-btn" data-purpose="snack">おやつ</button>
-        <button type="button" class="purpose-btn" data-purpose="coin">コイン</button>
+        <button type="button" class="purpose-btn" data-purpose="coin">お楽しみ袋</button>
       </div>
       <div class="stage" id="roulette-stage"></div>
       <div class="result" id="roulette-result" aria-live="polite"></div>
@@ -116,7 +116,7 @@
       </header>
       <div class="purpose" role="group" aria-label="きめるもの">
         <button type="button" class="purpose-btn" data-purpose="snack">おやつ</button>
-        <button type="button" class="purpose-btn" data-purpose="coin">コイン</button>
+        <button type="button" class="purpose-btn" data-purpose="coin">お楽しみ袋</button>
       </div>
       <div class="stage" id="stamp-stage"></div>
       <div class="result" id="stamp-result" aria-live="polite"></div>
@@ -138,7 +138,7 @@
       </header>
       <div class="purpose" role="group" aria-label="きめるもの">
         <button type="button" class="purpose-btn" data-purpose="snack">おやつ</button>
-        <button type="button" class="purpose-btn" data-purpose="coin">コイン</button>
+        <button type="button" class="purpose-btn" data-purpose="coin">お楽しみ袋</button>
       </div>
       <div class="stage" id="nobi-stage"></div>
       <div class="result" id="nobi-result" aria-live="polite"></div>
@@ -159,25 +159,25 @@
       </header>
       <div class="settings-scroll">
         <section class="panel">
-          <h3 class="panel-title">おやつ決めの選択肢</h3>
-          <p class="panel-hint">どのゲームでも、上の切りかえで「おやつ」を選んだ時に使います。2〜12個、1つ8文字まで。</p>
+          <h3 class="panel-title">おやつの選択肢</h3>
+          <p class="panel-hint">どのゲームでも、上の切りかえで「おやつ」を選んだ時に使います。どれも同じ出やすさです。2〜12個、1つ8文字まで。</p>
           <ol class="choice-list" id="list-snack"></ol>
           <button type="button" class="sub-button add" data-add="snack"><span class="icon-plus" aria-hidden="true"></span>ふやす</button>
         </section>
         <section class="panel">
-          <h3 class="panel-title">コイン決めの選択肢</h3>
-          <p class="panel-hint">どのゲームでも、「コイン」を選んだ時に使います。せいくらべでは、上に書いたものほど低い段階です。2〜12個、1つ8文字まで。</p>
+          <h3 class="panel-title">お楽しみ袋の選択肢</h3>
+          <p class="panel-hint">どのゲームでも、「お楽しみ袋」を選んだ時に使います。せいくらべでは、上に書いたものほど低い段階です。2〜12個、1つ8文字まで。</p>
+          <p class="panel-hint">それぞれの出やすさを「出やすい・ふつう・出にくい」から選べます。右の数字は、1回で出る割合です（ゲームの画面には出ません）。</p>
           <ol class="choice-list" id="list-coin"></ol>
           <button type="button" class="sub-button add" data-add="coin"><span class="icon-plus" aria-hidden="true"></span>ふやす</button>
         </section>
         <section class="panel">
           <h3 class="panel-title">ねこ</h3>
-          <p class="panel-hint">ルーレットとスタンプには パステル三毛猫、せいくらべには サバトラが出ます。見た目は、案の中から選べます。</p>
+          <p class="panel-hint">ルーレットとスタンプには パステル三毛猫、せいくらべには サバトラが出ます。見た目は、どちらも A の案です。</p>
           <dl class="status">
             <dt>パステル三毛猫</dt><dd id="st-cat-mike">-</dd>
             <dt>サバトラ</dt><dd id="st-cat-saba">-</dd>
           </dl>
-          <button type="button" class="sub-button" data-go="cats">ねこの案を くらべる</button>
         </section>
         <section class="panel">
           <h3 class="panel-title">季節と行事</h3>
@@ -218,25 +218,6 @@
           <p class="panel-hint">このアプリは、遊んだ記録や設定を外へ送りません。</p>
           <p class="panel-hint">書体：Zen Maru Gothic（SIL Open Font License 1.1、fonts/OFL.txt）</p>
         </section>
-      </div>
-    </div>
-  </section>
-
-  <!-- ねこの案（見比べて選ぶ。配信者には使わない、依頼者のための画面） -->
-  <section id="view-cats" class="view" data-view="cats" hidden>
-    <div class="scene" id="cats-scene" aria-hidden="true"></div>
-    <div class="view-body settings-body">
-      <header class="bar">
-        <button type="button" class="back" data-go="settings" aria-label="もどる"><span class="icon-back" aria-hidden="true"></span></button>
-        <h2 class="bar-title">ねこの案</h2>
-        <span class="bar-space"></span>
-      </header>
-      <div class="settings-scroll">
-        <p class="panel-hint cats-lead">それぞれ1つを えらぶと、ゲームの猫が かわります。えらんだ案は、閉じて開き直しても のこります。</p>
-        <h3 class="cats-head">パステル三毛猫<span class="cats-where">ルーレット・スタンプ</span></h3>
-        <div class="cat-cards" id="cats-mike"></div>
-        <h3 class="cats-head">サバトラ<span class="cats-where">せいくらべ</span></h3>
-        <div class="cat-cards" id="cats-saba"></div>
       </div>
     </div>
   </section>

@@ -3,11 +3,11 @@
 import { C, ginkgoLeaf, mapleLeaf } from '../art.js';
 import { catFace, catPaw, pawPrint } from '../cats.js';
 import { audio } from '../audio.js';
-import { pickIndex } from '../random.js';
+import { pickWeighted } from '../odds.js';
 import { celebrate, clearCelebration, ease, frames, wait } from '../fx.js';
 import { showHint, showResult, setBusy, centerOf, charCount, svgEl, escapeXml } from '../ui.js';
 
-export function createStamp({ view, stage, result, play, getChoices, getCat }) {
+export function createStamp({ view, stage, result, play, getChoices, getWeights, getCat }) {
   let geo = null;
   let busy = false;
   let refs = {};
@@ -191,7 +191,9 @@ export function createStamp({ view, stage, result, play, getChoices, getCat }) {
     render();
     showHint(result, 'どこに おそうかな…');
     const { n } = geo;
-    const decided = pickIndex(n); // 結果を先に決める
+    const weights = getWeights();
+    if (weights.length !== n) throw new Error(`選択肢と重みの数が合わない: ${n}・${weights.length}`);
+    const decided = pickWeighted(weights); // 結果を先に決める（出やすさ：RS01-S21）
     stage.dataset.decided = String(decided);
     delete stage.dataset.landed;
 

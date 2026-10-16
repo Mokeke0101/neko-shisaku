@@ -1,15 +1,64 @@
-// 設定の画面：選択肢の調整（RS01-S09・S10）、ねこ（RS01-S20）、季節と行事（RS01-S13）、音（RS01-S11・D02）、状態の表示。
+// 設定の画面：選択肢の調整（RS01-S09・S10）、お楽しみ袋の出やすさ（RS01-S21）、ねこ（RS01-S20）、季節と行事（RS01-S13）、
+// 音（RS01-S11・D02）、状態の表示。
 import { store, LIMITS, cleanLabel } from './store.js';
 import { audio } from './audio.js';
 import { icons } from './art.js';
-import { designById } from './cats.js';
-import { dayNum, fmt, fmtMD, lookup } from './schedule.js';
+import { CAT_DESIGN, designById } from './cats.js';
+import { LEVELS, DEFAULT_LEVEL, weightsOf, percents } from './odds.js';
+import { dayNum, fmt, fmtMD, lookup, naturalSeason } from './schedule.js';
 import { FIRST_YEAR, LAST_YEAR } from './calendar.js';
 
 const LISTS = {
   snack: { el: 'list-snack', make: (n) => `おやつ${n + 1}` },
-  coin: { el: 'list-coin', make: (n) => `${n + 1}だんめ` },
+  coin: { el: 'list-coin', make: (n) => `${n + 1}だんめ`, levels: true },
 };
+
+// お楽しみ袋の選択肢ごとの割合（%）を、選んだ出やすさから計算し直して並べ直す
+function renderPercents(ol) {
+  const shown = percents(weightsOf(store.data.coinLevels));
+  ol.querySelectorAll('.odds-pct').forEach((el, i) => { el.textContent = `${shown[i]}%`; });
+  ol.dataset.percents = shown.join(',');
+}
+
+// 出やすさを選ぶ3つのボタン（出やすい・ふつう・出にくい）
+function levelPicker(ol, i) {
+  const box = document.createElement('div');
+  box.className = 'odds';
+  const group = document.createElement('div');
+  group.className = 'odds-group';
+  group.setAttribute('role', 'group');
+  group.setAttribute('aria-label', `${i + 1}番目の出やすさ`);
+  for (const l of LEVELS) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'odds-btn';
+    b.dataset.level = l.id;
+    b.textContent = l.name;
+    const paint = () => {
+      const on = store.data.coinLevels[i] === l.id;
+      b.classList.toggle('is-on', on);
+      b.setAttribute('aria-pressed', String(on));
+    };
+    paint();
+    b.addEventListener('click', () => {
+      if (store.data.coinLevels[i] === l.id) return;
+      audio.tap();
+      store.data.coinLevels[i] = l.id;
+      save();
+      group.querySelectorAll('.odds-btn').forEach((x) => {
+        const on = x.dataset.level === l.id;
+        x.classList.toggle('is-on', on);
+        x.setAttribute('aria-pressed', String(on));
+      });
+      renderPercents(ol);
+    });
+    group.appendChild(b);
+  }
+  const pct = document.createElement('span');
+  pct.className = 'odds-pct';
+  box.append(group, pct);
+  return box;
+}
 
 function note(listEl, text) {
   let p = listEl.parentElement.querySelector('.choice-note');
@@ -61,13 +110,19 @@ function renderList(key) {
     del.addEventListener('click', () => {
       if (list.length <= LIMITS.min) return;
       list.splice(i, 1);
+      if (def.levels) store.data.coinLevels.splice(i, 1);
       note(ol, '');
       save();
       renderList(key);
     });
     li.append(num, input, del);
+    if (def.levels) {
+      li.classList.add('has-odds');
+      li.appendChild(levelPicker(ol, i));
+    }
     ol.appendChild(li);
   });
+  if (def.levels) renderPercents(ol);
   const add = document.querySelector(`[data-add="${key}"]`);
   add.disabled = list.length >= LIMITS.max;
 }
@@ -103,10 +158,10 @@ export function setSchedule(s) {
 function describe(n) {
   const r = lookup(schedule.parsed, n);
   const season = r.season ? r.season.name : '-';
-  let event;
-  if (r.eventOverlap) event = `重なりのため出さない（${r.eventOverlap.map((p) => p.name).join('・')}）`;
-  else if (r.event) event = `${r.event.name}（${fmtMD(r.event.from)}〜${fmtMD(r.event.to)}）`;
-  else event = 'なし';
+  let event = 'なし';
+  if (r.event) event = `${r.event.name}（${fmtMD(r.event.from)}〜${fmtMD(r.event.to)}）`;
+  // 重なった日は、期間の短い行事を出す（RS01-S13）。どの行事と重なったかも添える
+  if (r.eventOverlap) event += `。重なり：${r.eventOverlap.map((p) => p.name).join('と')}。期間の短い方を出す`;
   const seasonText = r.seasonOverlap ? `${season}（重なり：${r.seasonOverlap.map((p) => p.name).join('・')}）` : season;
   return { season: seasonText, event, needsUpdate: r.needsUpdate, r };
 }
@@ -127,8 +182,9 @@ export function renderSchedule() {
   if (schedule.state === 'loading') { set('st-yotei', '読んでいます'); return; }
   if (schedule.state === 'error') {
     set('st-yotei', '読めません', false);
-    set('st-season', 'わかりません', false);
-    set('st-event', 'わかりません', false);
+    // 季節と行事は決めない。ゲームは境目どおりの季節の見た目で、行事の飾りは出さない（仮に決めた。判断依頼 017）
+    set('st-season', `わかりません（ゲームは境目どおりの「${naturalSeason(today).name}」）`, false);
+    set('st-event', 'わかりません（飾りは出さない）', false);
     set('st-overlap', '-');
     addNote(schedule.message, true);
     (schedule.parsed ? schedule.parsed.errors : []).forEach((e) => addNote(`${e.line ? `${e.line}行目：` : ''}${e.message}`, true));
@@ -156,7 +212,7 @@ function renderTry() {
 // ---- ねこ ----
 export function renderCatStatus() {
   for (const kind of ['mike', 'saba']) {
-    const d = designById(store.data.cats[kind]);
+    const d = designById(CAT_DESIGN[kind]);
     set(`st-cat-${kind}`, `${d.label}　${d.name}`);
   }
 }
@@ -169,6 +225,7 @@ export function setupSettings() {
       const list = store.data[key];
       if (list.length >= LIMITS.max) return;
       list.push(LISTS[key].make(list.length));
+      if (LISTS[key].levels) store.data.coinLevels.push(DEFAULT_LEVEL);
       save();
       renderList(key);
       const inputs = document.querySelectorAll(`#${LISTS[key].el} .choice-input`);

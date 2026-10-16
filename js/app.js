@@ -1,14 +1,14 @@
 // ねこきめ（秋の見本）：画面の切り替え・起動・通信なしで動く仕組みの登録。
-// 選択肢の用途の切り替え（RS01-S10）、猫の案（RS01-S20）、予定のテキスト（RS01-S13）もここでつなぐ。
+// 選択肢の用途の切り替え（RS01-S10）、選択肢の出やすさ（RS01-S21）、猫（RS01-S20）、予定のテキスト（RS01-S13）もここでつなぐ。
 import { APP_VERSION } from './version.js';
 import { store, PURPOSES } from './store.js';
 import { audio } from './audio.js';
 import { wake } from './wake.js';
 import { icons, logoSVG, menuArt, rotateSVG, sceneSVG } from './art.js';
 import { setupFalling, clearCelebration } from './fx.js';
-import { setupSettings, refreshSettings, renderStatus, setSchedule, renderCatStatus } from './settings.js';
-import { DESIGNS, GAME_CAT, designById, catSitting, catFace } from './cats.js';
-import { parseYotei, findOverlaps, lookup, dayNum } from './schedule.js';
+import { setupSettings, refreshSettings, renderStatus, setSchedule } from './settings.js';
+import { CAT_DESIGN, GAME_CAT, designById } from './cats.js';
+import { parseYotei, findOverlaps, lookup, dayNum, naturalSeason } from './schedule.js';
 import { LAST_YEAR } from './calendar.js';
 import { createRoulette } from './games/roulette.js';
 import { createStamp } from './games/stamp.js';
@@ -22,10 +22,9 @@ store.load();
 for (const kind of ['home', 'roulette', 'stamp', 'nobi', 'settings']) {
   $(`${kind}-scene`).innerHTML = sceneSVG(kind);
 }
-$('cats-scene').innerHTML = sceneSVG('settings');
-const catOf = (kind) => designById(store.data.cats[kind]);
+// 猫は2匹とも A の案（RS01-S20）
+const catOf = (kind) => designById(CAT_DESIGN[kind]);
 const catForGame = (game) => catOf(GAME_CAT[game]);
-// 猫が出る絵を描き直す（猫の案を選び直した時も呼ぶ）
 function paintCats() {
   $('home-logo').innerHTML = logoSVG(catOf('mike'), catOf('saba'));
   $('rotate-art').innerHTML = rotateSVG(catOf('mike'));
@@ -39,12 +38,12 @@ document.querySelectorAll('.icon-plus').forEach((el) => { el.innerHTML = icons.p
 
 // ---- ゲーム ----
 const games = {
-  roulette: createRoulette({ view: $('view-roulette'), stage: $('roulette-stage'), result: $('roulette-result'), play: $('roulette-play'), getChoices: () => store.list(), getCat: () => catForGame('roulette') }),
-  stamp: createStamp({ view: $('view-stamp'), stage: $('stamp-stage'), result: $('stamp-result'), play: $('stamp-play'), getChoices: () => store.list(), getCat: () => catForGame('stamp') }),
-  nobi: createNobi({ view: $('view-nobi'), stage: $('nobi-stage'), result: $('nobi-result'), play: $('nobi-play'), getStages: () => store.list(), getCat: () => catForGame('nobi') }),
+  roulette: createRoulette({ view: $('view-roulette'), stage: $('roulette-stage'), result: $('roulette-result'), play: $('roulette-play'), getChoices: () => store.list(), getWeights: () => store.weights(), getCat: () => catForGame('roulette') }),
+  stamp: createStamp({ view: $('view-stamp'), stage: $('stamp-stage'), result: $('stamp-result'), play: $('stamp-play'), getChoices: () => store.list(), getWeights: () => store.weights(), getCat: () => catForGame('stamp') }),
+  nobi: createNobi({ view: $('view-nobi'), stage: $('nobi-stage'), result: $('nobi-result'), play: $('nobi-play'), getStages: () => store.list(), getWeights: () => store.weights(), getCat: () => catForGame('nobi') }),
 };
 
-// ---- 決めるもの（おやつ・コイン）の切り替え。ゲームの間で共有する（RS01-S10） ----
+// ---- 決めるもの（おやつ・お楽しみ袋）の切り替え。ゲームの間で共有する（RS01-S10） ----
 function paintPurpose() {
   document.querySelectorAll('.purpose-btn').forEach((b) => {
     const on = b.dataset.purpose === store.data.purpose;
@@ -66,36 +65,6 @@ document.querySelectorAll('.purpose-btn').forEach((b) => {
 });
 paintPurpose();
 
-// ---- ねこの案（見比べて選ぶ：RS01-S20） ----
-function renderCatCards() {
-  for (const kind of ['mike', 'saba']) {
-    const box = $(`cats-${kind}`);
-    box.textContent = '';
-    for (const d of DESIGNS.filter((x) => x.kind === kind)) {
-      const on = store.data.cats[kind] === d.id;
-      const card = document.createElement('button');
-      card.type = 'button';
-      card.className = 'cat-card' + (on ? ' is-on' : '');
-      card.dataset.design = d.id;
-      card.setAttribute('aria-pressed', String(on));
-      card.innerHTML = `<span class="cat-fig"><svg viewBox="-84 -84 168 166">${catSitting(d)}</svg></span>`
-        + `<span class="cat-text"><span class="cat-name">${d.label}　${d.name}</span><span class="cat-desc">${d.desc}</span>`
-        + `<span class="cat-faces"><svg viewBox="-55 -55 110 100">${catFace(d, { mood: 'happy' })}</svg><svg viewBox="-55 -55 110 100">${catFace(d, { mood: 'strain' })}</svg></span>`
-        + `<span class="cat-pick">${on ? 'えらんでいる' : 'これに する'}</span></span>`;
-      card.addEventListener('click', () => {
-        if (store.data.cats[kind] === d.id) return;
-        audio.tap();
-        store.data.cats[kind] = d.id;
-        store.save();
-        renderCatCards();
-        paintCats();
-        renderCatStatus();
-      });
-      box.appendChild(card);
-    }
-  }
-}
-
 // ---- 画面の切り替え（1つのページの中で切り替える。ページを移らないので、画面を消さない仕組みが外れない） ----
 const views = {};
 document.querySelectorAll('.view').forEach((v) => {
@@ -111,7 +80,6 @@ function show(name) {
   to.el.hidden = false;
   if (games[name]) games[name].reset();
   if (name === 'settings') refreshSettings();
-  if (name === 'cats') renderCatCards();
   to.falling.start();
   requestAnimationFrame(() => {
     to.el.classList.add('is-shown');
@@ -186,6 +154,13 @@ wake.onChange = status;
 
 // ---- 予定のテキスト（RS01-S13）。最初に開く時に端末へ保存し、その後は通信しない ----
 const yotei = { state: 'loading', needsUpdate: false };
+// 予定のテキストを読めない時は、季節と行事を決めない（RS01-S13）。その間のゲームの見た目は、
+// 予定のテキストに依らない境目どおりの四季とし、行事の飾りは出さない（仮に決めた。判断依頼 017）
+function lookWithoutYotei() {
+  const now = new Date();
+  document.body.dataset.season = naturalSeason(dayNum(now.getFullYear(), now.getMonth() + 1, now.getDate())).id;
+  document.body.dataset.event = '';
+}
 async function loadYotei() {
   let text;
   try {
@@ -194,6 +169,7 @@ async function loadYotei() {
     text = await res.text();
   } catch (e) {
     yotei.state = 'error';
+    lookWithoutYotei();
     setSchedule({ state: 'error', message: `予定のテキストを開けません（${e.message}）` });
     status();
     return;
@@ -201,6 +177,7 @@ async function loadYotei() {
   const parsed = parseYotei(text);
   if (!parsed.ok) {
     yotei.state = 'error';
+    lookWithoutYotei();
     setSchedule({ state: 'error', parsed, message: `予定のテキストに、書き方の誤りが ${parsed.errors.length} か所あります` });
     status();
     return;
