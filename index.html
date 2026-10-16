@@ -95,7 +95,7 @@
         </section>
         <section class="panel">
           <h3 class="panel-title">季節と行事</h3>
-          <p class="panel-hint">端末の日付と、予定のテキスト（yotei.txt）で決まります。いまの見本は、どの日も秋の見た目です。</p>
+          <p class="panel-hint">端末の日付と、予定のテキスト（yotei.txt）で決まります。「ほかの日を ためす」で日を選ぶと、アプリの見た目も その日に かわります（開き直すと、きょうに もどります）。</p>
           <dl class="status">
             <dt>予定のテキスト</dt><dd id="st-yotei">-</dd>
             <dt>きょう</dt><dd id="st-today">-</dd>
@@ -109,6 +109,7 @@
             <input type="date" id="try-date" class="try-date" min="2025-01-01" max="2032-12-31">
           </label>
           <p class="try-result" id="try-result"></p>
+          <button type="button" class="sub-button try-back" id="try-back" hidden>きょうに もどす</button>
         </section>
         <section class="panel">
           <h3 class="panel-title">音</h3>

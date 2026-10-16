@@ -7,6 +7,7 @@ import { CAT_DESIGN, designById } from './cats.js';
 import { LEVELS, DEFAULT_LEVEL, weightsOf, percents } from './odds.js';
 import { dayNum, fmt, fmtMD, lookup, naturalSeason } from './schedule.js';
 import { FIRST_YEAR, LAST_YEAR } from './calendar.js';
+import { setLook } from './look.js';
 
 const LISTS = {
   snack: { el: 'list-snack', make: (n) => `おやつ${n + 1}` },
@@ -199,14 +200,27 @@ export function renderSchedule() {
   if (t.needsUpdate) addNote(`行事のカレンダーは ${LAST_YEAR}年までです。アップデートが必要です。節分とお月見は出しません。`, true);
 }
 
+// その日の見た目にする（季節と行事。予定のテキストを読めない時は、境目どおりの季節だけ）
+function lookOf(n) {
+  if (schedule.state !== 'ok') { setLook(naturalSeason(n).id, ''); return; }
+  const r = lookup(schedule.parsed, n);
+  setLook(r.season ? r.season.id : naturalSeason(n).id, r.event ? r.event.id : '');
+}
+// 試作：選んだ日の見た目に、アプリ全体を かえる。端末には残さず、開き直すと きょうに もどる
+let tried = null;
 function renderTry() {
   const input = document.getElementById('try-date');
   const out = document.getElementById('try-result');
-  if (!input.value || schedule.state !== 'ok') { out.textContent = ''; return; }
-  const [y, m, d] = input.value.split('-').map(Number);
-  const n = dayNum(y, m, d);
+  const back = document.getElementById('try-back');
+  const n = input.value ? dayNum(...input.value.split('-').map(Number)) : null;
+  back.hidden = n === null;
+  if (n !== tried && schedule.state !== 'loading') {
+    tried = n;
+    lookOf(n === null ? dayNum(new Date().getFullYear(), new Date().getMonth() + 1, new Date().getDate()) : n);
+  }
+  if (n === null || schedule.state !== 'ok') { out.textContent = ''; return; }
   const t = describe(n);
-  out.textContent = `${fmt(n)}：季節 ${t.season}／行事 ${t.event}${t.needsUpdate ? '／カレンダーの範囲の外（アップデートが必要）' : ''}`;
+  out.textContent = `${fmt(n)}：季節 ${t.season}／行事 ${t.event}${t.needsUpdate ? '／カレンダーの範囲の外（アップデートが必要）' : ''}。アプリの見た目も、この日に なっています`;
 }
 
 // ---- ねこ ----
@@ -252,6 +266,10 @@ export function setupSettings() {
     audio.tap();
   });
   document.getElementById('try-date').addEventListener('change', renderTry);
+  document.getElementById('try-back').addEventListener('click', () => {
+    document.getElementById('try-date').value = '';
+    renderTry();
+  });
   renderCatStatus();
   renderSchedule();
 }

@@ -560,3 +560,5 @@ svg text { font-family: var(--font); }
 
 /* ---- ゲームの中の部品 ---- */
 .cell-label { font-weight: 700; }
+.try-back { margin-top: 8px; }
+.try-back[hidden] { display: none; }
