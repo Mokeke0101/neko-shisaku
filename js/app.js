@@ -10,7 +10,7 @@ import { setupSettings, refreshSettings, renderStatus, setSchedule } from './set
 import { CAT_DESIGN, GAME_CAT, designById } from './cats.js';
 import { parseYotei, findOverlaps, lookup, dayNum, naturalSeason } from './schedule.js';
 import { LAST_YEAR } from './calendar.js';
-import { GAMES } from './games/list.js';
+import { GAMES, maxOf } from './games/list.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -20,16 +20,33 @@ store.load();
 function buildGames() {
   const menu = $('menu');
   const before = $('view-settings');
+  // 決め方の仕組みの見出し（RS01-S07）。一覧は1本のまま、見出しで区切る。
+  // 見出しとそのカードを1つの かたまりにし、ゲームが1本だけの かたまりは1列ぶん（となりに並べる）、2本以上は2列ぶんにする
+  const secs = {};
   for (const g of GAMES) {
+    if (!secs[g.group]) {
+      const n = GAMES.filter((x) => x.group === g.group).length;
+      const sec = document.createElement('section');
+      sec.className = n === 1 ? 'menu-sec is-single' : 'menu-sec';
+      const h = document.createElement('h3');
+      h.className = 'menu-group';
+      h.textContent = g.group;
+      const cards = document.createElement('div');
+      cards.className = 'menu-cards';
+      sec.append(h, cards);
+      menu.appendChild(sec);
+      secs[g.group] = cards;
+    }
     const card = document.createElement('button');
     card.type = 'button';
     card.className = 'menu-card';
     card.dataset.go = g.id;
+    card.dataset.max = String(maxOf(g));
     card.setAttribute('aria-label', g.name);
     card.innerHTML = `<span class="menu-art" data-art="${g.id}" aria-hidden="true"></span>`
       + `<span class="menu-name">${g.lines.map((l) => `<span>${l}</span>`).join('')}</span>`
       + `<span class="menu-desc">${g.desc}</span>`;
-    menu.appendChild(card);
+    secs[g.group].appendChild(card);
     const v = document.createElement('section');
     v.id = `view-${g.id}`;
     v.className = 'view game-view';
@@ -49,7 +66,7 @@ function buildGames() {
       + '</div>';
     before.before(v);
   }
-  $('home-sub').textContent = `あきの みほん　${String(GAMES.length).replace(/[0-9]/g, (d) => String.fromCharCode(d.charCodeAt(0) + 0xFEE0))}つの あそび`;
+  $('home-sub').textContent = `あきの みほん　${String(GAMES.length).replace(/[0-9]/g, (d) => String.fromCharCode(d.charCodeAt(0) + 0xFEE0))}の あそび`;
 }
 buildGames();
 
@@ -69,6 +86,7 @@ paintCats();
 document.querySelectorAll('.icon-back').forEach((el) => { el.innerHTML = icons.back; });
 document.querySelectorAll('.icon-gear').forEach((el) => { el.innerHTML = icons.gear; });
 document.querySelectorAll('.icon-plus').forEach((el) => { el.innerHTML = icons.plus; });
+document.querySelectorAll('.icon-dice').forEach((el) => { el.innerHTML = icons.dice; });
 
 // ---- ゲーム ----
 const games = {};
@@ -97,10 +115,61 @@ document.querySelectorAll('.purpose-btn').forEach((b) => {
     store.data.purpose = b.dataset.purpose;
     store.save();
     paintPurpose();
-    if (g) g.reset();
+    if (g) openGame(current);
   });
 });
 paintPurpose();
+
+// ---- 選択肢の数を扱えないゲーム（RS01-S08） ----
+const gameById = (id) => GAMES.find((g) => g.id === id);
+const fits = (g) => store.list().length <= maxOf(g);
+const limitText = (g) => `2〜${maxOf(g)}こ の とき`;
+// ホームのカード：いまの選択肢の数を扱えないゲームは、うすくして押せなくし、扱える数を添える
+function refreshMenu() {
+  document.querySelectorAll('#menu .menu-card').forEach((card) => {
+    const g = gameById(card.dataset.go);
+    const off = !fits(g);
+    card.disabled = off;
+    card.classList.toggle('is-off', off);
+    card.querySelector('.menu-desc').textContent = off ? limitText(g) : g.desc;
+  });
+}
+// ゲームを開く。ゲームの画面で用途を切り替えて、扱えない数になった時は、あそべない わけを出す
+function openGame(id) {
+  const g = gameById(id);
+  const view = $(`view-${id}`);
+  if (fits(g)) {
+    view.classList.remove('is-limited');
+    $(`${id}-play`).disabled = false;
+    games[id].reset();
+    return;
+  }
+  view.classList.add('is-limited');
+  clearCelebration();
+  const stage = $(`${id}-stage`);
+  stage.textContent = '';
+  const note = document.createElement('div');
+  note.className = 'limit-note';
+  note.innerHTML = `<p>この あそびは<br><b>${limitText(g)}</b>に<br>あそべるよ</p>`;
+  stage.appendChild(note);
+  const result = $(`${id}-result`);
+  result.textContent = '';
+  const hint = document.createElement('span');
+  hint.className = 'result-hint';
+  hint.textContent = `えらぶものを ${maxOf(g)}こ までに してね`;
+  result.appendChild(hint);
+  $(`${id}-play`).disabled = true;
+}
+
+// ---- おまかせ（RS01-S08）：いまの選択肢の数で あそべるゲームから、アプリが1つ選ぶ。続けて同じゲームは出さない ----
+let lastOmakase = null;
+function omakase() {
+  const ok = GAMES.filter(fits);
+  const pool = ok.length > 1 ? ok.filter((g) => g.id !== lastOmakase) : ok;
+  const g = pool[Math.floor(Math.random() * pool.length)];
+  lastOmakase = g.id;
+  show(g.id);
+}
 
 // ---- 画面の切り替え（1つのページの中で切り替える。ページを移らないので、画面を消さない仕組みが外れない） ----
 const views = {};
@@ -115,7 +184,8 @@ function show(name) {
   const to = views[name];
   clearCelebration();
   to.el.hidden = false;
-  if (games[name]) games[name].reset();
+  if (games[name]) openGame(name);
+  if (name === 'home') refreshMenu();
   if (name === 'settings') refreshSettings();
   to.falling.start();
   requestAnimationFrame(() => {
@@ -132,6 +202,22 @@ function show(name) {
     }
   }, 300);
 }
+
+// 見えていないゲームや、いまの選択肢の数で あそべないゲームのボタンは、押されても動かさない（ゲームの絵が無いまま始まらないように）
+document.addEventListener('click', (e) => {
+  const p = e.target.closest('.play');
+  if (!p) return;
+  const v = p.closest('.view');
+  if (v && (v.hidden || v.classList.contains('is-limited'))) {
+    e.stopImmediatePropagation();
+    e.preventDefault();
+  }
+}, true);
+
+$('omakase').addEventListener('click', () => {
+  audio.tap();
+  omakase();
+});
 
 document.addEventListener('click', (e) => {
   const b = e.target.closest('[data-go]');
@@ -151,7 +237,7 @@ window.addEventListener('resize', () => {
   clearTimeout(resizeTimer);
   resizeTimer = setTimeout(() => {
     const g = games[current];
-    if (g && !g.isBusy()) g.reset();
+    if (g && !g.isBusy()) openGame(current);
   }, 150);
 });
 
@@ -280,6 +366,7 @@ function refreshCache() {
 
 // ---- 起動 ----
 setupSettings();
+refreshMenu();
 loadYotei();
 views.home.falling.start();
 document.body.dataset.view = 'home';

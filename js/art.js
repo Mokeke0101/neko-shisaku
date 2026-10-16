@@ -1,7 +1,7 @@
 // 絵（すべてコードで描く SVG。外部の画像・素材集は使わない：RS01-S18）。
 // 絵文字は使わない。記号が要る所も図形で描く（RS01-S14）。
 // 猫は cats.js が描く（RS01-S20）。
-import { catFace, catPaw, pawPrint, catSitting } from './cats.js';
+import { catFace, catPaw, pawPrint, catSitting, catCurled } from './cats.js';
 
 export const C = {
   fur: '#f7c48b',
@@ -139,6 +139,9 @@ export const icons = {
     const teeth = Array.from({ length: 8 }, (_, i) => `<rect x="10.2" y="1.6" width="3.6" height="5" rx="1.4" fill="${C.ink}" transform="rotate(${i * 45} 12 12)"/>`).join('');
     return `<svg viewBox="0 0 24 24">${teeth}<circle cx="12" cy="12" r="7.2" fill="${C.ink}"/><circle cx="12" cy="12" r="3" fill="${C.paper}"/></svg>`;
   })(),
+  // おまかせ：少し かたむいた さいころ（目は肉球の色）
+  dice: `<svg viewBox="0 0 24 24"><g transform="rotate(-12 12 12)"><rect x="3.5" y="3.5" width="17" height="17" rx="4.5" fill="${C.paper}" stroke="${C.ink}" stroke-width="2.2"/>`
+    + [[8, 8], [16, 8], [12, 12], [8, 16], [16, 16]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.8" fill="${C.momiji}"/>`).join('') + '</g></svg>',
 };
 
 // ---- まとまった絵 ----
@@ -285,6 +288,63 @@ export function menuArt(kind, d) {
       + `<g transform="translate(17 -6)"><path d="M5,1 q4,-4 8,0" stroke="#8f8499" stroke-width="1.2" fill="none" stroke-linecap="round"/><ellipse rx="6" ry="4.2" fill="#e3dde9" stroke="#8f8499" stroke-width="1"/><circle cx="-2" cy="-4" r="2.2" fill="#e3dde9" stroke="#8f8499" stroke-width="0.9"/><circle cx="-3.4" cy="-0.6" r="0.7" fill="#4a3a33"/><circle cx="-6" cy="0.4" r="0.9" fill="#f19bb0"/></g>`
       + boxAt(16, '#eecd9d')
       + `<g transform="translate(-20 -24) scale(0.15)">${catFace(d, { look: { x: 1, y: 0.6 } })}</g></svg>`;
+  }
+  if (kind === 'saikoro') {
+    // 大きな さいころと、前足でつつく猫
+    const pip = (x, y, c = C.ink) => `<circle cx="${x}" cy="${y}" r="2.6" fill="${c}"/>`;
+    return `<svg viewBox="-36 -36 72 72"><ellipse cx="-4" cy="30" rx="22" ry="4" fill="#a0703f" opacity="0.18"/>`
+      + `<g transform="translate(-6 8) rotate(-14)"><rect x="-19" y="-19" width="38" height="38" rx="8" fill="#ffffff" stroke="${C.line}" stroke-width="2"/>${pip(-9, -9)}${pip(9, -9)}${pip(0, 0, C.momiji)}${pip(-9, 9)}${pip(9, 9)}</g>`
+      + `<g transform="translate(24 18) scale(0.55)">${catPaw(d, 14)}</g>`
+      + `<g transform="translate(18 -22) scale(0.18)">${catFace(d, { look: { x: -1, y: 0.6 } })}</g></svg>`;
+  }
+  if (kind === 'negaeri') {
+    // まるい ラグの上で まるくなる猫と、まわりの札
+    return `<svg viewBox="-36 -36 72 72"><circle r="24" fill="#fde3d6" stroke="#f1b8a3" stroke-width="2"/>`
+      + [[0, -31], [29, 0], [0, 31], [-29, 0]].map(([x, y]) => `<rect x="${x - 6}" y="${y - 4}" width="12" height="8" rx="4" fill="#ffffff" stroke="${C.woodDeep}" stroke-width="1.2"/>`).join('')
+      + `<ellipse cx="-2" cy="2" rx="15" ry="11" fill="${d.base}" stroke="${d.line}" stroke-width="1.4"/>`
+      + `<g transform="translate(9 -6) rotate(30) scale(0.2)">${catFace(d, { blink: true })}</g>`
+      + `<text x="14" y="-16" font-size="9" font-weight="700" fill="${C.chestnut}">z</text></svg>`;
+  }
+  if (kind === 'mekuri') {
+    // 上で とじた めくりカード。1まい めくれかけ
+    return `<svg viewBox="-36 -36 72 72"><rect x="-26" y="-24" width="44" height="50" rx="6" fill="#efe0c8" stroke="${C.woodDeep}" stroke-width="1.6"/>`
+      + `<rect x="-23" y="-20" width="38" height="43" rx="4" fill="#fffaf0" stroke="#e6cfae" stroke-width="1.2"/>`
+      + `<path d="M-17,4 h26 M-17,12 h18" stroke="${C.ink}" stroke-width="3" stroke-linecap="round" opacity="0.75"/>`
+      + `<circle cx="-4" cy="-10" r="5" fill="#fde3d6"/>`
+      + `<path d="M-23,-20 L15,-20 L15,-30 Q-4,-36 -23,-28 Z" fill="#fff6ea" stroke="#e6cfae" stroke-width="1.2"/>`
+      + [-14, -4, 6].map((x) => `<rect x="${x - 2}" y="-28" width="4" height="9" rx="2" fill="#fffaf0" stroke="${C.chestnut}" stroke-width="1.2"/>`).join('')
+      + `<g transform="translate(24 18) scale(0.17)">${catFace(d, { look: { x: -1, y: 0 } })}</g></svg>`;
+  }
+  if (kind === 'wanage') {
+    // しばふに立つ2本の棒と、入った わ
+    const peg = (x) => `<rect x="${x - 2.5}" y="-14" width="5" height="22" rx="2" fill="#e3bb84" stroke="#b98a52" stroke-width="1.2"/><circle cx="${x}" cy="-14" r="3.5" fill="#f1d3a6" stroke="#b98a52" stroke-width="1.2"/><rect x="${x - 13}" y="10" width="26" height="9" rx="4" fill="#ffffff" stroke="${C.woodDeep}" stroke-width="1.2"/>`;
+    return `<svg viewBox="-36 -36 72 72"><rect x="-33" y="-22" width="66" height="46" rx="10" fill="#dfe9bf" stroke="#b9cc85" stroke-width="1.6"/>${peg(-15)}${peg(15)}`
+      + `<ellipse cx="-15" cy="6" rx="9" ry="3.6" fill="none" stroke="#d97f7a" stroke-width="3.4"/><ellipse cx="-15" cy="6" rx="9" ry="3.6" fill="none" stroke="#f7a6a0" stroke-width="2"/>`
+      + `<g transform="translate(20 -26) rotate(-25)"><ellipse rx="8" ry="3.2" fill="none" stroke="#6f9fcb" stroke-width="3"/></g>`
+      + `<g transform="translate(0 28) scale(0.15)">${catFace(d, { look: { x: 0, y: -1 } })}</g></svg>`;
+  }
+  if (kind === 'tsuri') {
+    // 池の さかなと、うき・つりざお
+    return `<svg viewBox="-36 -36 72 72"><rect x="-33" y="-6" width="66" height="38" rx="10" fill="#cfe8eb" stroke="#9fc8cf" stroke-width="1.6"/>`
+      + `<path d="M30,-30 Q8,-36 -2,-22" stroke="#9b5f3a" stroke-width="2.6" fill="none" stroke-linecap="round"/><path d="M-2,-22 V-8" stroke="#6b5a4e" stroke-width="1"/>`
+      + `<ellipse cx="-2" cy="-6" rx="3.4" ry="4.4" fill="#ffffff" stroke="${C.ink}" stroke-width="1"/><path d="M-2,-6 V14" stroke="#6b5a4e" stroke-width="1"/>`
+      + `<g transform="translate(-14 16)"><path d="M9,0 L14,-4 L14,4 Z" fill="#e08d7c"/><ellipse rx="10" ry="5.5" fill="#f7b5a6" stroke="#e08d7c" stroke-width="1"/><circle cx="-5" cy="-1" r="1.2" fill="#4a3a33"/></g>`
+      + `<g transform="translate(18 6) scale(-1 1)"><path d="M9,0 L14,-4 L14,4 Z" fill="#7aa7cf"/><ellipse rx="9" ry="5" fill="#a9cbe8" stroke="#7aa7cf" stroke-width="1"/></g>`
+      + `<g transform="translate(24 -24) scale(0.15)">${catFace(d, { look: { x: -1, y: 0.6 } })}</g></svg>`;
+  }
+  if (kind === 'tobiishi') {
+    // 川に じぐざぐの とびいしと、とびうつる子猫
+    const st = (x, y) => `<rect x="${x - 13}" y="${y - 5}" width="26" height="10" rx="5" fill="#efe8dc" stroke="#b8ab98" stroke-width="1.2"/>`;
+    return `<svg viewBox="-36 -36 72 72"><rect x="-34" y="-34" width="68" height="68" rx="12" fill="#cfe8eb"/>${st(-12, 22)}${st(12, 8)}${st(-12, -6)}${st(12, -20)}`
+      + `<path d="M-12,14 Q0,0 10,-2" stroke="${C.momiji}" stroke-width="1.4" stroke-dasharray="2 2" fill="none"/>`
+      + `<g transform="translate(-14 -16) scale(0.13)">${catSitting(d, { look: { x: 1, y: -1 } })}</g></svg>`;
+  }
+  if (kind === 'hidamari') {
+    // ひだまりの ざぶとんで まるくなる猫
+    return `<svg viewBox="-36 -36 72 72"><defs><radialGradient id="mhd" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#fff3b8"/><stop offset="1" stop-color="#fff3b8" stop-opacity="0"/></radialGradient></defs>`
+      + `<rect x="-28" y="-8" width="56" height="32" rx="9" fill="#cfe0ea" stroke="#9fbdd0" stroke-width="1.6"/><ellipse cx="0" cy="8" rx="34" ry="24" fill="url(#mhd)"/>`
+      + `<g transform="translate(0 6) scale(0.36)">${catCurled(d)}</g>`
+      + `<circle cx="22" cy="-24" r="7" fill="#ffe58a"/>` + [0, 60, 120, 180, 240, 300].map((a) => `<path d="M22,-24 m${(Math.cos((a * Math.PI) / 180) * 10).toFixed(1)},${(Math.sin((a * Math.PI) / 180) * 10).toFixed(1)} l${(Math.cos((a * Math.PI) / 180) * 4).toFixed(1)},${(Math.sin((a * Math.PI) / 180) * 4).toFixed(1)}" stroke="#f5c451" stroke-width="2" stroke-linecap="round"/>`).join('') + '</svg>';
   }
   // nobi
   return `<svg viewBox="-36 -36 72 72"><rect x="-26" y="-34" width="14" height="70" rx="3" fill="${C.wood}" stroke="${C.woodDeep}" stroke-width="1.5"/>`
@@ -507,6 +567,58 @@ export function sceneSVG(kind) {
       + `<path d="M0,720 H${W}" stroke="#ddb37c" stroke-width="4"/><path d="M0,770 H${W} M0,815 H${W}" stroke="#e2bd87" stroke-width="2"/>`
       + `<ellipse cx="195" cy="800" rx="150" ry="26" fill="#f7c4b4" opacity="0.7"/><ellipse cx="195" cy="800" rx="118" ry="18" fill="none" stroke="#fffaf0" stroke-width="3" opacity="0.8"/>`
       + `<g transform="translate(46 700) rotate(-14)">${acorn(15)}</g><g transform="translate(350 705) rotate(18)">${mapleLeaf(C.kaki, C.kakiDeep, 14)}</g>`;
+  } else if (kind === 'saikoro') {
+    // あそびべや：木の床に、星の もようの ラグと つみき
+    let stars = '';
+    [[60, 760], [140, 790], [250, 770], [330, 800], [200, 812]].forEach(([x, y], i) => { stars += `<path d="M${x},${y - 7} L${x + 2},${y - 2} L${x + 7},${y - 2} L${x + 3},${y + 1} L${x + 5},${y + 6} L${x},${y + 3} L${x - 5},${y + 6} L${x - 3},${y + 1} L${x - 7},${y - 2} L${x - 2},${y - 2} Z" fill="${[C.icho, '#fffaf0', C.rose][i % 3]}"/>`; });
+    const block = (x, y, s, col, rot) => `<g transform="translate(${x} ${y}) rotate(${rot})"><rect x="${-s / 2}" y="${-s / 2}" width="${s}" height="${s}" rx="4" fill="${col}" stroke="#d9b98e" stroke-width="2"/></g>`;
+    body = `<g transform="translate(80 130)">${cloud(70)}</g><g transform="translate(310 180)">${cloud(56)}</g>`
+      + `<rect x="0" y="720" width="${W}" height="124" fill="#efd0a0"/><path d="M0,720 H${W}" stroke="#ddb37c" stroke-width="4"/>`
+      + `<ellipse cx="195" cy="790" rx="170" ry="34" fill="#cfe0ea" opacity="0.8"/>` + stars
+      + block(34, 700, 26, '#f7c4b4', -8) + block(60, 706, 20, '#fde3a6', 10) + block(352, 702, 24, '#cfe3c0', 6);
+  } else if (kind === 'negaeri') {
+    // ひるねの へや：レースの カーテン、つりさげの かざり、木の床
+    let mobile = `<path d="M195,0 V60 M150,60 H240" stroke="#c99a62" stroke-width="2"/>`;
+    [[150, 80, C.icho], [195, 96, C.rose], [240, 80, '#cfe0ea']].forEach(([x, y, c]) => { mobile += `<path d="M${x},60 V${y - 10}" stroke="#c99a62" stroke-width="1.5"/><circle cx="${x}" cy="${y}" r="10" fill="${c}" stroke="#e6c99a" stroke-width="2"/>`; });
+    body = `<path d="M0,0 Q40,140 10,300 L0,300 Z M390,0 Q350,140 380,300 L390,300 Z" fill="#fffaf0" opacity="0.9"/>`
+      + `<path d="M0,0 Q40,140 10,300 M390,0 Q350,140 380,300" stroke="#f1d7c2" stroke-width="3" fill="none"/>` + mobile
+      + `<rect x="0" y="720" width="${W}" height="124" fill="#efd0a0"/><path d="M0,720 H${W}" stroke="#ddb37c" stroke-width="4"/><path d="M0,770 H${W} M0,815 H${W}" stroke="#e2bd87" stroke-width="2"/>`
+      + `<g transform="translate(52 702) rotate(-12)">${mapleLeaf(C.kaki, C.kakiDeep, 14)}</g>`;
+  } else if (kind === 'mekuri') {
+    // つくえの ある へや：かべの けいじ板、窓、つくえの はし
+    body = `<rect x="40" y="80" width="150" height="110" rx="10" fill="#f3dcbb" stroke="#e6c99a" stroke-width="5"/>`
+      + `<rect x="58" y="98" width="44" height="34" fill="#fffaf0" transform="rotate(-6 80 115)"/><rect x="116" y="104" width="52" height="40" fill="#fde3d6" transform="rotate(5 142 124)"/><circle cx="80" cy="100" r="4" fill="${C.momiji}"/><circle cx="142" cy="106" r="4" fill="${C.olive}"/>`
+      + `<rect x="240" y="70" width="110" height="120" rx="10" fill="#fffaf0" stroke="#e6c99a" stroke-width="5"/><path d="M295,70 V190 M240,130 H350" stroke="#e6c99a" stroke-width="4"/>`
+      + `<g transform="translate(300 108)">${cloud(40)}</g>`
+      + `<rect x="0" y="720" width="${W}" height="124" fill="#e9c591"/><path d="M0,720 H${W}" stroke="#c99a62" stroke-width="5"/><path d="M0,744 H${W}" stroke="#ddb37c" stroke-width="2"/>`
+      + `<g transform="translate(350 704) rotate(16)">${ginkgoLeaf(C.icho, C.ichoDeep, 15)}</g>`;
+  } else if (kind === 'wanage') {
+    // 縁日の夕方まえ：上に 小さな ちょうちんの列、まわりに 木、下に土の みち
+    let lanterns = `<path d="M-10,70 Q195,104 400,70" stroke="#9b5f3a" stroke-width="2" fill="none"/>`;
+    for (let i = 0; i < 9; i++) { const x = 10 + i * 46; const y = 70 + Math.sin(((x + 10) / 410) * Math.PI) * 17; lanterns += `<path d="M${x},${y} v6" stroke="#9b5f3a" stroke-width="1.6"/><ellipse cx="${x}" cy="${y + 16}" rx="10" ry="12" fill="#fff6e4" stroke="#e7b98a" stroke-width="1.6"/><path d="M${x - 9},${y + 13} h18" stroke="${C.momiji}" stroke-width="2" opacity="0.8"/>`; }
+    body = lanterns + treeRound(30, 560, 30, C.momiji) + treeRound(362, 548, 32, C.icho)
+      + `<rect x="0" y="700" width="${W}" height="144" fill="#efd9b4"/><path d="M0,700 H${W}" stroke="#e2c592" stroke-width="3"/>`
+      + scatter(41, 10, { x: 6, y: 720, w: 378, h: 110 }, 8, 12);
+  } else if (kind === 'tsuri') {
+    // 池の ほとり：遠くの山、すすき、くさ
+    let reeds = '';
+    [[22, 0], [44, 10], [348, -6], [370, 8]].forEach(([x, dd]) => { reeds += `<path d="M${x},844 Q${x + dd},${740} ${x + 18 + dd},${690}" stroke="#c9a670" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M${x + 18 + dd},690 q-4,22 -9,40 M${x + 18 + dd},690 q7,18 5,36" stroke="#e9d3a8" stroke-width="6" fill="none" stroke-linecap="round"/>`; });
+    body = `<g transform="translate(80 110)">${cloud(70)}</g><path d="M0,260 Q100,190 200,240 T390,220 V320 H0 Z" fill="#e7e2c2" opacity="0.8"/>`
+      + `<rect x="0" y="300" width="${W}" height="544" fill="#e2e8bf"/>` + treeRound(40, 280, 26, C.kaki) + treeRound(350, 270, 30, C.momiji) + reeds;
+  } else if (kind === 'tobiishi') {
+    // 川原：遠くの はし、くさ、とんぼ
+    body = `<g transform="translate(70 110)">${cloud(70)}</g>`
+      + `<path d="M210,250 Q290,200 370,250" stroke="#e3a074" stroke-width="8" fill="none"/><path d="M222,250 V262 M250,232 V262 M280,224 V262 M310,224 V262 M340,232 V262 M358,244 V262" stroke="#e3a074" stroke-width="3"/>`
+      + `<rect x="0" y="262" width="${W}" height="582" fill="#e2e8bf"/>` + treeRound(40, 250, 24, C.icho)
+      + `<g transform="translate(320 330) rotate(-14)">${dragonfly(16)}</g><g transform="translate(60 380) rotate(10)">${dragonfly(12)}</g>`;
+  } else if (kind === 'hidamari') {
+    // えんがわ：上に にわの みどりと そら、下に 木の いた
+    let boards = '';
+    for (let i = 0; i < 6; i++) boards += `<rect x="0" y="${560 + i * 48}" width="${W}" height="48" fill="${i % 2 ? '#f3d5a8' : '#f6dcb4'}"/><path d="M0,${560 + i * 48} H${W}" stroke="#e2bd87" stroke-width="2"/>`;
+    body = `<g transform="translate(90 110)">${cloud(80)}</g><g transform="translate(300 160)">${cloud(60)}</g>`
+      + `<circle cx="340" cy="70" r="26" fill="#ffe58a" opacity="0.9"/>`
+      + `<path d="M0,420 Q100,380 200,410 T390,390 V560 H0 Z" fill="#dfe6b5"/>` + treeRound(50, 420, 32, C.kaki) + treeRound(330, 410, 28, C.momiji) + boards
+      + `<path d="M0,556 H${W}" stroke="#c99a62" stroke-width="6"/>`;
   } else if (kind === 'settings') {
     body = scatter(23, 8, { x: 0, y: 0, w: W, h: H }, 10, 16).replaceAll('opacity="0.95"', 'opacity="0.18"');
   }

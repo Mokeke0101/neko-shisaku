@@ -4,8 +4,16 @@
 // 公開し直す時は VERSION を上げる（js/version.js の APP_VERSION と同じ値にする）。
 'use strict';
 
-const VERSION = 'v6';
+const VERSION = 'v7';
 const CACHE = `nekokime-${VERSION}`;
+// 書体（約 4.2 MB）は版と分けて保存し、版を上げても取り直さない（RS01-S03）。書体のファイルを替えた時だけ FONT_VERSION を上げる
+const FONT_VERSION = 'f1';
+const FONT_CACHE = `nekokime-fonts-${FONT_VERSION}`;
+const FONT_FILES = [
+  './fonts/ZenMaruGothic-Medium.woff',
+  './fonts/ZenMaruGothic-Bold.woff',
+  './fonts/OFL.txt',
+];
 const FILES = [
   './',
   './index.html',
@@ -39,10 +47,14 @@ const FILES = [
   './js/games/maigo.js',
   './js/games/tower.js',
   './js/games/sagasu.js',
+  './js/games/saikoro.js',
+  './js/games/negaeri.js',
+  './js/games/mekuri.js',
+  './js/games/wanage.js',
+  './js/games/tsuri.js',
+  './js/games/tobiishi.js',
+  './js/games/hidamari.js',
   './js/games/list.js',
-  './fonts/ZenMaruGothic-Medium.woff',
-  './fonts/ZenMaruGothic-Bold.woff',
-  './fonts/OFL.txt',
   './icons/apple-touch-icon.png',
   './icons/icon-192.png',
   './icons/icon-512.png',
@@ -66,6 +78,11 @@ self.addEventListener('install', (event) => {
     const cache = await caches.open(CACHE);
     // 置き場所の HTTP キャッシュを通さず、置き場所から取り直す
     await cache.addAll(FILES.map((f) => new Request(f, { cache: 'reload' })));
+    // 書体は、まだ保存していない時だけ取りに行く
+    const fonts = await caches.open(FONT_CACHE);
+    for (const f of FONT_FILES) {
+      if (!(await fonts.match(f))) await fonts.add(new Request(f, { cache: 'reload' }));
+    }
     await self.skipWaiting();
   })());
 });
@@ -73,7 +90,7 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
     const names = await caches.keys();
-    await Promise.all(names.filter((n) => n.startsWith('nekokime-') && n !== CACHE).map((n) => caches.delete(n)));
+    await Promise.all(names.filter((n) => n.startsWith('nekokime-') && n !== CACHE && n !== FONT_CACHE).map((n) => caches.delete(n)));
     await self.clients.claim();
   })());
 });
@@ -84,7 +101,7 @@ self.addEventListener('fetch', (event) => {
   if (new URL(req.url).origin !== self.location.origin) return;
   event.respondWith((async () => {
     const cache = await caches.open(CACHE);
-    const hit = await cache.match(req, { ignoreSearch: true });
+    const hit = (await cache.match(req, { ignoreSearch: true })) || (await (await caches.open(FONT_CACHE)).match(req, { ignoreSearch: true }));
     if (hit) return hit;
     return fetch(req);
   })());
@@ -94,8 +111,8 @@ self.addEventListener('fetch', (event) => {
 self.addEventListener('message', (event) => {
   if (!event.data || event.data.type !== 'status' || !event.ports[0]) return;
   event.waitUntil((async () => {
-    const cache = await caches.open(CACHE);
-    const keys = await cache.keys();
-    event.ports[0].postMessage({ version: VERSION, total: FILES.length, cached: keys.length });
+    const keys = await (await caches.open(CACHE)).keys();
+    const fontKeys = await (await caches.open(FONT_CACHE)).keys();
+    event.ports[0].postMessage({ version: VERSION, total: FILES.length + FONT_FILES.length, cached: keys.length + fontKeys.length });
   })());
 });

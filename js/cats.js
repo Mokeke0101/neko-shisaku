@@ -4,7 +4,7 @@
 // どのゲームにも2匹のどちらか1匹を出す。どちらが出るかは GAME_CAT が決める。
 // 絵はすべてコードで描く SVG（RS01-S18）。絵文字は使わない（RS01-S14）。
 
-export const GAME_CAT = { roulette: 'mike', stamp: 'mike', nobi: 'saba', hana: 'saba', kuji: 'mike', amida: 'saba', race: 'mike', mato: 'saba', sugoroku: 'mike', otoshi: 'saba', maigo: 'mike', tower: 'saba', sagasu: 'mike' };
+export const GAME_CAT = { roulette: 'mike', stamp: 'mike', nobi: 'saba', hana: 'saba', kuji: 'mike', amida: 'saba', race: 'mike', mato: 'saba', sugoroku: 'mike', otoshi: 'saba', maigo: 'mike', tower: 'saba', sagasu: 'mike', saikoro: 'saba', negaeri: 'mike', mekuri: 'saba', wanage: 'mike', tsuri: 'saba', tobiishi: 'mike', hidamari: 'saba' };
 export const CAT_NAMES = { mike: 'パステル三毛猫', saba: 'サバトラ' };
 export const CAT_DESIGN = { mike: 'mike-a', saba: 'saba-a' };
 
@@ -215,4 +215,21 @@ export function catSitting(d, { mood = 'normal', look = null } = {}) {
     + `<path d="M-18,72 v4 M-12,72 v4 M12,72 v4 M18,72 v4" stroke="${L}" stroke-width="2" stroke-linecap="round"/>`
     + `<g transform="translate(0 -20)">${catFace(d, { mood, look })}</g>`
     + `</g>`;
+}
+
+// ---- まるくなって ねている姿（ねがえり・ひだまり）----
+// 中心 0,0、あたまが右〈+x〉を向く。ほぼ 半径 60 の円に入る
+export function catCurled(d, { sleep = true, mood = 'normal' } = {}) {
+  const L = d.line;
+  const clip = nid('cc');
+  const tailPath = 'M-40,18 C-30,52 22,56 44,34';
+  return `<ellipse cx="0" cy="6" rx="58" ry="44" fill="#a0703f" opacity="0.12"/>`
+    + tail(d, tailPath, 12)
+    + `<ellipse cx="-6" cy="0" rx="48" ry="38" fill="${d.base}" stroke="${L}" stroke-width="3.2"/>`
+    + `<defs><clipPath id="${clip}"><ellipse cx="-6" cy="0" rx="48" ry="38"/></clipPath></defs>`
+    + `<g clip-path="url(#${clip})">${torsoPattern(d, { x0: -54, x1: 42, yBase: 38, h: 80, k: 0.8 })}</g>`
+    + `<ellipse cx="-6" cy="0" rx="48" ry="38" fill="none" stroke="${L}" stroke-width="3.2"/>`
+    + `<ellipse cx="24" cy="24" rx="14" ry="8" fill="${d.paw}" stroke="${L}" stroke-width="2.6"/>`
+    + `<ellipse cx="6" cy="28" rx="14" ry="8" fill="${d.paw}" stroke="${L}" stroke-width="2.6"/>`
+    + `<g transform="translate(34 -4) rotate(90) scale(0.62)">${catFace(d, { mood, blink: sleep && mood === 'normal' })}</g>`;
 }
