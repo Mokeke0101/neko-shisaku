@@ -1,16 +1,18 @@
 // にくきゅうスタンプ（見せ方の部品：並んだ格子）。
 // 猫の手がカードのます目をぴょんぴょん渡り、最後に1つのます目へ肉球を「ぽん」と押す。
-import { C, catPaw, pawPrint, ginkgoLeaf, mapleLeaf } from '../art.js';
+import { C, ginkgoLeaf, mapleLeaf } from '../art.js';
+import { catFace, catPaw, pawPrint } from '../cats.js';
 import { audio } from '../audio.js';
 import { pickIndex } from '../random.js';
 import { celebrate, clearCelebration, ease, frames, wait } from '../fx.js';
 import { showHint, showResult, setBusy, centerOf, charCount, svgEl, escapeXml } from '../ui.js';
 
-export function createStamp({ view, stage, result, play, getChoices }) {
+export function createStamp({ view, stage, result, play, getChoices, getCat }) {
   let geo = null;
   let busy = false;
   let refs = {};
   let pawPos = null;
+  let cat = null;
 
   function layoutFor(n) {
     const cols = n <= 6 ? 2 : 3;
@@ -36,6 +38,7 @@ export function createStamp({ view, stage, result, play, getChoices }) {
 
   function render() {
     const choices = getChoices();
+    cat = getCat();
     const n = choices.length;
     const W = stage.clientWidth;
     const H = stage.clientHeight;
@@ -46,11 +49,12 @@ export function createStamp({ view, stage, result, play, getChoices }) {
     const head = 40;
     const pad = 14;
     const gap = 10;
-    const maxCardH = H - 10;
+    const peek = 46; // カードの上から猫がのぞく場所
+    const maxCardH = H - 10 - peek;
     const cellW = (cardW - pad * 2 - gap * (cols - 1)) / cols;
     const cellH = Math.min(cellW * (cols === 2 ? 0.62 : 0.92), (maxCardH - head - pad * 2 - gap * (rows - 1)) / rows);
     const cardH = head + pad * 2 + cellH * rows + gap * (rows - 1);
-    const cardY = (H - cardH) / 2;
+    const cardY = peek + (H - peek - cardH) / 2;
     const cells = [];
     for (let i = 0; i < n; i++) {
       const r = Math.floor(i / cols);
@@ -61,10 +65,13 @@ export function createStamp({ view, stage, result, play, getChoices }) {
       const y = cardY + head + pad + r * (cellH + gap);
       cells.push({ x, y, w: cellW, h: cellH, cx: x + cellW / 2, cy: y + cellH / 2 });
     }
-    geo = { n, cells, W, H, cardX, cardY, cardW, cardH, cellW, cellH };
+    const peekAt = { x: cardX + cardW - 76, y: cardY - 12, s: 0.58 };
+    geo = { n, cells, W, H, cardX, cardY, cardW, cardH, cellW, cellH, peekAt };
 
     const svg = svgEl('svg', { viewBox: `0 0 ${W} ${H}` });
     let s = '';
+    // カードの上から のぞく猫（カードの後ろに描く）
+    s += `<g class="peek" transform="translate(${peekAt.x} ${peekAt.y}) scale(${peekAt.s})"><g class="peek-face">${catFace(cat)}</g></g>`;
     // カード
     s += `<g class="card">`;
     s += `<rect x="${cardX + 3}" y="${cardY + 6}" width="${cardW}" height="${cardH}" rx="22" fill="#d9b07a" opacity="0.35"/>`;
@@ -91,10 +98,12 @@ export function createStamp({ view, stage, result, play, getChoices }) {
       s += `</g>`;
     });
     s += `</g>`;
+    // カードの縁に かけた、のぞく猫の手
+    s += `<g transform="translate(${peekAt.x - 30} ${cardY + 1})">${catPaw(cat, 10)}</g>`;
     // 猫の手（影と手）
     const pawSize = Math.min(cellW, cellH) * 0.3;
     s += `<ellipse class="paw-shadow" cx="0" cy="0" rx="${pawSize * 0.95}" ry="${pawSize * 0.32}" fill="#a0703f" opacity="0.18"/>`;
-    s += `<g class="paw"><g class="paw-in">${catPaw(pawSize)}</g></g>`;
+    s += `<g class="paw"><g class="paw-in">${catPaw(cat, pawSize)}</g></g>`;
     svg.innerHTML = s;
     stage.textContent = '';
     stage.appendChild(svg);
@@ -105,11 +114,23 @@ export function createStamp({ view, stage, result, play, getChoices }) {
       pawIn: svg.querySelector('.paw-in'),
       shadow: svg.querySelector('.paw-shadow'),
       cells: Array.from(svg.querySelectorAll('.cell')),
+      peekFace: svg.querySelector('.peek-face'),
       pawSize,
     };
     pawPos = rest();
     placePaw(pawPos.x, pawPos.y, 0, 1);
     stage.dataset.count = String(n);
+    stage.dataset.cat = cat.id;
+  }
+
+  // のぞく猫の顔。look は手のほうを向く
+  function setFace(mood, at = null) {
+    let look = null;
+    if (at) {
+      const { peekAt } = geo;
+      look = { x: (at.x - peekAt.x) / (geo.cardW * 0.45), y: (at.y - peekAt.y) / (geo.cardH * 0.5) };
+    }
+    refs.peekFace.innerHTML = catFace(cat, { mood, look });
   }
 
   function rest() {
@@ -142,6 +163,7 @@ export function createStamp({ view, stage, result, play, getChoices }) {
     const from = { ...pawPos };
     const to = { x: c.cx, y: c.cy - c.h * 0.08 };
     const h = Math.min(36, 14 + dur * 0.05);
+    setFace('normal', to);
     audio.hop(idx);
     await frames(dur * 0.75, (t) => {
       const e = ease.inOutSine(t);
@@ -214,6 +236,7 @@ export function createStamp({ view, stage, result, play, getChoices }) {
     });
     pawPos = r;
     stage.dataset.landed = String(landed);
+    setFace('happy');
     audio.fanfare(2);
     const choices = getChoices();
     showResult(result, 'きまったよ', choices[landed]);

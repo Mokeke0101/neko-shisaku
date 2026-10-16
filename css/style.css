@@ -93,7 +93,7 @@ svg text { font-family: var(--font); }
 /* ---- ホーム ---- */
 .home-body { justify-content: space-between; }
 .home-head { text-align: center; padding-top: 18px; }
-.logo { width: 112px; height: 112px; margin: 0 auto; }
+.logo { width: 204px; height: 112px; margin: 0 auto; }
 .logo svg { width: 100%; height: 100%; display: block; }
 .home-title {
   margin: 4px 0 0;
@@ -151,7 +151,7 @@ svg text { font-family: var(--font); }
 
 /* 画面の低い端末（iPhone SE など）では、ホームの見出しを小さくして収める */
 @media (max-height: 700px) {
-  .logo { width: 84px; height: 84px; }
+  .logo { width: 154px; height: 84px; }
   .home-title { font-size: 38px; }
   .home-head { padding-top: 4px; }
   .menu { gap: 10px; margin: 6px 0; }
@@ -384,6 +384,80 @@ svg text { font-family: var(--font); }
 .fx { position: fixed; inset: 0; z-index: 40; pointer-events: none; overflow: hidden; }
 .fx-piece { position: absolute; left: 0; top: 0; width: 30px; height: 30px; will-change: transform, opacity; }
 .fx-piece svg, .leaf-fall svg { width: 100%; height: 100%; display: block; overflow: visible; }
+
+/* ---- 決めるもの（おやつ・コイン）の切り替え ---- */
+.purpose {
+  flex: none;
+  display: flex;
+  justify-content: center;
+  gap: 0;
+  margin: 2px auto 4px;
+  padding: 3px;
+  border: 3px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper);
+}
+.purpose-btn {
+  appearance: none;
+  min-width: 104px;
+  height: 38px;
+  padding: 0 18px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--ink-soft);
+  touch-action: manipulation;
+  transition: background 160ms ease, color 160ms ease;
+}
+.purpose-btn.is-on { background: var(--yellow); color: var(--ink); box-shadow: 0 2px 0 var(--yellow-edge); }
+.purpose-btn[disabled] { opacity: 0.6; }
+/* 画面の低い端末（iPhone SE など）では、切り替えと結果の欄を詰めて、ゲームの場所を広く取る */
+@media (max-height: 700px) {
+  .purpose { margin: 0 auto 2px; padding: 2px; }
+  .purpose-btn { height: 32px; font-size: 16px; min-width: 96px; }
+  .result { min-height: 80px; margin: 4px 0 10px; padding: 6px 18px; }
+}
+
+/* ---- ねこの案 ---- */
+.cats-lead { margin: 6px 4px 4px; }
+.cats-head { margin: 14px 4px 8px; font-size: 19px; font-weight: 700; display: flex; align-items: baseline; gap: 10px; }
+.cats-where { font-size: 13px; font-weight: 500; color: var(--ink-soft); }
+.cat-cards { display: flex; flex-direction: column; gap: 12px; }
+.cat-card {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px 10px 6px;
+  border: 3px solid var(--line);
+  border-radius: 24px;
+  background: var(--paper);
+  box-shadow: 0 4px 0 var(--line-strong);
+  text-align: left;
+  touch-action: manipulation;
+}
+.cat-card.is-on { border-color: var(--kaki); box-shadow: 0 4px 0 #e2a061; background: #fff7e8; }
+.cat-fig { flex: none; width: 118px; height: 118px; }
+.cat-fig svg, .cat-faces svg { width: 100%; height: 100%; display: block; }
+.cat-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.cat-name { font-size: 18px; font-weight: 700; }
+.cat-desc { font-size: 13px; line-height: 1.5; color: var(--ink-soft); }
+.cat-faces { display: flex; gap: 6px; height: 40px; }
+.cat-faces svg { width: 44px; height: 40px; }
+.cat-pick { align-self: flex-start; margin-top: 2px; padding: 3px 12px; border-radius: 999px; background: var(--paper-2); border: 2px solid var(--line); font-size: 13px; font-weight: 700; }
+.cat-card.is-on .cat-pick { background: var(--yellow); border-color: var(--yellow-edge); }
+
+/* ---- 季節と行事 ---- */
+.yotei-notes { margin: 0 0 8px; padding-left: 1.2em; font-size: 13px; line-height: 1.55; }
+.yotei-notes:empty { display: none; }
+.try-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 0 4px; border-top: 2px dashed var(--line); }
+.try-date { flex: none; height: 40px; padding: 0 8px; border: 2px solid var(--line); border-radius: 12px; background: #fff; font-family: var(--font); font-size: 15px; color: var(--ink); }
+.try-result { margin: 4px 0 0; font-size: 14px; line-height: 1.5; }
+.try-result:empty { display: none; }
 
 /* ---- ゲームの中の部品 ---- */
 .cell-label { font-weight: 700; }

@@ -4,7 +4,7 @@
 // 公開し直す時は VERSION を上げる（js/version.js の APP_VERSION と同じ値にする）。
 'use strict';
 
-const VERSION = 'v1';
+const VERSION = 'v2';
 const CACHE = `nekokime-${VERSION}`;
 const FILES = [
   './',
@@ -21,6 +21,10 @@ const FILES = [
   './js/ui.js',
   './js/random.js',
   './js/settings.js',
+  './js/cats.js',
+  './js/calendar.js',
+  './js/schedule.js',
+  './yotei.txt',
   './js/games/roulette.js',
   './js/games/stamp.js',
   './js/games/nobi.js',

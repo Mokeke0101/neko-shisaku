@@ -1,5 +1,7 @@
 // 絵（すべてコードで描く SVG。外部の画像・素材集は使わない：RS01-S18）。
 // 絵文字は使わない。記号が要る所も図形で描く（RS01-S14）。
+// 猫は cats.js が描く（RS01-S20）。
+import { catFace, catPaw, pawPrint } from './cats.js';
 
 export const C = {
   fur: '#f7c48b',
@@ -127,56 +129,6 @@ export function autumnLeaf(i, size = 20) {
   }
 }
 
-// ---- 猫 ----
-// 顔：中心 0,0、だいたい半径 50。mood は 'normal'（ふつう）・'happy'（にっこり）・'focus'（じっと見る）
-export function catFace({ mood = 'normal', blink = false } = {}) {
-  const L = C.line;
-  let eyes;
-  if (mood === 'happy') {
-    eyes = `<path d="M-23,0 Q-16,-9 -9,0 M9,0 Q16,-9 23,0" stroke="${C.eye}" stroke-width="4" fill="none" stroke-linecap="round"/>`;
-  } else if (blink) {
-    eyes = `<path d="M-22,1 Q-16,4 -10,1 M10,1 Q16,4 22,1" stroke="${C.eye}" stroke-width="3.5" fill="none" stroke-linecap="round"/>`;
-  } else {
-    eyes = `<ellipse cx="-16" cy="0" rx="5.2" ry="6.8" fill="${C.eye}"/><ellipse cx="16" cy="0" rx="5.2" ry="6.8" fill="${C.eye}"/>`
-      + `<circle cx="-14.2" cy="-2.6" r="2" fill="#ffffff"/><circle cx="17.8" cy="-2.6" r="2" fill="#ffffff"/>`;
-  }
-  const mouth = mood === 'happy'
-    ? `<path d="M-7,13 Q0,24 7,13 Z" fill="#e7776c" stroke="${L}" stroke-width="2.2" stroke-linejoin="round"/>`
-    : `<path d="M0,12 Q-3,18 -8,15 M0,12 Q3,18 8,15" fill="none" stroke="${L}" stroke-width="2.4" stroke-linecap="round"/>`;
-  return `<g class="cat-face">`
-    + `<path d="M-40,-14 L-36,-48 L-10,-34 Z" fill="${C.fur}" stroke="${L}" stroke-width="3.2" stroke-linejoin="round"/>`
-    + `<path d="M40,-14 L36,-48 L10,-34 Z" fill="${C.fur}" stroke="${L}" stroke-width="3.2" stroke-linejoin="round"/>`
-    + `<path d="M-34,-22 L-32,-40 L-18,-32 Z" fill="${C.pink}"/><path d="M34,-22 L32,-40 L18,-32 Z" fill="${C.pink}"/>`
-    + `<ellipse cx="0" cy="2" rx="44" ry="37" fill="${C.fur}" stroke="${L}" stroke-width="3.2"/>`
-    + `<path d="M-9,-34 v9 M0,-35 v11 M9,-34 v9" stroke="${C.stripe}" stroke-width="4" stroke-linecap="round"/>`
-    + `<path d="M-43,-2 h9 M-43,6 h7 M43,-2 h-9 M43,6 h-7" stroke="${C.stripe}" stroke-width="3.4" stroke-linecap="round"/>`
-    + `<ellipse cx="0" cy="15" rx="17" ry="12" fill="${C.white}"/>`
-    + eyes
-    + `<ellipse cx="-27" cy="13" rx="7" ry="4.4" fill="${C.blush}" opacity="0.55"/><ellipse cx="27" cy="13" rx="7" ry="4.4" fill="${C.blush}" opacity="0.55"/>`
-    + `<path d="M-4.2,8 h8.4 l-4.2,4.4 Z" fill="${C.nose}" stroke="${C.nose}" stroke-width="1.6" stroke-linejoin="round"/>`
-    + mouth
-    + `</g>`;
-}
-
-// 肉球（中心 0,0、半径 1 の座標を size 倍）
-export function pawPrint(color = C.pink, size = 20) {
-  const s = (v) => f(v * size);
-  return `<g fill="${color}"><ellipse cx="0" cy="${s(0.3)}" rx="${s(0.5)}" ry="${s(0.4)}"/>`
-    + `<ellipse cx="${s(-0.6)}" cy="${s(-0.22)}" rx="${s(0.19)}" ry="${s(0.24)}" transform="rotate(-18 ${s(-0.6)} ${s(-0.22)})"/>`
-    + `<ellipse cx="${s(-0.22)}" cy="${s(-0.56)}" rx="${s(0.2)}" ry="${s(0.26)}"/>`
-    + `<ellipse cx="${s(0.22)}" cy="${s(-0.56)}" rx="${s(0.2)}" ry="${s(0.26)}"/>`
-    + `<ellipse cx="${s(0.6)}" cy="${s(-0.22)}" rx="${s(0.19)}" ry="${s(0.24)}" transform="rotate(18 ${s(0.6)} ${s(-0.22)})"/></g>`;
-}
-
-// 猫の前足（毛の色の丸に肉球）
-export function catPaw(size = 30) {
-  const s = (v) => f(v * size);
-  return `<g><ellipse cx="0" cy="0" rx="${s(1)}" ry="${s(0.92)}" fill="${C.fur}" stroke="${C.line}" stroke-width="${s(0.1)}"/>`
-    + `<path d="M${s(-0.34)},${s(-0.84)} v${s(0.28)} M${s(0.34)},${s(-0.84)} v${s(0.28)}" stroke="${C.line}" stroke-width="${s(0.08)}" stroke-linecap="round"/>`
-    + pawPrint(C.pink, size * 0.62).replace('<g ', `<g transform="translate(0 ${s(0.12)})" `)
-    + `</g>`;
-}
-
 // ---- 小さな図形の印（絵文字の代わり） ----
 export const icons = {
   back: `<svg viewBox="0 0 24 24"><path d="M15 4 L7 12 L15 20" fill="none" stroke="${C.ink}" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
@@ -190,22 +142,24 @@ export const icons = {
 };
 
 // ---- まとまった絵 ----
-export function logoSVG() {
-  return `<svg viewBox="-60 -62 120 120">${mapleLeaf(C.momiji, C.momijiDeep, 15).replace('<g>', '<g transform="translate(34 -40) rotate(-20)">')}`
-    + `<g transform="translate(0 4)">${catFace()}</g></svg>`;
+// ホームの見出しの絵：パステル三毛猫とサバトラが並ぶ
+export function logoSVG(mike, saba) {
+  return `<svg viewBox="-110 -62 220 120">${mapleLeaf(C.momiji, C.momijiDeep, 15).replace('<g>', '<g transform="translate(92 -40) rotate(-20)">')}`
+    + `<g transform="translate(48 8) scale(0.92)">${catFace(saba, { mood: 'happy' })}</g>`
+    + `<g transform="translate(-48 4)">${catFace(mike)}</g></svg>`;
 }
 
-export function rotateSVG() {
+export function rotateSVG(d) {
   return `<svg viewBox="-70 -70 140 140">`
     + `<rect x="-26" y="-46" width="52" height="92" rx="10" fill="${C.paper}" stroke="${C.line}" stroke-width="4"/>`
-    + `<g transform="scale(0.38)">${catFace({ mood: 'happy' })}</g>`
+    + `<g transform="scale(0.38)">${catFace(d, { mood: 'happy' })}</g>`
     + `<path d="M-52,-20 A56,56 0 0 1 -20,-52" fill="none" stroke="${C.kaki}" stroke-width="6" stroke-linecap="round"/>`
     + `<path d="M-26,-60 L-18,-52 L-28,-46" fill="none" stroke="${C.kaki}" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>`
     + `</svg>`;
 }
 
 // ホームの献立の小さな絵
-export function menuArt(kind) {
+export function menuArt(kind, d) {
   if (kind === 'roulette') {
     const cols = [C.kaki, C.icho, '#f9dcc0', C.rose, C.olive, '#fbe3a6'];
     const n = 6;
@@ -217,23 +171,26 @@ export function menuArt(kind) {
     return `<svg viewBox="-36 -36 72 72"><circle r="30" fill="${C.chestnut}"/>${segs}`
       + `<path d="M0,0 L0,-20" stroke="${C.line}" stroke-width="3" stroke-linecap="round" transform="rotate(35)"/>`
       + `<g transform="rotate(35) translate(0 -20)">${pawPrint(C.momiji, 6)}</g>`
-      + `<g transform="scale(0.2)">${catFace()}</g></svg>`;
+      + `<g transform="scale(0.2)">${catFace(d)}</g></svg>`;
   }
   if (kind === 'stamp') {
     let cells = '';
     for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) {
-      cells += `<rect x="${-24 + c * 17}" y="${-20 + r * 15}" width="14" height="12" rx="3" fill="#ffffff" stroke="${C.line}" stroke-width="1" opacity="0.9"/>`;
+      cells += `<rect x="${-24 + c * 17}" y="${-10 + r * 14}" width="14" height="12" rx="3" fill="#ffffff" stroke="${C.line}" stroke-width="1" opacity="0.9"/>`;
     }
-    return `<svg viewBox="-36 -36 72 72"><rect x="-30" y="-28" width="60" height="56" rx="8" fill="${C.paper}" stroke="${C.woodDeep}" stroke-width="2"/>${cells}`
-      + `<g transform="translate(10 -5)">${pawPrint(C.momiji, 6)}</g>`
-      + `<g transform="translate(18 18) scale(0.7)">${catPaw(16)}</g></svg>`;
+    // カードの上から猫がのぞく（猫を先に描き、カードで顔の下を隠す）
+    return `<svg viewBox="-36 -36 72 72"><g transform="translate(12 -19) scale(0.24)">${catFace(d)}</g>`
+      + `<rect x="-30" y="-16" width="60" height="48" rx="8" fill="${C.paper}" stroke="${C.woodDeep}" stroke-width="2"/>${cells}`
+      + `<g transform="translate(10 7)">${pawPrint(C.momiji, 6)}</g>`
+      + `<g transform="translate(20 26) scale(0.62)">${catPaw(d, 16)}</g></svg>`;
   }
   // nobi
   return `<svg viewBox="-36 -36 72 72"><rect x="-26" y="-34" width="14" height="70" rx="3" fill="${C.wood}" stroke="${C.woodDeep}" stroke-width="1.5"/>`
     + `<path d="M-26,-18 h14 M-26,-2 h14 M-26,14 h14" stroke="${C.momiji}" stroke-width="2.4" stroke-linecap="round"/>`
-    + `<rect x="2" y="-8" width="20" height="40" rx="9" fill="${C.fur}" stroke="${C.line}" stroke-width="2"/>`
-    + `<g transform="translate(12 -16) scale(0.24)">${catFace({ mood: 'happy' })}</g>`
-    + `<circle cx="-2" cy="-26" r="5" fill="${C.fur}" stroke="${C.line}" stroke-width="2"/><circle cx="26" cy="-26" r="5" fill="${C.fur}" stroke="${C.line}" stroke-width="2"/></svg>`;
+    + `<rect x="2" y="-8" width="20" height="40" rx="9" fill="${d.base}" stroke="${d.line}" stroke-width="2"/>`
+    + (d.body === 'saba' ? `<path d="M2,6 h5 M22,12 h-5 M2,18 h5 M22,24 h-5" stroke="${d.stripe}" stroke-width="2" stroke-linecap="round"/>` : '')
+    + `<g transform="translate(12 -16) scale(0.24)">${catFace(d, { mood: 'happy' })}</g>`
+    + `<circle cx="-2" cy="-26" r="5" fill="${d.paw}" stroke="${d.line}" stroke-width="2"/><circle cx="26" cy="-26" r="5" fill="${d.paw}" stroke="${d.line}" stroke-width="2"/></svg>`;
 }
 
 // ---- 背景（秋）。縦長の画面の下を基準に置き、短い画面では上が少し切れる ----

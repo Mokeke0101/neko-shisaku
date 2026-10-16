@@ -1,6 +1,7 @@
 // にくきゅうルーレット（見せ方の部品：回る円盤）。
 // 盤は動かさず、猫の手の針だけが回る。文字が回らないので、カメラ越しでも選択肢が読みやすい。
-import { C, catFace, catPaw } from '../art.js';
+import { C } from '../art.js';
+import { catFace, catPaw } from '../cats.js';
 import { audio } from '../audio.js';
 import { pickIndex, jitter } from '../random.js';
 import { celebrate, clearCelebration, ease, frames, wait } from '../fx.js';
@@ -8,11 +9,12 @@ import { showHint, showResult, setBusy, centerOf, charCount, svgEl, escapeXml } 
 
 const FILLS = ['#fbd6a2', '#fde8b2', '#f8cbbb', '#e2ecc0', '#fbe0c6', '#f5d09a'];
 
-export function createRoulette({ view, stage, result, play, getChoices }) {
+export function createRoulette({ view, stage, result, play, getChoices, getCat }) {
   let angle = 0; // 針の向き（度。0 が真上、時計回り）
   let geo = null;
   let busy = false;
   let refs = {};
+  let cat = null;
 
   function sectorFill(i, n) {
     let c = FILLS[i % FILLS.length];
@@ -22,6 +24,7 @@ export function createRoulette({ view, stage, result, play, getChoices }) {
 
   function render() {
     const choices = getChoices();
+    cat = getCat();
     const n = choices.length;
     const W = stage.clientWidth;
     const H = stage.clientHeight;
@@ -77,13 +80,13 @@ export function createRoulette({ view, stage, result, play, getChoices }) {
     const pawSize = Math.max(11, R * 0.075);
     const armLen = rs - pawSize * 0.9;
     s += `<g class="needle" transform="rotate(${angle} ${cx} ${cy})">`
-      + `<path d="M${cx - 6},${cy} L${cx - 3.2},${cy - armLen} L${cx + 3.2},${cy - armLen} L${cx + 6},${cy} Z" fill="${C.fur}" stroke="${C.line}" stroke-width="2.4" stroke-linejoin="round"/>`
-      + `<g transform="translate(${cx} ${cy - armLen})">${catPaw(pawSize)}</g>`
+      + `<path d="M${cx - 6},${cy} L${cx - 3.2},${cy - armLen} L${cx + 3.2},${cy - armLen} L${cx + 6},${cy} Z" fill="${cat.paw}" stroke="${cat.line}" stroke-width="2.4" stroke-linejoin="round"/>`
+      + `<g transform="translate(${cx} ${cy - armLen})">${catPaw(cat, pawSize)}</g>`
       + `</g>`;
     // 真ん中の猫
     const k = hub / 50;
-    s += `<circle cx="${cx}" cy="${cy}" r="${hub + 6}" fill="${C.paper}" stroke="${C.line}" stroke-width="3"/>`;
-    s += `<g class="hub-cat" transform="translate(${cx} ${cy + hub * 0.08}) scale(${(k * 0.9).toFixed(3)})">${catFace()}</g>`;
+    s += `<circle cx="${cx}" cy="${cy}" r="${hub + 6}" fill="${C.paper}" stroke="${cat.line}" stroke-width="3"/>`;
+    s += `<g class="hub-cat" transform="translate(${cx} ${cy + hub * 0.08}) scale(${(k * 0.9).toFixed(3)})">${catFace(cat)}</g>`;
     svg.innerHTML = s;
     stage.textContent = '';
     stage.appendChild(svg);
@@ -93,14 +96,21 @@ export function createRoulette({ view, stage, result, play, getChoices }) {
       hubCat: svg.querySelector('.hub-cat'),
     };
     stage.dataset.count = String(n);
+    stage.dataset.cat = cat.id;
   }
 
   function setNeedle(a) {
     refs.needle.setAttribute('transform', `rotate(${a.toFixed(3)} ${geo.cx} ${geo.cy})`);
   }
 
-  function setCat(mood) {
-    refs.hubCat.innerHTML = catFace({ mood });
+  function setCat(mood, look = null) {
+    refs.hubCat.innerHTML = catFace(cat, { mood, look });
+  }
+
+  // 真ん中の猫が、針の先を目で追う
+  function lookAt(a) {
+    const r = (a * Math.PI) / 180;
+    setCat('normal', { x: Math.sin(r), y: -Math.cos(r) });
   }
 
   function showRing(i) {
@@ -144,6 +154,7 @@ export function createRoulette({ view, stage, result, play, getChoices }) {
     const total = delta + 10;
     let lastSector = Math.floor((((from % 360) + 360) % 360) / seg);
     let lastTick = 0;
+    let lastLook = 0;
     const dur = 4600 + turns * 260;
     await frames(dur, (t) => {
       angle = from + total * ease.outQuart(t);
@@ -154,6 +165,8 @@ export function createRoulette({ view, stage, result, play, getChoices }) {
         const now = performance.now();
         if (now - lastTick > 40) { audio.tick(); lastTick = now; }
       }
+      const nowL = performance.now();
+      if (nowL - lastLook > 90) { lookAt(angle); lastLook = nowL; }
     });
     angle = ((angle % 360) + 360) % 360;
     // ゆらり（扇の中に収まる小さな揺れ）

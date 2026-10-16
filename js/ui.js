@@ -23,7 +23,7 @@ export function showResult(el, label, value) {
 }
 
 export function setBusy(view, busy) {
-  view.querySelectorAll('.play, .back').forEach((b) => { b.disabled = busy; });
+  view.querySelectorAll('.play, .back, .purpose-btn').forEach((b) => { b.disabled = busy; });
 }
 
 export function centerOf(el) {

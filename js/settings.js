@@ -1,11 +1,14 @@
-// 設定の画面：選択肢と段階の調整（RS01-S09・S10）、音（RS01-S11・D02）、状態の表示。
+// 設定の画面：選択肢の調整（RS01-S09・S10）、ねこ（RS01-S20）、季節と行事（RS01-S13）、音（RS01-S11・D02）、状態の表示。
 import { store, LIMITS, cleanLabel } from './store.js';
 import { audio } from './audio.js';
 import { icons } from './art.js';
+import { designById } from './cats.js';
+import { dayNum, fmt, fmtMD, lookup } from './schedule.js';
+import { FIRST_YEAR, LAST_YEAR } from './calendar.js';
 
 const LISTS = {
-  choices: { el: 'list-choices', make: (n) => `おやつ${n + 1}` },
-  stages: { el: 'list-stages', make: (n) => `${n + 1}だんめ` },
+  snack: { el: 'list-snack', make: (n) => `おやつ${n + 1}` },
+  coin: { el: 'list-coin', make: (n) => `${n + 1}だんめ` },
 };
 
 function note(listEl, text) {
@@ -74,14 +77,15 @@ function save() {
   renderStatus();
 }
 
+const set = (id, text, ok = null) => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = text;
+  el.classList.toggle('is-ok', ok === true);
+  el.classList.toggle('is-ng', ok === false);
+};
+
 export function renderStatus(extra = {}) {
-  const set = (id, text, ok) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.textContent = text;
-    el.classList.toggle('is-ok', ok === true);
-    el.classList.toggle('is-ng', ok === false);
-  };
   if (extra.offline) set('st-offline', extra.offline.text, extra.offline.ok);
   if (extra.wake) set('st-wake', extra.wake.text, extra.wake.ok);
   if (extra.standalone) set('st-standalone', extra.standalone.text, extra.standalone.ok);
@@ -89,9 +93,77 @@ export function renderStatus(extra = {}) {
   if (store.blocked) set('st-offline', store.loadState, false);
 }
 
+// ---- 季節と行事 ----
+let schedule = { state: 'loading' }; // { state: 'loading' | 'ok' | 'error', parsed, overlaps, message }
+export function setSchedule(s) {
+  schedule = s;
+  renderSchedule();
+}
+
+function describe(n) {
+  const r = lookup(schedule.parsed, n);
+  const season = r.season ? r.season.name : '-';
+  let event;
+  if (r.eventOverlap) event = `重なりのため出さない（${r.eventOverlap.map((p) => p.name).join('・')}）`;
+  else if (r.event) event = `${r.event.name}（${fmtMD(r.event.from)}〜${fmtMD(r.event.to)}）`;
+  else event = 'なし';
+  const seasonText = r.seasonOverlap ? `${season}（重なり：${r.seasonOverlap.map((p) => p.name).join('・')}）` : season;
+  return { season: seasonText, event, needsUpdate: r.needsUpdate, r };
+}
+
+export function renderSchedule() {
+  const notes = document.getElementById('yotei-notes');
+  if (!notes) return;
+  notes.textContent = '';
+  const addNote = (text, ng = false) => {
+    const li = document.createElement('li');
+    li.textContent = text;
+    if (ng) li.className = 'is-ng';
+    notes.appendChild(li);
+  };
+  const now = new Date();
+  const today = dayNum(now.getFullYear(), now.getMonth() + 1, now.getDate());
+  set('st-today', fmt(today));
+  if (schedule.state === 'loading') { set('st-yotei', '読んでいます'); return; }
+  if (schedule.state === 'error') {
+    set('st-yotei', '読めません', false);
+    set('st-season', 'わかりません', false);
+    set('st-event', 'わかりません', false);
+    set('st-overlap', '-');
+    addNote(schedule.message, true);
+    (schedule.parsed ? schedule.parsed.errors : []).forEach((e) => addNote(`${e.line ? `${e.line}行目：` : ''}${e.message}`, true));
+    return;
+  }
+  set('st-yotei', `読めた（${FIRST_YEAR}〜${LAST_YEAR}年）`, true);
+  const t = describe(today);
+  set('st-season', t.season);
+  set('st-event', t.event);
+  set('st-overlap', schedule.overlaps.length ? `${schedule.overlaps.length} か所` : 'なし', schedule.overlaps.length ? false : true);
+  schedule.overlaps.forEach((o) => addNote(`${o.type === 'season' ? '季節' : '行事'}の重なり：${o.text}`, true));
+  if (t.needsUpdate) addNote(`行事のカレンダーは ${LAST_YEAR}年までです。アップデートが必要です。節分とお月見は出しません。`, true);
+}
+
+function renderTry() {
+  const input = document.getElementById('try-date');
+  const out = document.getElementById('try-result');
+  if (!input.value || schedule.state !== 'ok') { out.textContent = ''; return; }
+  const [y, m, d] = input.value.split('-').map(Number);
+  const n = dayNum(y, m, d);
+  const t = describe(n);
+  out.textContent = `${fmt(n)}：季節 ${t.season}／行事 ${t.event}${t.needsUpdate ? '／カレンダーの範囲の外（アップデートが必要）' : ''}`;
+}
+
+// ---- ねこ ----
+export function renderCatStatus() {
+  for (const kind of ['mike', 'saba']) {
+    const d = designById(store.data.cats[kind]);
+    set(`st-cat-${kind}`, `${d.label}　${d.name}`);
+  }
+}
+
 export function setupSettings() {
-  renderList('choices');
-  renderList('stages');
+  renderList('snack');
+  renderList('coin');
   for (const key of Object.keys(LISTS)) {
     document.querySelector(`[data-add="${key}"]`).addEventListener('click', () => {
       const list = store.data[key];
@@ -122,9 +194,16 @@ export function setupSettings() {
     await audio.unlock();
     audio.tap();
   });
+  document.getElementById('try-date').addEventListener('change', renderTry);
+  renderCatStatus();
+  renderSchedule();
 }
 
 export function refreshSettings() {
-  renderList('choices');
-  renderList('stages');
+  renderList('snack');
+  renderList('coin');
+  renderCatStatus();
+  renderSchedule();
+  renderTry();
 }
+

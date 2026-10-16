@@ -128,6 +128,17 @@ export const audio = {
     this.bell(PENTA[Math.min(i, PENTA.length - 1)], 0, 0.18);
   },
 
+  // せいくらべで ふんばっている間の、どきどき（低く やわらかい2つの音）
+  heart() {
+    this.tone(150, { decay: 0.12, gain: 0.22, glideTo: 110 });
+    this.tone(140, { at: 0.17, decay: 0.1, gain: 0.14, glideTo: 105 });
+  },
+
+  // せいくらべの じゅんび（おしりを ふりふり）。回を追うごとに音が上がる
+  wiggle(i) {
+    this.marimba(PENTA[i % 5] - 12, 0, 0.16);
+  },
+
   stretch(seconds) {
     if (!this.ready()) return;
     this.tone(260, { type: 'triangle', attack: 0.15, decay: seconds, gain: 0.05, glideTo: 520 });

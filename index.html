@@ -68,7 +68,7 @@
           <span class="menu-art" data-art="nobi" aria-hidden="true"></span>
           <span class="menu-text">
             <span class="menu-name">のびのび せいくらべ</span>
-            <span class="menu-desc">のびた たかさで コインが きまる</span>
+            <span class="menu-desc">のびた たかさで きまる</span>
           </span>
           <span class="menu-arrow" aria-hidden="true"></span>
         </button>
@@ -92,6 +92,10 @@
         <h2 class="bar-title">にくきゅうルーレット</h2>
         <span class="bar-space"></span>
       </header>
+      <div class="purpose" role="group" aria-label="きめるもの">
+        <button type="button" class="purpose-btn" data-purpose="snack">おやつ</button>
+        <button type="button" class="purpose-btn" data-purpose="coin">コイン</button>
+      </div>
       <div class="stage" id="roulette-stage"></div>
       <div class="result" id="roulette-result" aria-live="polite"></div>
       <div class="actions">
@@ -110,6 +114,10 @@
         <h2 class="bar-title">にくきゅうスタンプ</h2>
         <span class="bar-space"></span>
       </header>
+      <div class="purpose" role="group" aria-label="きめるもの">
+        <button type="button" class="purpose-btn" data-purpose="snack">おやつ</button>
+        <button type="button" class="purpose-btn" data-purpose="coin">コイン</button>
+      </div>
       <div class="stage" id="stamp-stage"></div>
       <div class="result" id="stamp-result" aria-live="polite"></div>
       <div class="actions">
@@ -128,6 +136,10 @@
         <h2 class="bar-title">のびのび せいくらべ</h2>
         <span class="bar-space"></span>
       </header>
+      <div class="purpose" role="group" aria-label="きめるもの">
+        <button type="button" class="purpose-btn" data-purpose="snack">おやつ</button>
+        <button type="button" class="purpose-btn" data-purpose="coin">コイン</button>
+      </div>
       <div class="stage" id="nobi-stage"></div>
       <div class="result" id="nobi-result" aria-live="polite"></div>
       <div class="actions">
@@ -147,16 +159,42 @@
       </header>
       <div class="settings-scroll">
         <section class="panel">
-          <h3 class="panel-title">おやつの選択肢</h3>
-          <p class="panel-hint">ルーレットとスタンプで使います。2〜12個、1つ8文字まで。</p>
-          <ol class="choice-list" id="list-choices"></ol>
-          <button type="button" class="sub-button add" data-add="choices"><span class="icon-plus" aria-hidden="true"></span>ふやす</button>
+          <h3 class="panel-title">おやつ決めの選択肢</h3>
+          <p class="panel-hint">どのゲームでも、上の切りかえで「おやつ」を選んだ時に使います。2〜12個、1つ8文字まで。</p>
+          <ol class="choice-list" id="list-snack"></ol>
+          <button type="button" class="sub-button add" data-add="snack"><span class="icon-plus" aria-hidden="true"></span>ふやす</button>
         </section>
         <section class="panel">
-          <h3 class="panel-title">コインの段階</h3>
-          <p class="panel-hint">せいくらべで使います。上に書いたものほど低い段階です。2〜12個、1つ8文字まで。</p>
-          <ol class="choice-list" id="list-stages"></ol>
-          <button type="button" class="sub-button add" data-add="stages"><span class="icon-plus" aria-hidden="true"></span>ふやす</button>
+          <h3 class="panel-title">コイン決めの選択肢</h3>
+          <p class="panel-hint">どのゲームでも、「コイン」を選んだ時に使います。せいくらべでは、上に書いたものほど低い段階です。2〜12個、1つ8文字まで。</p>
+          <ol class="choice-list" id="list-coin"></ol>
+          <button type="button" class="sub-button add" data-add="coin"><span class="icon-plus" aria-hidden="true"></span>ふやす</button>
+        </section>
+        <section class="panel">
+          <h3 class="panel-title">ねこ</h3>
+          <p class="panel-hint">ルーレットとスタンプには パステル三毛猫、せいくらべには サバトラが出ます。見た目は、案の中から選べます。</p>
+          <dl class="status">
+            <dt>パステル三毛猫</dt><dd id="st-cat-mike">-</dd>
+            <dt>サバトラ</dt><dd id="st-cat-saba">-</dd>
+          </dl>
+          <button type="button" class="sub-button" data-go="cats">ねこの案を くらべる</button>
+        </section>
+        <section class="panel">
+          <h3 class="panel-title">季節と行事</h3>
+          <p class="panel-hint">端末の日付と、予定のテキスト（yotei.txt）で決まります。いまの見本は、どの日も秋の見た目です。</p>
+          <dl class="status">
+            <dt>予定のテキスト</dt><dd id="st-yotei">-</dd>
+            <dt>きょう</dt><dd id="st-today">-</dd>
+            <dt>きょうの季節</dt><dd id="st-season">-</dd>
+            <dt>きょうの行事</dt><dd id="st-event">-</dd>
+            <dt>重なり</dt><dd id="st-overlap">-</dd>
+          </dl>
+          <ul class="yotei-notes" id="yotei-notes"></ul>
+          <label class="try-row">
+            <span class="switch-label">ほかの日を ためす</span>
+            <input type="date" id="try-date" class="try-date" min="2025-01-01" max="2032-12-31">
+          </label>
+          <p class="try-result" id="try-result"></p>
         </section>
         <section class="panel">
           <h3 class="panel-title">音</h3>
@@ -180,6 +218,25 @@
           <p class="panel-hint">このアプリは、遊んだ記録や設定を外へ送りません。</p>
           <p class="panel-hint">書体：Zen Maru Gothic（SIL Open Font License 1.1、fonts/OFL.txt）</p>
         </section>
+      </div>
+    </div>
+  </section>
+
+  <!-- ねこの案（見比べて選ぶ。配信者には使わない、依頼者のための画面） -->
+  <section id="view-cats" class="view" data-view="cats" hidden>
+    <div class="scene" id="cats-scene" aria-hidden="true"></div>
+    <div class="view-body settings-body">
+      <header class="bar">
+        <button type="button" class="back" data-go="settings" aria-label="もどる"><span class="icon-back" aria-hidden="true"></span></button>
+        <h2 class="bar-title">ねこの案</h2>
+        <span class="bar-space"></span>
+      </header>
+      <div class="settings-scroll">
+        <p class="panel-hint cats-lead">それぞれ1つを えらぶと、ゲームの猫が かわります。えらんだ案は、閉じて開き直しても のこります。</p>
+        <h3 class="cats-head">パステル三毛猫<span class="cats-where">ルーレット・スタンプ</span></h3>
+        <div class="cat-cards" id="cats-mike"></div>
+        <h3 class="cats-head">サバトラ<span class="cats-where">せいくらべ</span></h3>
+        <div class="cat-cards" id="cats-saba"></div>
       </div>
     </div>
   </section>
