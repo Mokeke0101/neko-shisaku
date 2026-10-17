@@ -4,7 +4,7 @@
 // 公開し直す時は VERSION を上げる（js/version.js の APP_VERSION と同じ値にする）。
 'use strict';
 
-const VERSION = 'v10';
+const VERSION = 'v11';
 const CACHE = `nekokime-${VERSION}`;
 // 書体（約 4.2 MB）は版と分けて保存し、版を上げても取り直さない（RS01-S03）。書体のファイルを替えた時だけ FONT_VERSION を上げる
 const FONT_VERSION = 'f1';
@@ -58,6 +58,19 @@ const FILES = [
   './js/games/tsuri.js',
   './js/games/tobiishi.js',
   './js/games/hidamari.js',
+  './js/games/common.js',
+  './js/games/crane.js',
+  './js/games/gacha.js',
+  './js/games/kanransha.js',
+  './js/games/shabon.js',
+  './js/games/jarashi.js',
+  './js/games/bowling.js',
+  './js/games/hikoki.js',
+  './js/games/watage.js',
+  './js/games/himo.js',
+  './js/games/hyokkori.js',
+  './js/games/yubin.js',
+  './js/games/daruma.js',
   './js/games/list.js',
   './icons/apple-touch-icon.png',
   './icons/icon-192.png',

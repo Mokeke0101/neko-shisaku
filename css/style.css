@@ -603,4 +603,4 @@ body[data-night="1"] .menu-group::after { background: rgba(255, 255, 255, 0.35);
   .fx-firework { opacity: 0.85; }
 }
 /* 板や紙の明るい背景の上に題名がある画面（スタンプ・すごろく・まとあて）は、夜でも いつもの色 */
-body[data-night="1"] :is(#view-stamp, #view-sugoroku, #view-mato) .bar-title { color: var(--ink); text-shadow: none; }
+body[data-night="1"] :is(#view-stamp, #view-sugoroku, #view-mato, #view-gacha, #view-himo, #view-crane) .bar-title { color: var(--ink); text-shadow: none; }

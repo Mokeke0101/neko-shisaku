@@ -296,6 +296,71 @@ export function sceneSVG(kind, lk = { season: 'aki', event: '' }) {
       + `<path d="M0,420 Q100,380 200,410 T390,390 V560 H0 Z" fill="${P.hillB}"/>` + tr(50, 420, 32, T[2], 0) + tr(330, 410, 28, T[0], 1)
       + yard(196, 520, 26, 0) + boards
       + `<path d="M0,556 H${W}" stroke="#c99a62" stroke-width="6"/>`;
+  } else if (kind === 'kanransha' || kind === 'hikoki' || kind === 'watage') {
+    // 遊園地の丘（かんらんしゃ）・ひろい原っぱ（かみひこうき）・川ぞいの野原（わたげ）
+    let field = '';
+    if (kind === 'watage') {
+      let sd = 19;
+      const rnd = () => ((sd = (sd * 9301 + 49297) % 233280) / 233280);
+      for (let i = 0; i < 18; i++) field += K.flower(rnd() * W, 690 + rnd() * 140, 4 + rnd() * 4, i);
+    }
+    body = cl(70, 120, 84) + cl(300, 180, 66) + (kind === 'hikoki' ? cl(200, 260, 50) : '')
+      + `<path d="M0,580 Q110,540 220,566 T390,550 V844 H0 Z" fill="${kind === 'watage' ? P.field : P.hillA}"/>`
+      + (kind === 'watage' ? `<path d="M0,640 Q200,610 390,650 V680 Q200,640 0,672 Z" fill="${snowy ? '#e6eef4' : K.night ? '#8f9cc0' : '#cfe8eb'}"/>` : '')
+      + tr(34, 570, 30, T[0], 0) + tr(360, 556, 34, T[1], 1) + (kind === 'kanransha' ? tr(310, 600, 22, T[2], 2) : '')
+      + `<path d="M0,690 Q130,656 260,680 T390,670 V844 H0 Z" fill="${kind === 'watage' ? P.fieldB : P.hillB}"/>`
+      + field + yard(kind === 'hikoki' ? 340 : 54, 712, 24, kind === 'hikoki' ? 1 : 0)
+      + sc(kind === 'kanransha' ? 61 : 67, 10, { x: 6, y: 720, w: 378, h: 110 }, 8, 13)
+      + air(40, 230, 14, 0, -8) + air(352, 290, 12, 1, 10);
+  } else if (kind === 'shabon' || kind === 'jarashi' || kind === 'hyokkori') {
+    // 庭の しばふ：花（しゃぼんだま）、背の高い草（ねこじゃらし）、丸い しげみ（ひょっこり）
+    let extra = '';
+    if (kind === 'shabon') [[30, 760], [70, 800], [320, 770], [360, 805], [200, 815]].forEach(([x, y], i) => { extra += K.flower(x, y, 6, i); });
+    if (kind === 'jarashi') [16, 44, 346, 374].forEach((x, k) => { extra += K.plant(x, 836, k); });
+    if (kind === 'hyokkori') {
+      const bush = (x, y, r, col) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${col}"/><circle cx="${x - r * 0.7}" cy="${y + r * 0.3}" r="${r * 0.7}" fill="${col}"/><circle cx="${x + r * 0.7}" cy="${y + r * 0.3}" r="${r * 0.7}" fill="${col}"/>` + (snowy ? `<path d="M${x - r * 1.2},${y - r * 0.2} q${r * 1.2},${-r * 1.1} ${r * 2.4},0" stroke="#ffffff" stroke-width="5" fill="none" stroke-linecap="round"/>` : '');
+      extra = bush(26, 610, 26, P.bush[0]) + bush(366, 600, 30, P.bush[1]);
+    }
+    body = cl(90, 130, 80) + cl(310, 170, 60)
+      + `<path d="M0,560 Q120,526 240,550 T390,540 V844 H0 Z" fill="${P.grass}"/>`
+      + tr(36, 540, 28, T[1], 0) + tr(356, 526, 32, T[2], 1)
+      + extra + yard(196, 560, 22, kind === 'hyokkori' ? 1 : 0)
+      + sc(kind === 'shabon' ? 71 : 73, 10, { x: 6, y: 660, w: 378, h: 170 }, 8, 13)
+      + air(330, 300, 14, 0, 10) + air(54, 360, 12, 1, -8);
+  } else if (kind === 'yubin' || kind === 'daruma') {
+    // 町はずれ（ゆうびん）・公園（だるまさんが ころんだ）：とおくの いえ並み、木、土の ひろば
+    let town = '';
+    if (kind === 'yubin') {
+      [[40, 540, '#f7c4b4'], [110, 552, '#cfe0ea'], [300, 546, '#fde3a6'], [360, 556, '#cfe3c0']].forEach(([x, y, c]) => {
+        town += `<rect x="${x - 20}" y="${y - 26}" width="40" height="30" fill="${c}" stroke="#e2bd87" stroke-width="2"/><path d="M${x - 26},${y - 24} L${x},${y - 46} L${x + 26},${y - 24} Z" fill="#e3a074"/>` + (snowy ? `<path d="M${x - 24},${y - 26} L${x},${y - 44} L${x + 24},${y - 26}" stroke="#ffffff" stroke-width="5" fill="none"/>` : '') + `<rect x="${x - 6}" y="${y - 18}" width="10" height="9" fill="${K.night ? '#ffe58a' : '#fffaf0'}"/>`;
+      });
+    }
+    body = cl(80, 120, 76) + cl(300, 170, 60)
+      + `<path d="M0,560 Q120,530 240,552 T390,544 V844 H0 Z" fill="${P.hillB}"/>` + town
+      + tr(kind === 'yubin' ? 200 : 40, 556, 26, T[0], 0) + tr(kind === 'yubin' ? 250 : 356, 566, 22, T[1], 1)
+      + `<rect x="0" y="600" width="${W}" height="244" fill="${snowy ? '#f2f6f9' : K.night ? '#c9b8a8' : '#efd9b4'}"/><path d="M0,600 H${W}" stroke="${snowy ? '#d3e1ea' : '#e2c592'}" stroke-width="3"/>`
+      + sc(kind === 'yubin' ? 79 : 83, 10, { x: 6, y: 640, w: 378, h: 190 }, 8, 12)
+      + air(46, 220, 13, 0, -8);
+  } else if (kind === 'bowling' || kind === 'himo' || kind === 'gacha' || kind === 'crane') {
+    // へやの中：ボウリングの ろうか、だがしやの たな（ひも・ガチャ）、ゲームの かど（クレーン）
+    let wall = '';
+    if (kind === 'crane') {
+      wall = `<rect x="0" y="0" width="${W}" height="640" fill="#fff4f6"/>`;
+      for (let i = 0; i < 9; i++) wall += `<rect x="${i * 46}" y="0" width="23" height="640" fill="#fbe3ea"/>`;
+      for (let i = 0; i < 12; i++) wall += `<circle cx="${18 + i * 32}" cy="40" r="5" fill="${[C.icho, C.rose, '#cfe0ea'][i % 3]}"/>`;
+    } else if (kind === 'gacha' || kind === 'himo') {
+      for (let i = 0; i < 9; i++) wall += `<path d="M${i * 46 - 10},0 h46 v40 q-23,12 -46,0 Z" fill="${i % 2 ? '#fff6e4' : kind === 'gacha' ? '#cfe0ea' : '#cfe3c0'}"/>`;
+      wall += `<path d="M0,1 H${W}" stroke="#e2bd87" stroke-width="3"/>`;
+      // たなの びん
+      [[40, 600], [86, 604], [304, 600], [350, 604]].forEach(([x, y], k) => { wall += `<rect x="${x - 15}" y="${y - 30}" width="30" height="34" rx="8" fill="#eaf6fb" stroke="#9fc8cf" stroke-width="2"/><rect x="${x - 12}" y="${y - 36}" width="24" height="8" rx="3" fill="${[C.momiji, C.olive, C.kaki, '#a985c9'][k]}"/>` + [0, 1, 2].map((j) => `<circle cx="${x - 7 + j * 7}" cy="${y - 8 - (j % 2) * 6}" r="4" fill="${[C.icho, C.rose, '#cfe3c0'][(j + k) % 3]}"/>`).join(''); });
+      wall += `<rect x="0" y="604" width="${W}" height="8" fill="#ddb37c"/>`;
+    } else {
+      wall = `<rect x="240" y="70" width="110" height="110" rx="10" fill="#fffaf0" stroke="#e6c99a" stroke-width="5"/>` + windowView(244, 74, 102, 102, K) + `<path d="M295,70 V180 M240,125 H350" stroke="#e6c99a" stroke-width="4"/>`;
+    }
+    body = wall + planks(640, 4, 52, kind === 'bowling' ? ['#f9e3bd', '#f4d9ab'] : ['#f6dcb4', '#f3d5a8'])
+      + (kind === 'bowling' ? `<path d="M120,844 L170,640 M270,844 L220,640" stroke="#e2bd87" stroke-width="3"/>` : '')
+      + at(46, 770, K.piece(0, 16), -20) + at(346, 790, K.piece(1, 18), 24)
+      + at(kind === 'crane' ? 40 : 352, 680, K.fruit(16, kind === 'gacha' ? 0 : 1));
   } else if (kind === 'settings') {
     body = sc(23, 8, { x: 0, y: 0, w: W, h: H }, 10, 16, 0.18);
     return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMax slice">${sky}${body}</svg>`;

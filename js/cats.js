@@ -4,7 +4,7 @@
 // どのゲームにも2匹のどちらか1匹を出す。どちらが出るかは GAME_CAT が決める。
 // 絵はすべてコードで描く SVG（RS01-S18）。絵文字は使わない（RS01-S14）。
 
-export const GAME_CAT = { roulette: 'mike', stamp: 'mike', nobi: 'saba', hana: 'saba', kuji: 'mike', amida: 'saba', race: 'mike', mato: 'saba', sugoroku: 'mike', otoshi: 'saba', maigo: 'mike', tower: 'saba', sagasu: 'mike', saikoro: 'saba', negaeri: 'mike', mekuri: 'saba', wanage: 'mike', tsuri: 'saba', tobiishi: 'mike', hidamari: 'saba' };
+export const GAME_CAT = { roulette: 'mike', stamp: 'mike', nobi: 'saba', hana: 'saba', kuji: 'mike', amida: 'saba', race: 'mike', mato: 'saba', sugoroku: 'mike', otoshi: 'saba', maigo: 'mike', tower: 'saba', sagasu: 'mike', saikoro: 'saba', negaeri: 'mike', mekuri: 'saba', wanage: 'mike', tsuri: 'saba', tobiishi: 'mike', hidamari: 'saba', crane: 'mike', gacha: 'saba', kanransha: 'mike', shabon: 'saba', jarashi: 'mike', bowling: 'saba', hikoki: 'mike', watage: 'saba', himo: 'mike', hyokkori: 'saba', yubin: 'mike', daruma: 'saba' };
 export const CAT_NAMES = { mike: 'パステル三毛猫', saba: 'サバトラ' };
 export const CAT_DESIGN = { mike: 'mike-a', saba: 'saba-a' };
 

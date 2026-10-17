@@ -8,6 +8,16 @@ import { pickWeighted } from '../odds.js';
 import { celebrate, clearCelebration, ease, frames, wait, levelOf } from '../fx.js';
 import { showHint, showResult, setBusy, centerOf, charCount, svgEl, escapeXml } from '../ui.js';
 
+// 行事の時のカードの題名
+const EVENT_TITLE = {
+  oshogatsu: 'おしょうがつの スタンプカード', setsubun: 'せつぶんの スタンプカード', valentine: 'バレンタインの スタンプカード',
+  nekonohi: 'ねこの ひの スタンプカード', hinamatsuri: 'ひなまつりの スタンプカード', hanami: 'おはなみの スタンプカード',
+  kodomonohi: 'こどもの ひの スタンプカード', tanabata: 'たなばたの スタンプカード', natsumatsuri: 'なつまつりの スタンプカード',
+  sekainekonohi: 'せかい ねこの ひの スタンプカード', otsukimi: 'おつきみの スタンプカード', manekinekonohi: 'まねきねこの スタンプカード',
+  halloween: 'ハロウィンの スタンプカード', christmas: 'クリスマスの スタンプカード', omisoka: 'おおみそかの スタンプカード',
+};
+export const cardTitle = () => EVENT_TITLE[look.event] || `${SEASON_KANA[look.season] || 'あき'}の スタンプカード`;
+
 export function createStamp({ view, stage, result, play, getChoices, getWeights, getCat, getPurpose }) {
   let geo = null;
   let busy = false;
@@ -78,7 +88,11 @@ export function createStamp({ view, stage, result, play, getChoices, getWeights,
     s += `<rect x="${cardX + 3}" y="${cardY + 6}" width="${cardW}" height="${cardH}" rx="22" fill="#d9b07a" opacity="0.35"/>`;
     s += `<rect x="${cardX}" y="${cardY}" width="${cardW}" height="${cardH}" rx="22" fill="${C.paper}" stroke="${C.woodDeep}" stroke-width="3"/>`;
     s += `<rect x="${cardX + 7}" y="${cardY + 7}" width="${cardW - 14}" height="${cardH - 14}" rx="17" fill="none" stroke="${C.kaki}" stroke-width="2" stroke-dasharray="2 7" stroke-linecap="round" opacity="0.8"/>`;
-    s += `<text x="${W / 2}" y="${cardY + 30}" font-size="19" font-weight="700" fill="${C.chestnutDeep}" text-anchor="middle" letter-spacing="3">${SEASON_KANA[look.season] || 'あき'}の スタンプカード</text>`;
+    // 題名は いまの見た目に合わせる。行事の時は行事の名前、それ以外は季節の名前（v11）
+    const title = cardTitle();
+    const room = cardW - 112; // 左右の角の飾りを よけた幅
+    const tsize = Math.min(19, room / (charCount(title) * 1.12));
+    s += `<text class="card-title" x="${W / 2}" y="${cardY + 30}" font-size="${tsize.toFixed(1)}" font-weight="700" fill="${C.chestnutDeep}" text-anchor="middle" letter-spacing="${tsize >= 17 ? 3 : 1}">${title}</text>`;
     // カードの角の飾り（季節・行事の物。秋は いちょうと もみじ）
     const cornerL = look.season === 'aki' && !look.event ? ginkgoLeaf(C.icho, C.ichoDeep, 13) : fallingPiece(0, 15, look);
     const cornerR = look.season === 'aki' && !look.event ? mapleLeaf(C.momiji, C.momijiDeep, 12) : fallingPiece(1, 14, look);
@@ -253,6 +267,8 @@ export function createStamp({ view, stage, result, play, getChoices, getWeights,
     celebrate(level, pc.x, pc.y - 30);
     await wait(500);
     play.textContent = 'もういちど';
+    // 押している間に見た目が かわった時も、題名を いまの見た目に そろえる
+    refs.svg.querySelector('.card-title').textContent = cardTitle();
     busy = false;
     setBusy(view, false);
   }

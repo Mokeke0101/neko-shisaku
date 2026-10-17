@@ -631,7 +631,7 @@ const EVENT = {
 };
 
 // 外の場面（空と地面が見える）。この場面にだけ、大きな空の物（富士・こいのぼり）を置く
-export const OUTDOOR = new Set(['home', 'roulette', 'hana', 'amida', 'race', 'maigo', 'wanage', 'tsuri', 'tobiishi', 'kuji', 'mato', 'nobi', 'hidamari']);
+export const OUTDOOR = new Set(['home', 'roulette', 'hana', 'amida', 'race', 'maigo', 'wanage', 'tsuri', 'tobiishi', 'kuji', 'mato', 'nobi', 'hidamari', 'kanransha', 'shabon', 'jarashi', 'hikoki', 'watage', 'hyokkori', 'yubin', 'daruma']);
 
 const DEFAULTS = {
   night: false,

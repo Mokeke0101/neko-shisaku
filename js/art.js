@@ -430,6 +430,100 @@ export function menuArt(kind, d) {
       + `<g transform="translate(0 6) scale(0.36)">${catCurled(d)}</g>`
       + `<circle cx="22" cy="-24" r="7" fill="#ffe58a"/>` + [0, 60, 120, 180, 240, 300].map((a) => `<path d="M22,-24 m${(Math.cos((a * Math.PI) / 180) * 10).toFixed(1)},${(Math.sin((a * Math.PI) / 180) * 10).toFixed(1)} l${(Math.cos((a * Math.PI) / 180) * 4).toFixed(1)},${(Math.sin((a * Math.PI) / 180) * 4).toFixed(1)}" stroke="#f5c451" stroke-width="2" stroke-linecap="round"/>`).join('') + '</svg>';
   }
+  // ---- 版 v11 で足した12本 ----
+  const face = (x, y, k, o = {}) => `<g transform="translate(${x} ${y}) scale(${k})">${catFace(d, o)}</g>`;
+  if (kind === 'crane') {
+    // ガラスの箱と アーム、ぬいぐるみ
+    return `<svg viewBox="-36 -36 72 72"><rect x="-30" y="-32" width="60" height="64" rx="8" fill="#eaf6fb" stroke="#9fc8cf" stroke-width="2"/>`
+      + `<path d="M-26,-26 H26" stroke="#c99a62" stroke-width="3"/><path d="M4,-26 V-8" stroke="#8c6e5a" stroke-width="1.6"/>`
+      + `<rect x="-2" y="-10" width="12" height="6" rx="2" fill="#f7c4b4" stroke="#d98a7a" stroke-width="1"/><path d="M0,-5 q-4,6 0,10 M8,-5 q4,6 0,10" stroke="#8c6e5a" stroke-width="2" fill="none" stroke-linecap="round"/>`
+      + `<path d="M-18,14 l2,-9 l6,5 Z M-2,14 l-2,-9 l-6,5 Z" fill="#fde3a6" stroke="#d9b04d" stroke-width="1.2"/><ellipse cx="-10" cy="17" rx="10" ry="8" fill="#fde3a6" stroke="#d9b04d" stroke-width="1.2"/>`
+      + `<circle cx="13" cy="10" r="4" fill="#cfe0ea" stroke="#7aa7c4" stroke-width="1.2"/><circle cx="21" cy="10" r="4" fill="#cfe0ea" stroke="#7aa7c4" stroke-width="1.2"/><ellipse cx="17" cy="18" rx="9" ry="7" fill="#cfe0ea" stroke="#7aa7c4" stroke-width="1.2"/>`
+      + face(-17, -12, 0.13, { look: { x: 1, y: 0.5 } }) + `</svg>`;
+  }
+  if (kind === 'gacha') {
+    // ガチャの台と、出てきた カプセル
+    const caps = [[-8, -18, '#f7b4a6'], [6, -20, '#cfe0ea'], [-2, -8, '#fde3a6'], [10, -8, '#cfe3c0'], [-12, -6, '#ece2f4']];
+    return `<svg viewBox="-36 -36 72 72"><circle cx="0" cy="-12" r="18" fill="#eaf6fb" stroke="#9fc8cf" stroke-width="2"/>`
+      + caps.map(([x, y, c]) => `<circle cx="${x}" cy="${y}" r="5" fill="${c}" stroke="#c9a98a" stroke-width="1"/>`).join('')
+      + `<rect x="-18" y="4" width="36" height="26" rx="5" fill="#f7a6a0" stroke="#d97f7a" stroke-width="2"/><circle cx="6" cy="14" r="6" fill="#fffaf0" stroke="#d97f7a" stroke-width="1.6"/><rect x="0" y="12.5" width="12" height="3" rx="1.5" fill="#f6d58a"/>`
+      + `<g transform="translate(-26 26)"><path d="M-6,0 A6,6 0 0 1 6,0 Z" fill="#cfe0ea" stroke="#7aa7c4" stroke-width="1.2"/><path d="M-6,0 A6,6 0 0 0 6,0 Z" fill="#ffffff" stroke="#7aa7c4" stroke-width="1.2"/></g>`
+      + face(25, -20, 0.15, { look: { x: -1, y: 0.6 } }) + `</svg>`;
+  }
+  if (kind === 'kanransha') {
+    // かんらんしゃ
+    const n = 8;
+    let s = `<path d="M0,-6 L-14,32 M0,-6 L14,32" stroke="#c99a62" stroke-width="2.6" stroke-linecap="round"/><circle cx="0" cy="-6" r="24" fill="none" stroke="#f7a6a0" stroke-width="2.4"/>`;
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2;
+      const x = f(Math.cos(a) * 24);
+      const y = f(-6 + Math.sin(a) * 24);
+      s += `<path d="M0,-6 L${x},${y}" stroke="#f1d3a6" stroke-width="1.2"/><rect x="${f(x - 4)}" y="${f(y)}" width="8" height="8" rx="2.5" fill="${['#f7b4a6', '#fde3a6', '#cfe3c0', '#cfe0ea'][i % 4]}" stroke="#c9a98a" stroke-width="0.8"/>`;
+    }
+    return `<svg viewBox="-36 -36 72 72">${s}<circle cx="0" cy="-6" r="3" fill="#fffaf0" stroke="#d97f7a" stroke-width="1.4"/>${face(26, 26, 0.12, { look: { x: -1, y: -0.6 } })}</svg>`;
+  }
+  if (kind === 'shabon') {
+    // しゃぼんだまと、わる前足
+    const bub = (x, y, r, c) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#eef8ff" fill-opacity="0.6" stroke="${c}" stroke-width="1.8"/><path d="M${x - r * 0.6},${y - r * 0.1} A${r * 0.66},${r * 0.66} 0 0 1 ${x - r * 0.1},${y - r * 0.6}" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round"/>`;
+    return `<svg viewBox="-36 -36 72 72">${bub(-14, -16, 13, '#f7b4d0')}${bub(14, -20, 10, '#b5d8f7')}${bub(16, 4, 9, '#c8f0c0')}`
+      + [0, 1, 2, 3, 4].map((k) => `<circle cx="${f(-18 + Math.cos(k * 1.3) * 10)}" cy="${f(8 + Math.sin(k * 1.3) * 8)}" r="1.6" fill="#b5d8f7"/>`).join('')
+      + face(-4, 24, 0.17, { look: { x: 0, y: -1 } }) + `<g transform="translate(16 18) scale(0.5)">${catPaw(d, 14)}</g></svg>`;
+  }
+  if (kind === 'jarashi') {
+    // ねこじゃらしと、とびつく猫
+    const tail = (x, h, r) => `<g transform="translate(${x} 32) rotate(${r})"><path d="M0,0 Q2,${-h * 0.5} 0,${-h * 0.62}" stroke="#86a256" stroke-width="2" fill="none"/><ellipse cx="0" cy="${-h * 0.8}" rx="${h * 0.1}" ry="${h * 0.2}" fill="#e6d9a0" stroke="#b9ad6e" stroke-width="1"/></g>`;
+    return `<svg viewBox="-36 -36 72 72">${tail(-20, 50, -8)}${tail(2, 58, 12)}${tail(22, 46, -4)}${face(-6, -14, 0.22, { mood: 'happy' })}<g transform="translate(-18 -2) scale(0.5)">${catPaw(d, 12)}</g><g transform="translate(6 -2) scale(0.5)">${catPaw(d, 12)}</g></svg>`;
+  }
+  if (kind === 'bowling') {
+    // ピンと 毛糸玉
+    const pinAt = (x, y, k, r = 0) => `<g transform="translate(${x} ${y}) rotate(${r})"><path d="M0,-22 C4,-22 4,-15 2,-13 C6,-9 6,-2 3,0 L-3,0 C-6,-2 -6,-9 -2,-13 C-4,-15 -4,-22 0,-22 Z" fill="#fffaf0" stroke="#c9b9a4" stroke-width="1.4"/><path d="M-2.4,-13 H2.4" stroke="${k}" stroke-width="2"/></g>`;
+    return `<svg viewBox="-36 -36 72 72">${pinAt(-14, 2, '#e8664a', -60)}${pinAt(0, -2, '#6f9fcb')}${pinAt(14, 2, '#86a256', 55)}`
+      + `<g transform="translate(-4 20)"><circle r="9" fill="#f4a7a3" stroke="#d97f7a" stroke-width="1.4"/><path d="M-7,-2 Q0,-9 7,-2 M-7,3 Q0,-4 7,3" stroke="#d97f7a" stroke-width="1" fill="none"/></g>`
+      + face(22, 22, 0.15, { look: { x: -1, y: -0.4 } }) + `</svg>`;
+  }
+  if (kind === 'hikoki') {
+    // かみひこうきと、とんだ あと
+    return `<svg viewBox="-36 -36 72 72"><path d="M-26,18 Q-10,-22 8,-10 T26,-20" stroke="#9fbdd0" stroke-width="1.6" fill="none" stroke-dasharray="3 3"/>`
+      + `<g transform="translate(18 -20) rotate(-18)"><path d="M12,0 L-10,-7 L-5,0 Z" fill="#ffffff" stroke="#9fbdd0" stroke-width="1.4" stroke-linejoin="round"/><path d="M12,0 L-10,6 L-5,0 Z" fill="#e3eef6" stroke="#9fbdd0" stroke-width="1.4" stroke-linejoin="round"/></g>`
+      + `<ellipse cx="10" cy="26" rx="18" ry="5" fill="#e4efd2" stroke="#a3bd6e" stroke-width="1.4"/>` + face(-20, 20, 0.17, { look: { x: 1, y: -1 } }) + `</svg>`;
+  }
+  if (kind === 'watage') {
+    // たんぽぽの わたげと、とぶ わたげ
+    let s = `<path d="M-6,4 Q-10,20 -6,34" stroke="#86a256" stroke-width="2.4" fill="none"/>`;
+    for (let k = 0; k < 14; k++) { const a = (k / 14) * Math.PI * 2; s += `<path d="M-6,-6 l${f(Math.cos(a) * 13)},${f(Math.sin(a) * 13)}" stroke="#d6cfc0" stroke-width="1.2"/><circle cx="${f(-6 + Math.cos(a) * 13)}" cy="${f(-6 + Math.sin(a) * 13)}" r="2.2" fill="#ffffff" stroke="#d6cfc0" stroke-width="0.8"/>`; }
+    s += `<circle cx="-6" cy="-6" r="4" fill="#d9c58a"/>`;
+    s += [[18, -24], [24, -10], [12, -30]].map(([x, y]) => `<g transform="translate(${x} ${y})"><path d="M0,4 v5" stroke="#b9a46c" stroke-width="1"/><circle r="3.4" fill="#ffffff" stroke="#d6cfc0" stroke-width="0.8"/></g>`).join('');
+    return `<svg viewBox="-36 -36 72 72">${s}${face(20, 22, 0.15, { look: { x: -1, y: -1 } })}</svg>`;
+  }
+  if (kind === 'himo') {
+    // つり下げた札と、からまった ひも
+    const tags = [[-22, -24], [0, -24], [22, -24]];
+    let s = `<path d="M-32,-32 H32" stroke="#c99a62" stroke-width="2.4"/>`;
+    s += `<path d="M-22,-18 C10,0 -14,10 2,22 M0,-18 C-24,0 20,8 -2,22 M22,-18 C-2,-4 10,10 0,22" stroke="#c9b9a4" stroke-width="1.6" fill="none"/>`;
+    s += `<path d="M0,-18 C-24,0 20,8 -2,22" stroke="${C.momiji}" stroke-width="2" fill="none"/>`;
+    s += tags.map(([x, y], k) => `<path d="M${x},-32 V${y}" stroke="#c99a62" stroke-width="1"/><rect x="${x - 8}" y="${y - (k === 1 ? 4 : 0)}" width="16" height="9" rx="3" fill="${k === 1 ? '#fff1c4' : '#ffffff'}" stroke="${k === 1 ? C.momiji : C.woodDeep}" stroke-width="1.4"/>`).join('');
+    return `<svg viewBox="-36 -36 72 72">${s}<g transform="translate(0 26) scale(0.5)">${catPaw(d, 14)}</g>${face(24, 24, 0.13, { look: { x: -1, y: -0.6 } })}</svg>`;
+  }
+  if (kind === 'hyokkori') {
+    // あなから ひょっこり
+    const hole = (x, y) => `<ellipse cx="${x}" cy="${y}" rx="14" ry="5" fill="#7a5233"/><path d="M${x - 15},${y} A15,5.6 0 0 0 ${x + 15},${y}" fill="none" stroke="#c99a62" stroke-width="2.6" stroke-linecap="round"/>`;
+    return `<svg viewBox="-36 -36 72 72"><defs><clipPath id="mhk"><rect x="-36" y="-36" width="72" height="44"/></clipPath></defs>${hole(-14, 22)}${hole(16, 26)}`
+      + `<ellipse cx="2" cy="8" rx="15" ry="5" fill="#7a5233"/><g clip-path="url(#mhk)">${face(2, -4, 0.24, { mood: 'happy' })}</g>`
+      + `<path d="M-13,8 A15,5.6 0 0 0 17,8" fill="none" stroke="#c99a62" stroke-width="2.6" stroke-linecap="round"/><g transform="translate(20 -18) rotate(20) scale(0.45)">${catPaw(d, 14)}</g></svg>`;
+  }
+  if (kind === 'yubin') {
+    // いえと てがみ、ゆうびんやさんの猫
+    return `<svg viewBox="-36 -36 72 72"><rect x="-30" y="-6" width="30" height="26" rx="2" fill="#fde3a6" stroke="#d9b04d" stroke-width="1.4"/><path d="M-34,-4 L-15,-22 L4,-4 Z" fill="#e8664a" stroke="${C.line}" stroke-width="1.2" stroke-linejoin="round"/>`
+      + `<rect x="-26" y="0" width="8" height="8" rx="1.5" fill="#ffe58a" stroke="#d9b04d" stroke-width="1"/><rect x="-12" y="4" width="8" height="16" rx="2" fill="#c99a62"/><rect x="-20" y="12" width="5" height="5" rx="1" fill="#e8664a"/>`
+      + `<g transform="translate(16 2) scale(0.17)">${catSitting(d, { mood: 'happy', look: { x: -1, y: 0 } })}</g>`
+      + `<g transform="translate(6 -20) rotate(-12)"><rect x="-8" y="-5.5" width="16" height="11" rx="1.5" fill="#ffffff" stroke="${C.chestnut}" stroke-width="1.2"/><path d="M-8,-5.5 L0,1 L8,-5.5" fill="none" stroke="${C.chestnut}" stroke-width="1.2"/></g></svg>`;
+  }
+  if (kind === 'daruma') {
+    // うしろを向く おにと、すすむ こねこ
+    return `<svg viewBox="-36 -36 72 72"><path d="M-34,-12 H6 M-34,6 H6 M-34,24 H6" stroke="#e2bd87" stroke-width="1.6" stroke-dasharray="2 4"/>`
+      + face(-20, -12, 0.13) + face(-4, 6, 0.13) + face(-26, 24, 0.13)
+      + `<g transform="translate(22 4)"><path d="M-12,-14 L-10,-24 L-3,-18 Z M12,-14 L10,-24 L3,-18 Z" fill="${d.base}" stroke="${d.line}" stroke-width="1.4" stroke-linejoin="round"/><ellipse cx="0" cy="-10" rx="12" ry="10" fill="${d.base}" stroke="${d.line}" stroke-width="1.4"/><ellipse cx="0" cy="10" rx="10" ry="12" fill="${d.base}" stroke="${d.line}" stroke-width="1.4"/></g></svg>`;
+  }
   // nobi
   return `<svg viewBox="-36 -36 72 72"><rect x="-26" y="-34" width="14" height="70" rx="3" fill="${C.wood}" stroke="${C.woodDeep}" stroke-width="1.5"/>`
     + `<path d="M-26,-18 h14 M-26,-2 h14 M-26,14 h14" stroke="${C.momiji}" stroke-width="2.4" stroke-linecap="round"/>`
