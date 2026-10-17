@@ -354,7 +354,7 @@ function status() {
   const notices = [];
   if (!wake.supported) notices.push('この端末では、画面を消さない仕組みが使えません（iOS 18.4 以降が必要です）。');
   if (!isStandalone()) notices.push('ホーム画面に追加して、そこから開いてください。');
-  if (yotei.state === 'error') notices.push('予定のテキストを読めません（せっていの「季節と行事」を見てください）。');
+  if (yotei.state === 'error') notices.push('予定のテキストを読めません。開き直しても出る時は、知らせてください。');
   if (yotei.needsUpdate) notices.push(`行事のカレンダーは ${LAST_YEAR}年までです。アップデートが必要です。`);
   const el = $('home-notice');
   el.hidden = notices.length === 0;

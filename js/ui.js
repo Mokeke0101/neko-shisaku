@@ -18,7 +18,7 @@ const SAY = {
   coin: (label) => [`${label}…`, 'これに きまり！', 'どきどきしたにゃ', 'やったね！'],
 };
 export function sayOf(purpose, label, top) {
-  if (top) return 'だいあたり！';
+  if (top) return 'おおあたり！';
   const list = (SAY[purpose] || SAY.snack)(label);
   return list[Math.floor(Math.random() * list.length)];
 }

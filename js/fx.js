@@ -130,7 +130,7 @@ export function jackpot() {
   box.className = 'fx-jackpot';
   const mike = designById(CAT_DESIGN.mike);
   const saba = designById(CAT_DESIGN.saba);
-  box.innerHTML = '<div class="jp-text">だいあたり！</div>'
+  box.innerHTML = '<div class="jp-text">おおあたり！</div>'
     + `<div class="jp-cat jp-left"><svg viewBox="-90 -90 180 180">${catSitting(mike, { mood: 'happy' })}</svg></div>`
     + `<div class="jp-cat jp-right"><svg viewBox="-90 -90 180 180">${catSitting(saba, { mood: 'happy' })}</svg></div>`;
   layer.appendChild(box);

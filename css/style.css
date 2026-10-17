@@ -189,6 +189,7 @@ svg text { font-family: var(--font); }
 .menu-fav-title::after { content: ""; flex: 1; height: 2px; border-radius: 1px; background: #f3d36b; }
 .fav-mark { width: 20px; height: 20px; display: inline-block; }
 .menu-fav[hidden] { display: none; }
+.panel[hidden] { display: none; }
 /* 決め方の仕組みの見出し */
 .menu-group {
   display: flex;
@@ -332,7 +333,8 @@ svg text { font-family: var(--font); }
 .bar-space { flex: none; width: 48px; }
 
 .stage { position: relative; flex: 1; min-height: 0; }
-.stage > svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; overflow: visible; }
+/* ゲームの絵は押す所が無い。絵の外へ広がる光などが、上のボタン（おやつ・お楽しみ袋）を覆って押せなくしないよう、押されないようにする（v14：ひだまりの光が覆っていた） */
+.stage > svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; overflow: visible; pointer-events: none; }
 
 .result {
   flex: none;
