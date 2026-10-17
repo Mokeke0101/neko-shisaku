@@ -562,3 +562,45 @@ svg text { font-family: var(--font); }
 .cell-label { font-weight: 700; }
 .try-back { margin-top: 8px; }
 .try-back[hidden] { display: none; }
+
+/* ---- 行事の色（v10：行事の時は、ボタンや枠も行事の色にする。docs/決めたことの記録.md §9） ---- */
+body[data-theme="christmas"] { --yellow: #f6a0a0; --yellow-edge: #d9706f; --line: #bfdcb0; --line-strong: #93bf7f; --chestnut: #5f8f4a; }
+body[data-theme="omisoka"] { --yellow: #ffd98a; --yellow-edge: #d9a843; --line: #cdd3ea; --line-strong: #9aa3cc; }
+body[data-theme="oshogatsu"] { --yellow: #f59b8f; --yellow-edge: #d66e62; --line: #f0d39a; --line-strong: #d9ad5a; --chestnut: #c9584a; }
+body[data-theme="setsubun"] { --yellow: #ffcf6a; --yellow-edge: #e0a03a; --line: #f2c6b4; --line-strong: #e09a82; --chestnut: #c96a4a; }
+body[data-theme="valentine"] { --yellow: #f7a8c0; --yellow-edge: #e07a9a; --line: #f6cfdc; --line-strong: #eaa6bd; --chestnut: #d0708e; }
+body[data-theme="nekonohi"] { --yellow: #f9b8a0; --yellow-edge: #e58e72; --line: #f4d4c4; --line-strong: #e6ad96; --chestnut: #c97a5e; }
+body[data-theme="hinamatsuri"] { --yellow: #f8b4c4; --yellow-edge: #e3869d; --line: #d6e8b8; --line-strong: #a9cc86; --chestnut: #c96a86; }
+body[data-theme="hanami"] { --yellow: #f9bfd0; --yellow-edge: #e690aa; --line: #f8d5e0; --line-strong: #eab0c2; --chestnut: #c7708c; }
+body[data-theme="kodomonohi"] { --yellow: #9fcdf2; --yellow-edge: #6fa2d4; --line: #c8e2f4; --line-strong: #93bfe0; --chestnut: #4f84b8; }
+body[data-theme="tanabata"] { --yellow: #ffe08a; --yellow-edge: #d9b04d; --line: #c9c6ee; --line-strong: #9d98d6; }
+body[data-theme="natsumatsuri"] { --yellow: #ffb07a; --yellow-edge: #e0804a; --line: #f4c9b4; --line-strong: #d99a7e; }
+body[data-theme="sekainekonohi"] { --yellow: #9fdccf; --yellow-edge: #62b3a2; --line: #c4e6e6; --line-strong: #8fcaca; --chestnut: #3f8f86; }
+body[data-theme="otsukimi"] { --yellow: #ffe08a; --yellow-edge: #d9b04d; --line: #d8d4ea; --line-strong: #aaa4d0; }
+body[data-theme="manekinekonohi"] { --yellow: #f6d55e; --yellow-edge: #d9a82c; --line: #f2b8a8; --line-strong: #e08670; --chestnut: #c95a48; }
+body[data-theme="halloween"] { --yellow: #f8b15c; --yellow-edge: #dc8a36; --line: #d7cbe9; --line-strong: #ab96d0; --chestnut: #8a6cb8; }
+/* 夜の行事：空の上に じかに書く文字を明るくする（カードや欄の中の文字は そのまま） */
+body[data-night="1"] .home-title, body[data-night="1"] .bar-title { color: #fff8ec; text-shadow: 0 2px 0 rgba(30, 30, 70, 0.35); }
+body[data-night="1"] .home-sub, body[data-night="1"] .menu-group { color: #f3ecff; text-shadow: 0 1px 0 rgba(30, 30, 70, 0.35); }
+body[data-night="1"] .menu-group::after { background: rgba(255, 255, 255, 0.35); }
+
+/* ---- 背景の動く物（背景と同じ置き方：下を基準に、画面いっぱいに広げる） ---- */
+.scene-fx { position: absolute; left: 50%; bottom: 0; width: max(100%, 46.21vh); aspect-ratio: 390 / 844; transform: translateX(-50%); pointer-events: none; }
+.scene-fx > div { position: absolute; will-change: transform, opacity; }
+.scene-fx svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.fx-twinkle { animation: fx-twinkle 3.2s ease-in-out infinite; }
+.fx-blink { animation: fx-blink 2s ease-in-out infinite; }
+.fx-firework { opacity: 0; animation: fx-firework 3.6s ease-out infinite; }
+.fx-firefly { animation: fx-firefly 4.2s ease-in-out infinite; }
+.fx-float { animation: fx-float 5s ease-in-out infinite; }
+@keyframes fx-twinkle { 0%, 100% { opacity: 0.15; transform: scale(0.6); } 50% { opacity: 1; transform: scale(1); } }
+@keyframes fx-blink { 0%, 100% { opacity: 0.2; } 50% { opacity: 0.95; } }
+@keyframes fx-firework { 0% { opacity: 0; transform: scale(0.1); } 8% { opacity: 1; } 40% { opacity: 1; transform: scale(1); } 65% { opacity: 0; transform: scale(1.12); } 100% { opacity: 0; transform: scale(1.12); } }
+@keyframes fx-firefly { 0%, 100% { opacity: 0.1; transform: translate(0, 0); } 50% { opacity: 1; transform: translate(8px, -14px); } }
+@keyframes fx-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-14px); } }
+@media (prefers-reduced-motion: reduce) {
+  .scene-fx > div { animation: none; }
+  .fx-firework { opacity: 0.85; }
+}
+/* 板や紙の明るい背景の上に題名がある画面（スタンプ・すごろく・まとあて）は、夜でも いつもの色 */
+body[data-night="1"] :is(#view-stamp, #view-sugoroku, #view-mato) .bar-title { color: var(--ink); text-shadow: none; }

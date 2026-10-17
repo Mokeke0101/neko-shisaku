@@ -5,7 +5,8 @@ import { store, PURPOSES } from './store.js';
 import { audio } from './audio.js';
 import { wake } from './wake.js';
 import { icons, logoSVG, menuArt, rotateSVG } from './art.js';
-import { sceneSVG } from './scenes.js';
+import { sceneSVG, sceneFX } from './scenes.js';
+import { isNight } from './kits.js';
 import { decorLayers } from './decor.js';
 import { look, setLook, onLook, SEASON_KANA } from './look.js';
 import { setupFalling, clearCelebration } from './fx.js';
@@ -100,10 +101,20 @@ function paintDecor(kind) {
 // 季節と行事の背景（ゲームごとに描き分ける：RS01-S13）
 function paintScenes() {
   for (const kind of ['home', ...GAMES.map((g) => g.id), 'settings']) {
-    $(`${kind}-scene`).innerHTML = sceneSVG(kind, look);
+    $(`${kind}-scene`).innerHTML = sceneSVG(kind, look) + sceneFX(kind, look);
+    $(`${kind}-scene`).querySelectorAll('[data-p]').forEach((el) => {
+      const [l, tp, w, h, d] = el.dataset.p.split(',');
+      Object.assign(el.style, { left: `${l}%`, top: `${tp}%`, width: `${w}%`, height: `${h}%`, animationDelay: `${d}s` });
+    });
     paintDecor(kind);
   }
   paintHomeSub();
+  paintTheme();
+}
+// 行事の時は、ボタンや枠も行事の色にする（v10）。夜の行事は、空の上の文字を明るくする
+function paintTheme() {
+  document.body.dataset.theme = look.event || look.season;
+  document.body.dataset.night = isNight(look) ? '1' : '';
 }
 paintScenes();
 // 猫は2匹とも A の案（RS01-S20）

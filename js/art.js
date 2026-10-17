@@ -183,6 +183,14 @@ export function fallingPiece(i, size, lk) {
     case 'setsubun': return bean(size * 0.8);
     case 'valentine': return heartShape(size * 0.75, ['#f4a3b4', '#f7c4b4', '#fbd9e2'][i % 3]);
     case 'nekonohi': return `<g transform="scale(0.8)">${pawPrint(['#f7b4a6', '#e3a3b8', '#f5c451'][i % 3], size * 0.7)}</g>`;
+    case 'hinamatsuri': return i % 3 === 2 ? confetti(i, size, ['#f9c6d3', '#b9d48a', '#ffffff']) : sakuraPetal(size * 0.8, i + 2);
+    case 'hanami': return sakuraPetal(size * 0.85, i);
+    case 'kodomonohi': return mapleLeaf(['#a9cf7f', '#8fbf6a', '#bfe08f'][i % 3], '#6f9a4f', size * 0.8);
+    case 'tanabata': case 'otsukimi': return starShape(size * 0.8, ['#fff3b8', '#ffffff', '#fde3a6'][i % 3], '#e6c46a');
+    case 'natsumatsuri': return starShape(size * 0.7, ['#f7a6a0', '#fde3a6', '#9fc5e8', '#b5e0a0'][i % 4], '#ffffff');
+    case 'sekainekonohi': return `<g transform="scale(0.8)">${pawPrint(['#9fc5e8', '#f7b4a6', '#b5d98a'][i % 3], size * 0.7)}</g>`;
+    case 'manekinekonohi': return `<ellipse rx="${f(size * 0.32)}" ry="${f(size * 0.46)}" fill="#f6d55e" stroke="#d9b04d" stroke-width="${f(size * 0.06)}"/>`;
+    case 'halloween': return starShape(size * 0.75, ['#f8b15c', '#cdbfe0', '#fde3a6'][i % 3], ['#dc8a36', '#a98cc9', '#e6c46a'][i % 3]);
     default: break;
   }
   switch (lk.season) {

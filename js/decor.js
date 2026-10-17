@@ -188,7 +188,7 @@ const TOPS = {
   oshogatsu: [() => `<g transform="translate(195 14)">${M.shime(40)}</g>`, () => strip('kite', 6, 10), () => `<g transform="translate(60 30)">${M.sunrise(24)}</g>`],
   setsubun: [() => strip('oni', 7, 10), () => strip('masu', 7, 10), () => strip('ehomaki', 7, 10), () => `<g transform="translate(340 32)">${M.oni(20, 1)}</g><g transform="translate(50 32)">${M.oni(18, 0)}</g>`],
   valentine: [() => strip('heart', 11, 9), () => strip('choco', 7, 9), () => strip('heart', 9, 10, '#e3a3b8', 12)],
-  nekonohi: [() => strip('paw', 10, 9), () => strip('fishCookie', 7, 10), () => `<g transform="translate(195 26)">${M.banner(26, 0)}</g>`, () => strip('suzu', 7, 10)],
+  nekonohi: [() => strip('paw', 10, 9), () => strip('fishCookie', 7, 10), () => strip('suzu', 7, 10)],
 };
 // 下の角の物（季節と行事ごと）
 const CORNERS = {
@@ -378,3 +378,4 @@ export function decorLayers(kind, lk) {
   if (sp) for (const place of ['top', 'bl', 'br']) if (sp[place]) out[place] = SP[sp[place]]();
   return out;
 }
+export { M as MOTIF };
