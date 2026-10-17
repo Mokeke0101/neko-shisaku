@@ -8,7 +8,7 @@
 // 結果は先に乱数で決め（RS01-S14）、落とす所と、はねる向きの並びを、決めた お皿に入るように組む。
 // お皿はどれも同じ大きさ（出やすさは お皿の大きさに表れない：RS01-S21）。
 import { C } from '../art.js';
-import { catFace, catPaw } from '../cats.js';
+import { catFace, catPaw, pawPrint } from '../cats.js';
 import { audio } from '../audio.js';
 import { pickWeighted } from '../odds.js';
 import { celebrate, clearCelebration, ease, frames, wait, levelOf } from '../fx.js';
@@ -74,14 +74,14 @@ export function createOtoshi({ view, stage, result, play, getChoices, getWeights
     const bw = (boardW - 20) / n;
     const vertical = bw < 96;
     const binH = vertical ? Math.max(96, Math.min(176, H * 0.4)) : Math.max(64, Math.min(96, H * 0.2));
-    const topZone = 58;
+    const topZone = 78;
     const binTop = H - binH - 6;
     const pegTop = topZone + 10;
     const pegBottom = binTop - 14;
     const rowGap = Math.max(14, Math.min(30, (pegBottom - pegTop) / 10));
     const rows = Math.max(3, Math.floor((pegBottom - pegTop) / rowGap));
     const half = bw / 2;
-    const kr = Math.max(7, Math.min(11, half * 0.62));
+    const kr = Math.max(7, Math.min(14, half * 0.7));
     const mouth = kr * 2 + 6; // お皿の口（入ったカリカリが止まる所。文字はその下に書く）
     const qx = (q) => x0 + q * half;
     const rowY = (r) => pegTop + r * rowGap;
@@ -95,6 +95,9 @@ export function createOtoshi({ view, stage, result, play, getChoices, getWeights
     // くぎ：段 r と r+1 の間の、カリカリが通る q と同じ偶数・奇数の所に置く（カリカリは くぎに当たって右か左へ はねる）。
     // 遊ぶ時に、落とす所に合わせて くぎを置き直す
     s += `<g class="pegs"></g>`;
+    // カリカリの ふくろ（左上。v12）
+    s += `<g transform="translate(${boardX + 26} ${(topZone * 0.55).toFixed(1)}) rotate(-12)"><path d="M-14,-18 h28 l3,34 q-17,6 -34,0 Z" fill="#f6d58a" stroke="#c9a032" stroke-width="2" stroke-linejoin="round"/><path d="M-14,-18 l4,-5 h20 l4,5" fill="#f3d9b0" stroke="#c9a032" stroke-width="1.6"/>`
+      + `<g transform="translate(0 2)">${pawPrint('#e8664a', 7)}</g></g>`;
     // お皿
     let minLabel = Infinity;
     choices.forEach((c, i) => {
@@ -132,7 +135,7 @@ export function createOtoshi({ view, stage, result, play, getChoices, getWeights
     // 落ちるカリカリ（小さな魚の形）と、落とす手と、のぞく猫
     s += `<g class="kibble"><g class="kibble-in">${kibble(kr)}</g></g>`;
     s += `<g class="paw">${catPaw(cat, Math.max(12, Math.min(17, half * 0.9)))}</g>`;
-    s += `<g transform="translate(${W - 44} ${topZone / 2 + 4}) scale(0.42)"><g class="ot-cat">${catFace(cat, { look: { x: -1, y: 0.6 } })}</g></g>`;
+    s += `<g transform="translate(${W - 50} ${topZone / 2 + 6}) scale(0.62)"><g class="ot-cat">${catFace(cat, { look: { x: -1, y: 0.6 } })}</g></g>`;
     svg.innerHTML = s;
     stage.textContent = '';
     stage.appendChild(svg);
@@ -227,7 +230,7 @@ export function createOtoshi({ view, stage, result, play, getChoices, getWeights
         placeKibble(x, yPaw + 14, Math.sin(t * Math.PI * 2) * 10);
       });
       px = to;
-      setFace('normal', { x: (to - (W - 44)) / 120, y: 0.6 });
+      setFace('normal', { x: (to - (W - 50)) / 120, y: 0.6 });
       audio.hover(k);
       await wait(k === stops.length - 1 ? 380 : 160);
     }
@@ -241,7 +244,19 @@ export function createOtoshi({ view, stage, result, play, getChoices, getWeights
     await frames(260, (t) => placeKibble(sx, y + (rowY(0) - y) * t * t, rot));
     y = rowY(0);
     placePaw(sx, yPaw - 10);
+    // ときどき出る別の動き（v12）：とちゅうの くぎに ひっかかって、ぐらぐら してから また おちる
+    delete stage.dataset.variant;
+    const stuckAt = steps.length >= 4 && Math.random() < 0.3 ? Math.floor(steps.length / 2) : -1;
     for (let r = 0; r < steps.length; r++) {
+      if (r === stuckAt) {
+        stage.dataset.variant = 'stuck';
+        showHint(result, 'あれ？ ひっかかった…');
+        audio.heart();
+        const kx = qx(q);
+        const ky = rowY(r);
+        await frames(560, (t) => placeKibble(kx + Math.sin(t * Math.PI * 6) * 3 * (1 - t), ky - Math.abs(Math.sin(t * Math.PI * 3)) * 3, rot + Math.sin(t * Math.PI * 6) * 20));
+        showHint(result, 'ころころ…');
+      }
       const s = steps[r];
       const fromX = qx(q);
       const toX = qx(q + s);

@@ -52,9 +52,9 @@ export function createHidamari({ view, stage, result, play, getChoices, getWeigh
     const rows = Math.ceil(n / 2);
     const colGap = 14;
     const colW = (W - 20 - colGap) / 2;
-    const cellH = Math.min(118, (H - 12) / rows);
+    const cellH = Math.min(170, (H - 12) / rows);
     const plateH = Math.max(22, Math.min(34, cellH * 0.34));
-    const cushH = Math.max(22, cellH - plateH - 10);
+    const cushH = Math.max(22, Math.min(cellH - plateH - 10, colW * 0.6));
     const cushW = Math.min(colW * 0.78, cushH * 2.1);
     const top = 6 + Math.max(0, (H - 12 - cellH * rows) / 2);
     const cells = choices.map((_, i) => {
@@ -65,8 +65,8 @@ export function createHidamari({ view, stage, result, play, getChoices, getWeigh
       const y = top + r * cellH;
       return { cx, cushY: y + 2 + cushH / 2, plateY: y + 4 + cushH + 2 };
     });
-    const catK = Math.max(0.2, Math.min(0.5, (cushH * 0.95) / 92)); // まるくなった猫の大きさ
-    const sitK = Math.max(0.16, Math.min(0.42, (cushH * 1.4) / 160));
+    const catK = Math.max(0.2, Math.min(0.72, (cushH * 0.95) / 92)); // まるくなった猫の大きさ
+    const sitK = Math.max(0.16, Math.min(0.58, (cushH * 1.4) / 160));
     geo = { n, W, H, cells, colW, plateH, cushH, cushW, catK, sitK };
 
     const svg = svgEl('svg', { viewBox: `0 0 ${W} ${H}` });
@@ -95,6 +95,9 @@ export function createHidamari({ view, stage, result, play, getChoices, getWeigh
         + `</g>`;
     });
     s += `<g class="hd-pos"><g class="hd-cat"></g></g>`;
+    // 上を ながれる 雲と、ときどき来る ちょうちょ（v12）
+    s += `<g class="hd-cloud" transform="translate(-80 30)" opacity="0.9"><path d="M0,22 q-4,-14 10,-16 q4,-12 20,-8 q12,-8 24,2 q14,-2 14,12 q8,4 2,10 Z" fill="#ffffff" stroke="#e6eef4" stroke-width="2"/></g>`;
+    s += `<g class="hd-fly" visibility="hidden"><path d="M0,0 C-8,-10 -14,-2 -8,4 C-4,7 -1,4 0,1 Z M0,0 C8,-10 14,-2 8,4 C4,7 1,4 0,1 Z" fill="#fbd9e2" stroke="#e391ad" stroke-width="1.2"/><path d="M0,-3 V5" stroke="#8c6e5a" stroke-width="1.6" stroke-linecap="round"/></g>`;
     s += `<g class="hd-z"></g>`;
     svg.innerHTML = s;
     stage.textContent = '';
@@ -105,6 +108,8 @@ export function createHidamari({ view, stage, result, play, getChoices, getWeigh
       pos: svg.querySelector('.hd-pos'),
       catG: svg.querySelector('.hd-cat'),
       z: svg.querySelector('.hd-z'),
+      cloud: svg.querySelector('.hd-cloud'),
+      fly: svg.querySelector('.hd-fly'),
     };
     const start = Math.floor(Math.random() * n);
     curlOn(start);
@@ -140,7 +145,9 @@ export function createHidamari({ view, stage, result, play, getChoices, getWeigh
   // ひだまりを from から to へ うつす
   async function shiftSun(from, to, dur) {
     audio.slide(dur / 1000);
+    const cx0 = -80 + Math.random() * 40;
     await frames(dur, (t) => {
+      refs.cloud.setAttribute('transform', `translate(${(cx0 + (geo.W + 120) * t).toFixed(1)} 30)`);
       setSun(from, 1 - t);
       setSun(to, t);
     });
@@ -210,6 +217,8 @@ export function createHidamari({ view, stage, result, play, getChoices, getWeigh
     showHint(result, 'うとうと…');
     puffZ(seq[0]);
     await wait(T.doze);
+    delete stage.dataset.variant;
+    const flyAt = seq.length >= 3 && Math.random() < 0.3 ? 1 : -1;
     // 1・2. ひだまりが うつり、猫が追いかける（さいごの1回の前まで）
     for (let k = 1; k < seq.length - 1; k++) {
       showHint(result, 'くもが ながれて…');
@@ -218,6 +227,18 @@ export function createHidamari({ view, stage, result, play, getChoices, getWeigh
       await moveCat(seq[k - 1], seq[k]);
       puffZ(seq[k]);
       await wait(T.rest);
+      if (k === flyAt) {
+        // ときどき出る別の動き（v12）：ちょうちょが来て、目を さます
+        stage.dataset.variant = 'fly';
+        const c = geo.cells[seq[k]];
+        showHint(result, 'あ、ちょうちょ…');
+        curlOn(seq[k], 'happy');
+        refs.fly.setAttribute('visibility', 'visible');
+        await frames(900, (t) => refs.fly.setAttribute('transform', `translate(${(c.cx + geo.cushW * 0.6 - t * geo.cushW * 1.2).toFixed(1)} ${(c.cushY - geo.cushH * 0.9 - Math.sin(t * Math.PI * 3) * 10).toFixed(1)}) scale(${(1.7 * (1 - 0.3 * Math.abs(Math.sin(t * 20)))).toFixed(2)} 1.7)`));
+        refs.fly.setAttribute('visibility', 'hidden');
+        curlOn(seq[k]);
+        showHint(result, 'すやぁ…');
+      }
     }
     // 3. さいご：雲が ちらちらして、ひだまりが2つの間で ゆれてから、決めた ざぶとんに落ちつく
     const from = seq[seq.length - 2];

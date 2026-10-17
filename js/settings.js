@@ -232,6 +232,17 @@ export function renderCatStatus() {
 }
 
 export function setupSettings() {
+  renderSets();
+  const name = document.getElementById('set-name');
+  name.addEventListener('change', () => {
+    const { value } = cleanLabel(name.value);
+    const x = store.data.sets[store.data.setIndex];
+    if (value) x.name = value;
+    name.value = x.name;
+    save();
+    renderSets();
+  });
+  name.addEventListener('keydown', (e) => { if (e.key === 'Enter') name.blur(); });
   renderList('snack');
   renderList('coin');
   for (const key of Object.keys(LISTS)) {
@@ -274,7 +285,35 @@ export function setupSettings() {
   renderSchedule();
 }
 
+// ---- 選択肢の組（v12）：3つの組を切り替える。組の名前を かえる ----
+function renderSets() {
+  const box = document.getElementById('set-tabs');
+  box.textContent = '';
+  store.data.sets.forEach((x, i) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'set-tab';
+    b.dataset.set = String(i);
+    b.textContent = x.name;
+    const on = i === store.data.setIndex;
+    b.classList.toggle('is-on', on);
+    b.setAttribute('aria-pressed', String(on));
+    b.addEventListener('click', () => {
+      if (i === store.data.setIndex) return;
+      audio.tap();
+      store.useSet(i);
+      save();
+      renderSets();
+      renderList('snack');
+      renderList('coin');
+    });
+    box.appendChild(b);
+  });
+  document.getElementById('set-name').value = store.data.sets[store.data.setIndex].name;
+}
+
 export function refreshSettings() {
+  renderSets();
   renderList('snack');
   renderList('coin');
   renderCatStatus();

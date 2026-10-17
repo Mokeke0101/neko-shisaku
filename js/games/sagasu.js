@@ -143,6 +143,14 @@ export function createSagasu({ view, stage, result, play, getChoices, getWeights
     }
     // 天板（猫が座る所）
     s += `<rect x="${shelfX - 2}" y="${shelfTop.toFixed(1)}" width="${shelfW + 4}" height="${roofT}" rx="3" fill="${C.woodDeep}"/>`;
+    // 天板の上の 本と 植木ばち（右はし。v12）
+    const ox = shelfX + shelfW - 16;
+    const oy = shelfTop;
+    const bkH = Math.min(30, topRoom * 0.5);
+    s += [['#f7a6a0', 0], ['#9fc5e8', 9], ['#a6dc98', 17]].map(([col, dx]) => `<rect x="${(ox - 70 + dx).toFixed(1)}" y="${(oy - bkH + (dx === 9 ? 3 : 0)).toFixed(1)}" width="8" height="${(bkH - (dx === 9 ? 3 : 0)).toFixed(1)}" rx="1.5" fill="${col}" stroke="#8c6e5a" stroke-width="1.4"/>`).join('')
+      + `<path d="M${(ox - 22).toFixed(1)},${(oy - bkH * 0.55).toFixed(1)} h18 l-3,${(bkH * 0.55).toFixed(1)} h-12 Z" fill="#db8f4a" stroke="#9b5f3a" stroke-width="1.6"/>`
+      + `<path d="M${(ox - 13).toFixed(1)},${(oy - bkH * 0.55).toFixed(1)} q-8,-10 -4,-18 M${(ox - 13).toFixed(1)},${(oy - bkH * 0.55).toFixed(1)} q6,-12 10,-14 M${(ox - 13).toFixed(1)},${(oy - bkH * 0.55).toFixed(1)} q0,-12 0,-20" stroke="#86a256" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+    s += `<g class="sg-sock" visibility="hidden"><path d="M-6,-14 h12 v14 q0,8 8,10 q4,6 -4,8 q-14,0 -16,-10 Z" fill="#cfe0ea" stroke="#7aa7c4" stroke-width="2"/><path d="M-6,-10 h12 M-6,-6 h12" stroke="#f7a6a0" stroke-width="2"/></g>`;
     // おもちゃと猫（いちばん上に描く）
     s += `<g class="sg-toy" visibility="hidden">${toyMouse(toyS)}</g>`;
     s += `<g class="sg-cat-pos"><g class="sg-cat">${catSitting(cat, { look: { x: 0.4, y: 0.8 } })}</g></g>`;
@@ -158,6 +166,7 @@ export function createSagasu({ view, stage, result, play, getChoices, getWeights
       toy: svg.querySelector('.sg-toy'),
       catPos: svg.querySelector('.sg-cat-pos'),
       catG: svg.querySelector('.sg-cat'),
+      sock: svg.querySelector('.sg-sock'),
     };
     placeCat(home);
     stage.dataset.count = String(n);
@@ -289,6 +298,8 @@ export function createSagasu({ view, stage, result, play, getChoices, getWeights
     // 2. 箱に飛び移って もぐる。何もなければ顔を出して、次の箱へ
     let pos = home;
     let dove = -1;
+    delete stage.dataset.variant;
+    const sockAt = order.length >= 2 && Math.random() < 0.3 ? 0 : -1;
     for (let k = 0; k < order.length; k++) {
       const b = boxes[order[k]];
       const last = k === order.length - 1;
@@ -311,6 +322,19 @@ export function createSagasu({ view, stage, result, play, getChoices, getWeights
       if (last) break;
       // 何もない：ふたを開けたままにして、顔を出す
       refs.flaps[dove].innerHTML = flaps(true);
+      if (k === sockAt) {
+        // ときどき出る別の動き（v12）：おもちゃの かわりに くつしたが とびだす
+        stage.dataset.variant = 'sock';
+        const bx = boxes[dove];
+        showHint(result, 'あった！… と おもったら くつした');
+        audio.pop();
+        refs.sock.setAttribute('visibility', 'visible');
+        await frames(560, (t) => {
+          refs.sock.setAttribute('transform', `translate(${(bx.cx + 30 * t).toFixed(1)} ${(bx.rim - 10 - Math.sin(Math.PI * t) * 40 + t * 20).toFixed(1)}) rotate(${(t * 200).toFixed(0)}) scale(1.6)`);
+          refs.sock.setAttribute('opacity', (1 - Math.max(0, t - 0.6) * 2.5).toFixed(2));
+        });
+        refs.sock.setAttribute('visibility', 'hidden');
+      }
       showHint(result, 'ここじゃ ないみたい');
       setCat('normal', { x: -1, y: 0 });
       refs.catPos.setAttribute('visibility', 'visible');

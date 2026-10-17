@@ -32,7 +32,7 @@ export function tossPlan(n, decided, rand = Math.random) {
 }
 
 // 1本を投げる時間（ミリ秒）。さいごの わは ゆれる時間を足す
-export const tossTime = (last, only) => 520 + 720 + (last ? (only ? 1500 : 1000) : 520) + 280;
+export const tossTime = (last, only) => 520 + 720 + (last ? (only ? 1500 : 1000) + 220 : 520) + 280;
 
 // 押してから結果が出るまでの、おおよその時間（ミリ秒）
 export function wanageDuration(count) {
@@ -45,6 +45,13 @@ export function wanageDuration(count) {
 function ring(r, col, deep) {
   return `<ellipse cx="0" cy="0" rx="${r.toFixed(1)}" ry="${(r * 0.38).toFixed(1)}" fill="none" stroke="${deep}" stroke-width="${(r * 0.36).toFixed(1)}"/>`
     + `<ellipse cx="0" cy="0" rx="${r.toFixed(1)}" ry="${(r * 0.38).toFixed(1)}" fill="none" stroke="${col}" stroke-width="${(r * 0.24).toFixed(1)}"/>`;
+}
+// わの 奥の半分（part='back'：棒の後ろ）と 手前の半分（part='front'：棒の前）。棒に入った わは、2つに分けて棒を はさむ
+function ringHalf(r, col, deep, part) {
+  const ry = (r * 0.38).toFixed(1);
+  const d = `M${(-r).toFixed(1)},0 A${r.toFixed(1)},${ry} 0 0 ${part === 'back' ? 1 : 0} ${r.toFixed(1)},0`;
+  return `<path d="${d}" fill="none" stroke="${deep}" stroke-width="${(r * 0.36).toFixed(1)}"/>`
+    + `<path d="${d}" fill="none" stroke="${col}" stroke-width="${(r * 0.24).toFixed(1)}"/>`;
 }
 const RINGS = [['#f7a6a0', '#d97f7a'], ['#9fc5e8', '#6f9fcb'], ['#f3d36b', '#d4b043']];
 
@@ -62,7 +69,7 @@ export function createWanage({ view, stage, result, play, getChoices, getWeights
     const H = stage.clientHeight;
     if (!W || !H) return;
     const rows = Math.ceil(n / 2);
-    const throwZone = Math.max(96, Math.min(130, H * 0.22));
+    const throwZone = Math.max(96, Math.min(160, H * 0.26));
     const top = 8;
     const areaH = H - throwZone - top;
     const cellH = Math.min(96, areaH / rows);
@@ -81,7 +88,7 @@ export function createWanage({ view, stage, result, play, getChoices, getWeights
       const base = plateY - 2; // 棒の根もと
       return { cx, base, tip: base - pegH, plateY, r };
     });
-    const catS = Math.max(0.3, Math.min(0.5, throwZone / 190));
+    const catS = Math.max(0.3, Math.min(0.62, throwZone / 190));
     const catAt = { x: W / 2, y: H - 6 - 78 * catS };
     const hand = { x: catAt.x + 40 * catS, y: catAt.y - 10 * catS };
     geo = { n, W, H, pegs, colW, plateH, pegH, ringR, catS, catAt, hand };
@@ -100,28 +107,36 @@ export function createWanage({ view, stage, result, play, getChoices, getWeights
       const pw = colW - 4;
       s += `<g class="peg" data-i="${i}">`
         + `<ellipse cx="${p.cx.toFixed(1)}" cy="${p.base.toFixed(1)}" rx="${(ringR * 0.9).toFixed(1)}" ry="${(ringR * 0.3).toFixed(1)}" fill="#a0703f" opacity="0.18"/>`
+        + `<g class="ring-back"></g>`
         + `<rect x="${(p.cx - 3.5).toFixed(1)}" y="${p.tip.toFixed(1)}" width="7" height="${geo.pegH.toFixed(1)}" rx="3" fill="#e3bb84" stroke="#b98a52" stroke-width="1.6"/>`
         + `<circle cx="${p.cx.toFixed(1)}" cy="${p.tip.toFixed(1)}" r="5" fill="#f1d3a6" stroke="#b98a52" stroke-width="1.6"/>`
+        + `<g class="ring-front"></g>`
         + `<g class="cell" data-i="${i}">`
         + `<rect class="cell-bg" x="${(p.cx - pw / 2).toFixed(1)}" y="${p.plateY.toFixed(1)}" width="${pw.toFixed(1)}" height="${plateH.toFixed(1)}" rx="${Math.min(10, plateH / 2).toFixed(1)}" fill="${C.paper}" stroke="${C.woodDeep}" stroke-width="2"/>`
         + `<text class="cell-label" x="${p.cx.toFixed(1)}" y="${(p.plateY + plateH / 2).toFixed(1)}" font-size="${size.toFixed(1)}" fill="${C.ink}" text-anchor="middle" dominant-baseline="central">${escapeXml(label)}</text>`
         + `</g></g>`;
     });
-    s += `<g class="wn-rings"></g>`;
     s += `<g class="wn-fly" visibility="hidden"></g>`;
-    s += `<g transform="translate(${catAt.x.toFixed(1)} ${catAt.y.toFixed(1)}) scale(${catS.toFixed(3)})"><g class="wn-cat">${catSitting(cat, { look: { x: 0, y: -1 } })}</g></g>`;
+    // 猫の よこの わの たば（v12）
+    const pr = ringR * 0.8;
+    for (let k = 0; k < 3; k++) {
+      const [col, deep] = RINGS[k % RINGS.length];
+      s += `<g transform="translate(${(catAt.x - 92 * catS - pr).toFixed(1)} ${(H - 8 - k * pr * 0.42).toFixed(1)})">${ring(pr, col, deep)}</g>`;
+    }
+    s += `<g transform="translate(${catAt.x.toFixed(1)} ${catAt.y.toFixed(1)}) scale(${catS.toFixed(3)})"><g class="wn-cat">${catSitting(cat, { look: { x: 0, y: -1 } })}</g><g class="wn-hat"></g></g>`;
     s += `<g class="wn-paw" visibility="hidden">${catPaw(cat, 30 * catS * 1.1)}</g>`;
     svg.innerHTML = s;
     stage.textContent = '';
     stage.appendChild(svg);
     refs = {
       ground: svg.querySelector('.wn-ground'),
-      rings: svg.querySelector('.wn-rings'),
+      pegs: Array.from(svg.querySelectorAll('.peg')),
       fly: svg.querySelector('.wn-fly'),
       catG: svg.querySelector('.wn-cat'),
       paw: svg.querySelector('.wn-paw'),
       cells: Array.from(svg.querySelectorAll('.cell')),
     };
+    refs.hat = svg.querySelector('.wn-hat');
     stage.dataset.count = String(n);
     stage.dataset.cat = cat.id;
     stage.dataset.minLabel = minLabel.toFixed(1);
@@ -147,7 +162,7 @@ export function createWanage({ view, stage, result, play, getChoices, getWeights
   }
 
   // 1本投げる（target の棒へ）。last なら入る、そうでなければ はじかれて しばふに落ちる
-  async function toss(target, k, last, only) {
+  async function toss(target, k, last, only, hat = false) {
     const { hand, pegs, ringR, catS } = geo;
     const [col, deep] = RINGS[k % RINGS.length];
     const p = pegs[target];
@@ -171,6 +186,20 @@ export function createWanage({ view, stage, result, play, getChoices, getWeights
       const e = ease.inOutSine(t);
       placeFly(from.x + (to.x - from.x) * e, from.y + (to.y - from.y) * e - Math.sin(Math.PI * t) * h, 1.1 - 0.2 * e, 360 * 2 * t);
     });
+    if (!last && hat) {
+      // ときどき出る別の動き（v12）：はねた わが もどってきて、猫の あたまに すっぽり
+      audio.ping(k, 1);
+      showHint(result, 'あれれ…');
+      const head = { x: geo.catAt.x, y: geo.catAt.y - 66 * catS };
+      await frames(620, (t) => placeFly(to.x + (head.x - to.x) * t, to.y + (head.y - to.y) * t - Math.sin(Math.PI * t) * 60, 0.9 + 0.2 * t, 300 * t));
+      refs.fly.setAttribute('visibility', 'hidden');
+      refs.hat.innerHTML = `<g transform="translate(0 -66) scale(${(1.1 / catS).toFixed(3)})">${ring(ringR, col, deep)}</g>`;
+      setCat('happy', { x: 0, y: -1 });
+      showHint(result, 'すっぽり！');
+      audio.pop();
+      await wait(420);
+      return -1;
+    }
     if (!last) {
       // 棒の先で はねて、しばふに落ちる
       audio.ping(k, 1);
@@ -195,14 +224,19 @@ export function createWanage({ view, stage, result, play, getChoices, getWeights
       const a = Math.sin(t * Math.PI * 6) * 18 * (1 - t * 0.7);
       placeFly(to.x + Math.sin(t * Math.PI * 6) * 3, to.y + Math.abs(Math.sin(t * Math.PI * 3)) * 2, 0.9, a);
     });
-    const down = { x: p.cx, y: p.base - 3 };
-    await frames(280, (t) => placeFly(to.x, to.y + (down.y - to.y) * t * t, 0.9, 0));
-    audio.stamp();
-    const landed = pegAt(down.x, down.y);
-    const g = svgEl('g', { transform: `translate(${down.x.toFixed(1)} ${down.y.toFixed(1)}) scale(0.9)` });
-    g.innerHTML = ring(ringR, col, deep);
-    refs.rings.appendChild(g);
+    // 棒に通る：わを 奥と手前に分けて、棒を はさんだまま 根もとへ落とす
+    const down = { x: p.cx, y: p.base - ringR * 0.42 }; // 手前の半分が 札に かからない高さ
+    const peg = refs.pegs[target];
+    const back = peg.querySelector('.ring-back');
+    const front = peg.querySelector('.ring-front');
+    back.innerHTML = ringHalf(ringR, col, deep, 'back');
+    front.innerHTML = ringHalf(ringR, col, deep, 'front');
     refs.fly.setAttribute('visibility', 'hidden');
+    const put = (y) => [back, front].forEach((el) => el.setAttribute('transform', `translate(${down.x.toFixed(1)} ${y.toFixed(1)}) scale(0.9)`));
+    await frames(280, (t) => put(to.y + (down.y - to.y) * t * t));
+    audio.stamp();
+    await frames(220, (t) => put(down.y - Math.sin(Math.PI * t) * 3));
+    const landed = pegAt(down.x, down.y);
     return landed;
   }
 
@@ -228,6 +262,8 @@ export function createWanage({ view, stage, result, play, getChoices, getWeights
     delete stage.dataset.landed;
     const t0 = performance.now();
     const plan = tossPlan(n, decided);
+    delete stage.dataset.variant;
+    const hatAt = plan.length >= 2 && Math.random() < 0.3 ? 0 : -1;
     showHint(result, 'どこに なげようかな…');
     // 1本だけの時は、はじめに長く ねらう（4秒を下回らないように）
     for (let k = 0; k < (plan.length === 1 ? 4 : 2); k++) {
@@ -239,7 +275,8 @@ export function createWanage({ view, stage, result, play, getChoices, getWeights
     for (let k = 0; k < plan.length; k++) {
       const last = k === plan.length - 1;
       showHint(result, last ? (plan.length === 1 ? 'えいっ…！' : 'さいごの わ…！') : 'えいっ！');
-      landed = await toss(plan[k], k, last, plan.length === 1);
+      landed = await toss(plan[k], k, last, plan.length === 1, k === hatAt);
+      if (k === hatAt) stage.dataset.variant = 'hat';
     }
     stage.dataset.landed = String(landed);
     stage.dataset.waitMs = String(Math.round(performance.now() - t0));

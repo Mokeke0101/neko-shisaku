@@ -18,7 +18,9 @@ export function swayPlan(n, decided, rand = Math.random) {
   return wander(n, n <= 2 ? 4 : 4 + Math.floor(rand() * 2), decided, rand);
 }
 export const T = { sway: 640, wiggle: 300, wiggles: 3, crouch: 280, jump: 620, bend: 520 };
-export const jarashiDuration = (steps) => steps * T.sway + T.crouch + T.wiggles * T.wiggle + T.jump + T.bend;
+// ときどき出る別の動き（v12）：とびつく ふりを して、もう いちど おしりを ふる（フェイント）
+export const FEINT = 380 + T.wiggle;
+export const jarashiDuration = (steps, feint = false) => steps * T.sway + T.crouch + T.wiggles * T.wiggle + T.jump + T.bend + (feint ? FEINT : 0);
 
 // ねこじゃらし（根もと 0,0 から上へ、高さ h）
 function foxtail(h, k) {
@@ -44,7 +46,7 @@ export function createJarashi(deps) {
       const { n, W, H, choices } = g;
       const catH = Math.max(60, Math.min(130, H * 0.24));
       const cols = n <= 4 ? 2 : 3;
-      const cells = grid(n, { x: 8, y: catH + 6, w: W - 16, h: H - catH - 12 }, cols, 8);
+      const cells = grid(n, { x: 4, y: catH + 6, w: W - 8, h: H - catH - 12 }, cols, 6);
       const plateH = Math.max(22, Math.min(32, cells[0].h * 0.34));
       const th = Math.max(26, Math.min(110, cells[0].h - plateH - 2));
       const roots = cells.map((c) => ({ cx: c.cx, cy: c.y + c.h - plateH - 1 }));
@@ -52,9 +54,15 @@ export function createJarashi(deps) {
       Object.assign(g, { cells, plateH, th, roots, sk, home: { x: W * 0.5, y: catH * 0.52 } });
       let s = '';
       cells.forEach((c, i) => {
+        // 根もとの 草（かざり）
+        s += `<path d="M${f(roots[i].cx - th * 0.22)},${f(roots[i].cy)} q${f(th * 0.04)},${f(-th * 0.2)} ${f(-th * 0.06)},${f(-th * 0.26)} M${f(roots[i].cx - th * 0.16)},${f(roots[i].cy)} q${f(th * 0.06)},${f(-th * 0.14)} ${f(th * 0.1)},${f(-th * 0.18)} M${f(roots[i].cx + th * 0.2)},${f(roots[i].cy)} q${f(-th * 0.02)},${f(-th * 0.16)} ${f(th * 0.08)},${f(-th * 0.22)}" stroke="#a3bd6e" stroke-width="2.2" fill="none" stroke-linecap="round"/>`;
         s += `<g transform="translate(${f(roots[i].cx)} ${f(roots[i].cy)})"><g class="tail" data-i="${i}">${foxtail(th, i)}</g></g>`;
-        s += plate(i, c.x + 4, c.y + c.h - plateH, c.w - 8, plateH, choices[i]).svg;
+        s += plate(i, c.x, c.y + c.h - plateH, c.w, plateH, choices[i]).svg;
       });
+      // 毛糸玉（アズの よこ）と、ひらひら とぶ ちょうちょ
+      const yr = Math.max(9, catH * 0.13);
+      s += `<g transform="translate(${f(g.home.x - catH * 0.7)} ${f(g.home.y + catH * 0.38)})"><circle r="${f(yr)}" fill="#f4a7a3" stroke="#d97f7a" stroke-width="2"/><path d="M${f(-yr * 0.8)},${f(-yr * 0.2)} Q0,${f(-yr)} ${f(yr * 0.8)},${f(-yr * 0.2)} M${f(-yr * 0.8)},${f(yr * 0.3)} Q0,${f(-yr * 0.5)} ${f(yr * 0.8)},${f(yr * 0.3)}" stroke="#d97f7a" stroke-width="1.4" fill="none"/><path d="M${f(yr * 0.7)},${f(yr * 0.6)} q${f(yr)},${f(yr * 0.5)} ${f(yr * 1.8)},${f(yr * 0.1)}" stroke="#d97f7a" stroke-width="1.4" fill="none"/></g>`;
+      s += `<g transform="translate(${f(W * 0.82)} ${f(catH * 0.35)})"><g class="jr-fly"><path d="M0,0 C-8,-10 -14,-2 -8,4 C-4,7 -1,4 0,1 Z M0,0 C8,-10 14,-2 8,4 C4,7 1,4 0,1 Z" fill="#fde3a6" stroke="#d9b04d" stroke-width="1.2"/><path d="M0,-3 V5" stroke="#8c6e5a" stroke-width="1.6" stroke-linecap="round"/></g></g>`;
       s += `<g class="jr-pos" transform="translate(${f(g.home.x)} ${f(g.home.y)}) scale(${f(sk)})"><g class="jr-cat">${catSitting(g.cat, { look: { x: 0, y: 1 } })}</g></g>`;
       return s;
     },
@@ -62,6 +70,8 @@ export function createJarashi(deps) {
       R.tails = Array.from(g.svg.querySelectorAll('.tail'));
       R.pos = g.svg.querySelector('.jr-pos');
       R.cat = g.svg.querySelector('.jr-cat');
+      const fly = g.svg.querySelector('.jr-fly');
+      fly.animate([{ transform: 'translate(0px,0px) scaleX(1)' }, { transform: 'translate(-30px,-10px) scaleX(0.6)' }, { transform: 'translate(-50px,6px) scaleX(1)' }, { transform: 'translate(-20px,14px) scaleX(0.6)' }, { transform: 'translate(0px,0px) scaleX(1)' }], { duration: 4200, iterations: Infinity, easing: 'ease-in-out' });
     },
     async perform(g, decided, say) {
       const plan = swayPlan(g.n, decided);
@@ -85,6 +95,16 @@ export function createJarashi(deps) {
       for (let k = 0; k < T.wiggles; k++) {
         audio.wiggle(k);
         await frames(T.wiggle, (t) => at(g.home.x + Math.sin(t * Math.PI * 2) * 5, g.home.y + 8, 0.88, Math.sin(t * Math.PI * 2) * 5));
+      }
+      // ときどき：とびつく ふりを して、もう いちど ふりふり
+      delete g.stage.dataset.variant;
+      if (Math.random() < 0.3) {
+        g.stage.dataset.variant = 'feint';
+        say('…と みせかけて');
+        await frames(380, (t) => at(g.home.x, g.home.y + 8 - Math.sin(Math.PI * t) * 16, 0.88 + 0.12 * Math.sin(Math.PI * t)));
+        say('まだ まだ… ふり ふり');
+        audio.wiggle(3);
+        await frames(T.wiggle, (t) => at(g.home.x + Math.sin(t * Math.PI * 2) * 6, g.home.y + 8, 0.88, Math.sin(t * Math.PI * 2) * 6));
       }
       // 3. とびつく
       say('えいっ！');

@@ -474,13 +474,6 @@ export function menuArt(kind, d) {
     const tail = (x, h, r) => `<g transform="translate(${x} 32) rotate(${r})"><path d="M0,0 Q2,${-h * 0.5} 0,${-h * 0.62}" stroke="#86a256" stroke-width="2" fill="none"/><ellipse cx="0" cy="${-h * 0.8}" rx="${h * 0.1}" ry="${h * 0.2}" fill="#e6d9a0" stroke="#b9ad6e" stroke-width="1"/></g>`;
     return `<svg viewBox="-36 -36 72 72">${tail(-20, 50, -8)}${tail(2, 58, 12)}${tail(22, 46, -4)}${face(-6, -14, 0.22, { mood: 'happy' })}<g transform="translate(-18 -2) scale(0.5)">${catPaw(d, 12)}</g><g transform="translate(6 -2) scale(0.5)">${catPaw(d, 12)}</g></svg>`;
   }
-  if (kind === 'bowling') {
-    // ピンと 毛糸玉
-    const pinAt = (x, y, k, r = 0) => `<g transform="translate(${x} ${y}) rotate(${r})"><path d="M0,-22 C4,-22 4,-15 2,-13 C6,-9 6,-2 3,0 L-3,0 C-6,-2 -6,-9 -2,-13 C-4,-15 -4,-22 0,-22 Z" fill="#fffaf0" stroke="#c9b9a4" stroke-width="1.4"/><path d="M-2.4,-13 H2.4" stroke="${k}" stroke-width="2"/></g>`;
-    return `<svg viewBox="-36 -36 72 72">${pinAt(-14, 2, '#e8664a', -60)}${pinAt(0, -2, '#6f9fcb')}${pinAt(14, 2, '#86a256', 55)}`
-      + `<g transform="translate(-4 20)"><circle r="9" fill="#f4a7a3" stroke="#d97f7a" stroke-width="1.4"/><path d="M-7,-2 Q0,-9 7,-2 M-7,3 Q0,-4 7,3" stroke="#d97f7a" stroke-width="1" fill="none"/></g>`
-      + face(22, 22, 0.15, { look: { x: -1, y: -0.4 } }) + `</svg>`;
-  }
   if (kind === 'hikoki') {
     // かみひこうきと、とんだ あと
     return `<svg viewBox="-36 -36 72 72"><path d="M-26,18 Q-10,-22 8,-10 T26,-20" stroke="#9fbdd0" stroke-width="1.6" fill="none" stroke-dasharray="3 3"/>`

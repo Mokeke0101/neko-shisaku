@@ -74,7 +74,7 @@ export function createMaigo({ view, stage, result, play, getChoices, getWeights,
     const D = Math.max(1, treeDepth(tree));
     const cardX = 4;
     const cardW = W - 8;
-    const spacing = Math.min(n <= 4 ? 92 : 62, (H - 34) / n);
+    const spacing = Math.min(n <= 4 ? 92 : 76, (H - 40) / n);
     const top = (H - spacing * n) / 2 + spacing / 2;
     const ys = choices.map((_, i) => top + i * spacing);
     const cardY = ys[0] - spacing / 2 - 6;
@@ -85,7 +85,7 @@ export function createMaigo({ view, stage, result, play, getChoices, getWeights,
     const xEnd = tagX - 10;
     const th = Math.max(22, Math.min(40, spacing - 6));
     const road = Math.max(8, Math.min(16, spacing * 0.36));
-    const kit = Math.max(24, Math.min(40, spacing * 0.95));
+    const kit = Math.max(24, Math.min(54, spacing * 1.1));
     // 分かれ道の位置：深さで x を決め、y は その先の出口の真ん中
     const place = (node) => {
       node.x = node.children.length ? xRoot + ((xEnd - 40 - xRoot) * node.depth) / D : xEnd;
@@ -129,6 +129,19 @@ export function createMaigo({ view, stage, result, play, getChoices, getWeights,
         + [0, 72, 144, 216, 288].map((a) => `<ellipse cx="0" cy="-3.2" rx="2.4" ry="3.4" fill="${col}" transform="rotate(${a})"/>`).join('')
         + `<circle r="1.8" fill="${C.ichoDeep}"/></g>`;
     });
+    // 紙の すみの しげみ（v12）
+    const bush = (x, y, k) => `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) scale(${k})"><circle cx="-9" cy="0" r="9" fill="#bdd68c"/><circle cx="6" cy="-3" r="11" fill="#a3bd6e"/><circle cx="16" cy="3" r="7" fill="#bdd68c"/><path d="M-6,-4 l2,-3 M8,-8 l2,-3" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" opacity="0.7"/></g>`;
+    if (tree.y - cardY > 90) s += bush(cardX + 30, cardY + 30, 1);
+    if (cardY + cardH - tree.y > 90) s += bush(cardX + 30, cardY + cardH - 26, 0.9);
+    // 入口の 立てふだ（v12）
+    const sx = cardX + 16;
+    const sy = tree.y - road - 4;
+    if (sy - cardY > 40) {
+      s += `<path d="M${sx},${sy.toFixed(1)} V${(sy - 34).toFixed(1)}" stroke="#9b5f3a" stroke-width="3"/>`
+        + `<path d="M${sx - 10},${(sy - 40).toFixed(1)} h22 l6,6 l-6,6 h-22 Z" fill="#f3d9b0" stroke="#9b5f3a" stroke-width="1.6"/>`
+        + `<text x="${sx + 3}" y="${(sy - 33.5).toFixed(1)}" font-size="12" font-weight="700" fill="#9b5f3a" text-anchor="middle" dominant-baseline="central">？</text>`;
+    }
+    s += `<g class="mg-fly" visibility="hidden"><path d="M0,0 C-8,-10 -14,-2 -8,4 C-4,7 -1,4 0,1 Z M0,0 C8,-10 14,-2 8,4 C4,7 1,4 0,1 Z" fill="#fde3a6" stroke="#d9b04d" stroke-width="1.2"/><path d="M0,-3 V5" stroke="#8c6e5a" stroke-width="1.6" stroke-linecap="round"/></g>`;
     // 足あと
     s += `<g class="prints"></g>`;
     // 出口の札
@@ -152,6 +165,7 @@ export function createMaigo({ view, stage, result, play, getChoices, getWeights,
       kitten: svg.querySelector('.kitten'),
       kittenIn: svg.querySelector('.kitten-in'),
       tags: Array.from(svg.querySelectorAll('.tag')),
+      fly: svg.querySelector('.mg-fly'),
     };
     geo.edgeD = edgeD;
     geo.start = { x: cardX + 22, y: tree.y };
@@ -248,6 +262,23 @@ export function createMaigo({ view, stage, result, play, getChoices, getWeights,
       setLook('normal', look);
       audio.hover(0);
       await wait(320);
+    }
+    // ときどき出る別の動き（v12）：ちょうちょが とんできて、目で おいかける
+    delete stage.dataset.variant;
+    if (Math.random() < 0.3) {
+      stage.dataset.variant = 'fly';
+      showHint(result, 'あ、ちょうちょ…');
+      refs.fly.setAttribute('visibility', 'visible');
+      const y0 = start.y - geo.kit * 1.2;
+      await frames(900, (t) => {
+        const x = start.x + 20 + t * geo.W * 0.5;
+        const y = y0 - Math.sin(t * Math.PI * 3) * 14 - t * 20;
+        refs.fly.setAttribute('transform', `translate(${x.toFixed(1)} ${y.toFixed(1)}) scale(${(1.4 * (1 - 0.3 * Math.abs(Math.sin(t * 24)))).toFixed(2)} 1.4)`);
+        if (Math.floor(t * 6) !== Math.floor((t - 0.02) * 6)) setLook('happy', { x: 1, y: -1 });
+      });
+      refs.fly.setAttribute('visibility', 'hidden');
+      setLook('normal', { x: 1, y: 0 });
+      showHint(result, 'あれれ、まいごかな…');
     }
     const speed = Math.max(95, Math.min(150, (geo.xEnd - geo.xRoot) / 1.6));
     // 入口から最初の分かれ道まで

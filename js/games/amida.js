@@ -69,7 +69,7 @@ export function createAmida({ view, stage, result, play, getChoices, getWeights,
     if (!W || !H) return;
     const cardX = 4;
     const cardW = W - 8;
-    const spacing = Math.min(62, (H - 34) / n);
+    const spacing = Math.min(76, (H - 60) / n);
     const top = (H - spacing * n) / 2 + spacing / 2;
     const ys = choices.map((_, i) => top + i * spacing);
     const cardY = ys[0] - spacing / 2 - 6;
@@ -80,7 +80,7 @@ export function createAmida({ view, stage, result, play, getChoices, getWeights,
     const xEnd = tagX - 12;
     const colX = Array.from({ length: COLS }, (_, c) => xStart + ((xEnd - xStart) * (c + 0.75)) / (COLS + 0.5));
     const th = Math.max(22, Math.min(40, spacing - 6));
-    const kit = Math.max(26, Math.min(42, spacing * 1.05));
+    const kit = Math.max(26, Math.min(50, spacing * 1.1));
     geo = { n, W, H, ys, spacing, tagX, tagW, xStart, xEnd, colX, th, kit, cardX };
 
     const svg = svgEl('svg', { viewBox: `0 0 ${W} ${H}` });
@@ -88,6 +88,12 @@ export function createAmida({ view, stage, result, play, getChoices, getWeights,
     // 紙
     s += `<rect x="${cardX + 3}" y="${cardY + 6}" width="${cardW}" height="${cardH}" rx="22" fill="#d9b07a" opacity="0.35"/>`;
     s += `<rect x="${cardX}" y="${cardY}" width="${cardW}" height="${cardH}" rx="22" fill="${C.paper}" stroke="${C.woodDeep}" stroke-width="3"/>`;
+    // 紙の下の えんぴつと けしゴム（v12。よゆうが ある時）
+    if (H - (cardY + cardH) > 26) {
+      const py = Math.min(H - 12, cardY + cardH + 18);
+      s += `<g transform="translate(${(cardX + 40).toFixed(1)} ${py.toFixed(1)}) rotate(-8)"><rect x="0" y="-5" width="96" height="10" rx="2" fill="#f6d55e" stroke="#c9a032" stroke-width="1.6"/><path d="M96,-5 L110,0 L96,5 Z" fill="#f3d9b0" stroke="#c9a032" stroke-width="1.4"/><path d="M106,-1.4 L110,0 L106,1.4 Z" fill="#4a3a33"/><rect x="-10" y="-5" width="10" height="10" rx="2" fill="#f7a6a0" stroke="#d97f7a" stroke-width="1.4"/></g>`
+        + `<g transform="translate(${(cardX + cardW - 70).toFixed(1)} ${py.toFixed(1)}) rotate(6)"><rect x="-18" y="-8" width="36" height="16" rx="3" fill="#ffffff" stroke="#9fbdd0" stroke-width="1.6"/><rect x="-6" y="-8" width="14" height="16" fill="#9fc5e8"/></g>`;
+    }
     // 横の線と、左はしの立つ所
     let minLabel = Infinity;
     ys.forEach((y, i) => {
@@ -228,7 +234,22 @@ export function createAmida({ view, stage, result, play, getChoices, getWeights,
     const gapPrint = Math.max(14, geo.spacing * 0.42);
     let nextPrint = gapPrint * 0.5;
     let printNo = 0;
-    await frames(dur, (t) => {
+    // ときどき出る別の動き（v12）：とちゅうで 立ちどまって、きょろきょろ
+    delete stage.dataset.variant;
+    const stop = dur < 5600 && Math.random() < 0.3 ? 700 : 0;
+    if (stop) stage.dataset.variant = 'look';
+    const stopAt = 0.4;
+    let stopped = false;
+    await frames(dur + stop, (tt) => {
+      const ms = tt * (dur + stop);
+      const inStop = stop && ms >= dur * stopAt && ms < dur * stopAt + stop;
+      const t = !stop || ms < dur * stopAt ? ms / dur : inStop ? stopAt : (ms - stop) / dur;
+      if (inStop) {
+        if (!stopped) { stopped = true; showHint(result, 'あれ？ どっちだっけ…'); audio.hover(1); }
+        setFace('normal', { x: Math.sin((ms - dur * stopAt) / 110), y: 0 });
+        return;
+      }
+      if (stopped && stopped !== 2) { stopped = 2; showHint(result, 'こっちだ！'); }
       const d = total * (1 - Math.pow(1 - t, 1.7));
       const p = at(d);
       refs.trail.setAttribute('stroke-dashoffset', (total - d).toFixed(2));

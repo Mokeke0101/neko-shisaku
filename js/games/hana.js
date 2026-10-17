@@ -62,7 +62,7 @@ export function createHana({ view, stage, result, play, getChoices, getWeights, 
     const step = 360 / n;
     const wMax = Math.min(2 * Rf * 0.86 * Math.sin(Math.PI / n) * 0.96, Rf * 0.62);
     const hb = Math.min(wMax * 0.2, r0 * Math.sin(Math.PI / n) * 0.95);
-    const catAt = { x: W - 40, y: H - 38, s: 0.42 };
+    const catAt = { x: W - 46, y: H - 44, s: 0.5 };
     const pawSize = Math.max(14, Math.min(22, Rf * 0.1));
     geo = { n, W, H, fx, fy, Rf, r0, step, wMax, catAt, pawSize };
 
@@ -112,6 +112,8 @@ export function createHana({ view, stage, result, play, getChoices, getWeights, 
       const rr = r0 * 0.62 * Math.sqrt((k + 0.5) / 14);
       s += `<circle cx="${fx + Math.cos(a) * rr}" cy="${fy + Math.sin(a) * rr}" r="${Math.max(1.6, r0 * 0.07)}" fill="${C.kakiDeep}" opacity="0.75"/>`;
     }
+    // 花の まわりを とぶ はち（v12）
+    s += `<g transform="translate(${(fx - Rf * 0.85).toFixed(1)} ${(fy - Rf * 0.85).toFixed(1)})"><g class="hana-bee"><ellipse rx="9" ry="7" fill="#f6d55e" stroke="#8c6e5a" stroke-width="1.6"/><path d="M-3,-6.5 V6.5 M2,-6.8 V6.8" stroke="#8c6e5a" stroke-width="2"/><ellipse cx="-2" cy="-9" rx="5" ry="3.4" fill="#ffffff" opacity="0.85" stroke="#cfe0ea" stroke-width="1"/><ellipse cx="4" cy="-9" rx="5" ry="3.4" fill="#ffffff" opacity="0.85" stroke="#cfe0ea" stroke-width="1"/><circle cx="6" cy="-1" r="1.3" fill="#4a3a33"/></g></g>`;
     // 右下で見ている猫
     s += `<g transform="translate(${catAt.x} ${catAt.y}) scale(${catAt.s})"><g class="hana-cat">${catSitting(cat)}</g></g>`;
     // 猫の手
@@ -125,6 +127,7 @@ export function createHana({ view, stage, result, play, getChoices, getWeights, 
       catG: svg.querySelector('.hana-cat'),
       front: svg.querySelector('.hana-cat').parentNode,
     };
+    svg.querySelector('.hana-bee').animate([{ transform: 'translate(0px,0px)' }, { transform: 'translate(26px,-10px)' }, { transform: 'translate(40px,12px)' }, { transform: 'translate(12px,20px)' }, { transform: 'translate(0px,0px)' }], { duration: 5000, iterations: Infinity, easing: 'ease-in-out' });
     pawAt = rest();
     placePaw(pawAt.x, pawAt.y, 1);
     stage.dataset.count = String(n);
@@ -218,7 +221,19 @@ export function createHana({ view, stage, result, play, getChoices, getWeights, 
     const m = order.length;
     showHint(result, 'どれが のこるかな…');
     // のこり2枚になる前までは、順に抜く
+    // ときどき出る別の動き（v12）：とちゅうの1まいが、風で ふわっと とんでいく
+    delete stage.dataset.variant;
+    const windAt = m >= 3 && Math.random() < 0.3 ? 1 : -1;
     for (let k = 0; k < m - 1; k++) {
+      if (k === windAt) {
+        stage.dataset.variant = 'wind';
+        showHint(result, 'あっ、かぜで とんだ！');
+        audio.stretch(0.5);
+        fall(order[k]);
+        await wait(560);
+        showHint(result, 'どれが のこるかな…');
+        continue;
+      }
       await pluck(order[k], pluckTime(k, m), k);
     }
     // のこり2枚：2枚の間で まよってから、結果でない方を抜く

@@ -75,12 +75,12 @@ export function createRace({ view, stage, result, play, getChoices, getWeights, 
     if (!W || !H) return;
     const cardX = 4;
     const cardW = W - 8;
-    const spacing = Math.min(58, (H - 30) / n);
+    const spacing = Math.min(64, (H - 56) / n);
     const top = (H - spacing * n) / 2 + spacing / 2;
     const ys = choices.map((_, i) => top + i * spacing);
     const cardY = ys[0] - spacing / 2 - 8;
     const cardH = spacing * n + 16;
-    const tagW = Math.max(112, Math.min(134, W * 0.33));
+    const tagW = Math.max(112, Math.min(140, W * 0.35));
     const tagX = cardX + 8;
     const th = Math.max(22, Math.min(40, spacing - 5));
     const catZone = Math.max(70, Math.min(92, W * 0.22));
@@ -116,6 +116,11 @@ export function createRace({ view, stage, result, play, getChoices, getWeights, 
       const fy = cardY + 12 + (k * (cardH - 24)) / (flags - 1);
       const col = [C.momiji, C.icho, C.olive][k % 3];
       s += `<path d="M${xGoal + 1.5},${fy - 5} l9,5 l-9,5 Z" fill="${col}"/>`;
+    }
+    // ゴールの 看板（v12。カードの上に よゆうが ある時）
+    if (cardY > 24) {
+      s += `<g transform="translate(${xGoal} ${(cardY - 4).toFixed(1)})"><path d="M-24,0 V-20 M24,0 V-20" stroke="${C.chestnutDeep}" stroke-width="3"/><rect x="-32" y="-30" width="64" height="20" rx="10" fill="#fffaf0" stroke="${C.momiji}" stroke-width="2.4"/>`
+        + `<text y="-19.5" font-size="13" font-weight="700" fill="${C.momiji}" text-anchor="middle" dominant-baseline="central">ゴール</text></g>`;
     }
     // 糸（走った後に残る）と毛糸玉
     s += `<g class="threads">`;
@@ -222,6 +227,10 @@ export function createRace({ view, stage, result, play, getChoices, getWeights, 
     let lastTick = 0;
     let lastLook = 0;
     let hinted = false;
+    delete stage.dataset.variant;
+    let trip = n > 1 && Math.random() < 0.3 ? Math.floor(Math.random() * n) : -1;
+    if (trip === decided) trip = (trip + 1) % n;
+    let tripped = false;
     await new Promise((resolve) => {
       const step = (now) => {
         const dt = Math.min(50, now - last);
@@ -243,6 +252,14 @@ export function createRace({ view, stage, result, play, getChoices, getWeights, 
           lastLook = now;
           const dy = (ys[lead] - catAt.y) / Math.max(60, geo.H / 2);
           setCat('normal', { x: -1, y: Math.max(-1, Math.min(1, dy)) });
+        }
+        if (trip >= 0 && !tripped && s > 0.45) {
+          // ときどき出る別の動き（v12）：毛糸玉が 1つ つまずいて、ころん
+          tripped = true;
+          stage.dataset.variant = 'trip';
+          showHint(result, 'あっ、ころん！');
+          audio.hop(0);
+          refs.ballIns[trip].animate([{ transform: 'translateY(0) rotate(0deg)' }, { transform: `translateY(${-geo.r * 1.6}px) rotate(-90deg)` }, { transform: 'translateY(0) rotate(-180deg)' }, { transform: `translateY(${-geo.r * 0.5}px) rotate(-240deg)` }, { transform: 'translateY(0) rotate(-270deg)' }], { duration: 700 });
         }
         if (!hinted && leadP > 0.8) { hinted = true; showHint(result, 'もうすぐ ゴール…'); }
         if (s < 1) requestAnimationFrame(step);

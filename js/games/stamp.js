@@ -120,6 +120,13 @@ export function createStamp({ view, stage, result, play, getChoices, getWeights,
     s += `<g transform="translate(${peekAt.x - 30} ${cardY + 1})">${catPaw(cat, 10)}</g>`;
     // 猫の手（影と手）
     const pawSize = Math.min(cellW, cellH) * 0.3;
+    // スタンプ台（v12。カードの下に よゆうが ある時だけ。手は ここで まつ）
+    if (H - (cardY + cardH) > pawSize * 1.8) {
+      const px = cardX + cardW * 0.8;
+      const py = cardY + cardH + pawSize * 0.85 + pawSize * 0.55;
+      s += `<rect x="${(px - pawSize * 1.4).toFixed(1)}" y="${(py - pawSize * 0.45).toFixed(1)}" width="${(pawSize * 2.8).toFixed(1)}" height="${(pawSize * 0.9).toFixed(1)}" rx="${(pawSize * 0.25).toFixed(1)}" fill="#c99a62" stroke="#9b5f3a" stroke-width="2"/>`
+        + `<rect x="${(px - pawSize * 1.2).toFixed(1)}" y="${(py - pawSize * 0.38).toFixed(1)}" width="${(pawSize * 2.4).toFixed(1)}" height="${(pawSize * 0.5).toFixed(1)}" rx="${(pawSize * 0.18).toFixed(1)}" fill="${C.momiji}" opacity="0.8"/>`;
+    }
     s += `<ellipse class="paw-shadow" cx="0" cy="0" rx="${pawSize * 0.95}" ry="${pawSize * 0.32}" fill="#a0703f" opacity="0.18"/>`;
     s += `<g class="paw"><g class="paw-in">${catPaw(cat, pawSize)}</g></g>`;
     svg.innerHTML = s;
@@ -217,15 +224,28 @@ export function createStamp({ view, stage, result, play, getChoices, getWeights,
 
     // 渡る道すじ：同じます目へ続けて戻らない。最後が決めたます目
     const hops = 16 + Math.min(n, 8);
+    // 選択肢が2つの時は、2つのます目を こうごに渡って、決めたます目で終わる
+    // （3つ以上の時と同じ決まり「続けて同じます目に戻らない・最後の1つ前は決めたます目でない」を2つで満たすには、こうごしか無い。
+    //  v12 までは2つの時に この決まりを満たす目を さがし続けて、画面が止まった）
     const path = [];
-    let prev = -1;
-    for (let k = 0; k < hops - 1; k++) {
-      let c;
-      do { c = Math.floor(Math.random() * n); } while (c === prev || (k === hops - 2 && c === decided));
-      path.push(c);
-      prev = c;
+    if (n === 2) {
+      for (let k = 0; k < hops; k++) path.push((decided + hops - 1 - k) % 2);
+    } else {
+      let prev = -1;
+      for (let k = 0; k < hops - 1; k++) {
+        let c;
+        do { c = Math.floor(Math.random() * n); } while (c === prev || (k === hops - 2 && c === decided));
+        path.push(c);
+        prev = c;
+      }
+      path.push(decided);
     }
-    path.push(decided);
+    // スタンプ台で、肉球に いんくを つける（ぽんぽん）
+    const home = { ...pawPos };
+    for (let k = 0; k < 2; k++) {
+      await frames(150, (t) => placePaw(home.x, home.y, 14 * Math.sin(Math.PI * t), 1));
+      audio.tap();
+    }
     for (let k = 0; k < path.length; k++) {
       const p = k / (path.length - 1);
       const dur = 120 + 420 * Math.pow(p, 2.2);
@@ -233,6 +253,16 @@ export function createStamp({ view, stage, result, play, getChoices, getWeights,
     }
     // ぐっと持ち上げて、ぽん
     const c = geo.cells[decided];
+    // ときどき出る別の動き（v12）：おす ふりを して、もう いちど もちあげる
+    delete stage.dataset.variant;
+    if (Math.random() < 0.3) {
+      stage.dataset.variant = 'feint';
+      showHint(result, 'ぽ… と みせかけて');
+      await frames(260, (t) => placePaw(pawPos.x, pawPos.y, 26 * Math.sin(Math.PI * t), 1 + 0.1 * Math.sin(Math.PI * t)));
+      audio.heart();
+      showHint(result, 'ここで いいかな…');
+      await wait(260);
+    }
     await frames(320, (t) => placePaw(pawPos.x, pawPos.y, 26 * ease.outCubic(t), 1 + 0.18 * ease.outCubic(t)));
     await wait(160);
     await frames(110, (t) => placePaw(pawPos.x, pawPos.y, 26 * (1 - t * t), 1.18 - 0.28 * t * t));

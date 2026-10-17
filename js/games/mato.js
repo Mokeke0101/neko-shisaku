@@ -99,6 +99,18 @@ export function createMato({ view, stage, result, play, getChoices, getWeights, 
       const y = boardY + pad + 4 + (r + 1) * rowH;
       s += `<rect x="${boardX + 8}" y="${y}" width="${boardW - 16}" height="7" rx="3" fill="${C.wood}" stroke="${C.woodDeep}" stroke-width="1.6"/>`;
     }
+    // 屋台の しましまの やね（v12。1だん目の的の上に すきまが ある時）
+    const awn = Math.min(16, rowH - ph - 8);
+    if (awn >= 8) {
+      const k = Math.ceil((boardW - 16) / 28);
+      let a = '';
+      for (let j = 0; j < k; j++) {
+        const x0 = boardX + 8 + j * 28;
+        const w = Math.min(28, boardX + boardW - 8 - x0);
+        a += `<path d="M${x0},${boardY + 6} h${w} v${awn - 4} q${-w / 2},8 ${-w},0 Z" fill="${j % 2 ? '#fffaf0' : '#f7a6a0'}"/>`;
+      }
+      s += `<g opacity="0.95">${a}</g><path d="M${boardX + 8},${boardY + 6} H${boardX + boardW - 8}" stroke="#d97f7a" stroke-width="2"/>`;
+    }
     let minLabel = Infinity;
     plates.forEach((p, i) => {
       const labelX = p.bx + p.rb + 7;
@@ -230,8 +242,31 @@ export function createMato({ view, stage, result, play, getChoices, getWeights, 
     await frames(260, (t) => placeAim(target.bx, target.by, 1 - 0.25 * ease.outCubic(t)));
     await wait(200);
 
+    // ときどき出る別の動き（v12）：1ぱつ目は はずれて「おしい！」、2はつ目で 当てる
+    delete stage.dataset.variant;
+    if (Math.random() < 0.3) {
+      stage.dataset.variant = 'miss';
+      showHint(result, 'えいっ！');
+      setCat('strain', lookAt(target));
+      await frames(300, (t) => placePunch(-14 * ease.outCubic(t) * catS * 3, 10 * ease.outCubic(t) * catS * 3, -20 * t));
+      audio.toss();
+      await frames(120, (t) => placePunch(-42 * catS + 60 * catS * t, 30 * catS - 50 * catS * t, -20 + 30 * t));
+      const m0 = { x: pawRest.x, y: pawRest.y - 22 * catS };
+      const side = target.bx > geo.W / 2 ? -1 : 1;
+      const m1 = { x: target.bx + side * geo.ph * 1.4, y: target.by - geo.ph * 0.9 };
+      await frames(520, (t) => {
+        placeBall(m0.x + (m1.x - m0.x) * t, m0.y + (m1.y - m0.y) * t - Math.sin(Math.PI * t) * 50, 1 - 0.3 * t);
+        if (t > 0.3) placePunch(18 * catS * (1 - t), -20 * catS * (1 - t), 10 * (1 - t));
+      });
+      placePunch(0, 0, 0);
+      showHint(result, 'おしい！');
+      audio.tap();
+      await frames(380, (t) => placeBall(m1.x + side * 20 * t, m1.y + 90 * t * t, 0.7 * (1 - t)));
+      placeBall(m0.x, m0.y, 1);
+      await wait(160);
+    }
     // 2. 手を引いて、パンチ。玉が弧をえがいて飛ぶ
-    showHint(result, 'ねこパンチ！');
+    showHint(result, 'イズの ねこパンチ！');
     setCat('strain', lookAt(target));
     await frames(380, (t) => placePunch(-14 * ease.outCubic(t) * catS * 3, 10 * ease.outCubic(t) * catS * 3, -20 * t));
     audio.toss();

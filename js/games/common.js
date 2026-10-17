@@ -18,10 +18,10 @@ export const TINTS = [
   ['#e3dde9', '#8f8499'], ['#fff1b8', '#d4b043'], ['#f6c6c0', '#c97a6e'], ['#d9e6f7', '#6f8fcb'],
 ];
 
-// 札の文字の大きさ：札の幅と高さに収まる大きさ（12 px 以上・max まで）
+// 札の文字の大きさ：札の幅と高さに収まる大きさ（12 px 以上・max まで）。左右の すきまは 5 px ずつ（v12 で 7 → 5）
 export function fitSize(label, w, h, max = 22) {
   const len = Math.max(charCount(label), 1);
-  return Math.max(12, Math.min(max, (w - 14) / len, h * 0.62));
+  return Math.max(12, Math.min(max, (w - 10) / len, h * 0.64));
 }
 
 // 札を n 個、箱 box（x, y, w, h）の中に cols 列で並べる。最後の行は真ん中に寄せる

@@ -341,24 +341,21 @@ export function sceneSVG(kind, lk = { season: 'aki', event: '' }) {
       + `<rect x="0" y="600" width="${W}" height="244" fill="${snowy ? '#f2f6f9' : K.night ? '#c9b8a8' : '#efd9b4'}"/><path d="M0,600 H${W}" stroke="${snowy ? '#d3e1ea' : '#e2c592'}" stroke-width="3"/>`
       + sc(kind === 'yubin' ? 79 : 83, 10, { x: 6, y: 640, w: 378, h: 190 }, 8, 12)
       + air(46, 220, 13, 0, -8);
-  } else if (kind === 'bowling' || kind === 'himo' || kind === 'gacha' || kind === 'crane') {
-    // へやの中：ボウリングの ろうか、だがしやの たな（ひも・ガチャ）、ゲームの かど（クレーン）
+  } else if (kind === 'himo' || kind === 'gacha' || kind === 'crane') {
+    // へやの中：だがしやの たな（ひも・ガチャ）、ゲームの かど（クレーン）
     let wall = '';
     if (kind === 'crane') {
       wall = `<rect x="0" y="0" width="${W}" height="640" fill="#fff4f6"/>`;
       for (let i = 0; i < 9; i++) wall += `<rect x="${i * 46}" y="0" width="23" height="640" fill="#fbe3ea"/>`;
       for (let i = 0; i < 12; i++) wall += `<circle cx="${18 + i * 32}" cy="40" r="5" fill="${[C.icho, C.rose, '#cfe0ea'][i % 3]}"/>`;
-    } else if (kind === 'gacha' || kind === 'himo') {
+    } else {
       for (let i = 0; i < 9; i++) wall += `<path d="M${i * 46 - 10},0 h46 v40 q-23,12 -46,0 Z" fill="${i % 2 ? '#fff6e4' : kind === 'gacha' ? '#cfe0ea' : '#cfe3c0'}"/>`;
       wall += `<path d="M0,1 H${W}" stroke="#e2bd87" stroke-width="3"/>`;
       // たなの びん
       [[40, 600], [86, 604], [304, 600], [350, 604]].forEach(([x, y], k) => { wall += `<rect x="${x - 15}" y="${y - 30}" width="30" height="34" rx="8" fill="#eaf6fb" stroke="#9fc8cf" stroke-width="2"/><rect x="${x - 12}" y="${y - 36}" width="24" height="8" rx="3" fill="${[C.momiji, C.olive, C.kaki, '#a985c9'][k]}"/>` + [0, 1, 2].map((j) => `<circle cx="${x - 7 + j * 7}" cy="${y - 8 - (j % 2) * 6}" r="4" fill="${[C.icho, C.rose, '#cfe3c0'][(j + k) % 3]}"/>`).join(''); });
       wall += `<rect x="0" y="604" width="${W}" height="8" fill="#ddb37c"/>`;
-    } else {
-      wall = `<rect x="240" y="70" width="110" height="110" rx="10" fill="#fffaf0" stroke="#e6c99a" stroke-width="5"/>` + windowView(244, 74, 102, 102, K) + `<path d="M295,70 V180 M240,125 H350" stroke="#e6c99a" stroke-width="4"/>`;
     }
-    body = wall + planks(640, 4, 52, kind === 'bowling' ? ['#f9e3bd', '#f4d9ab'] : ['#f6dcb4', '#f3d5a8'])
-      + (kind === 'bowling' ? `<path d="M120,844 L170,640 M270,844 L220,640" stroke="#e2bd87" stroke-width="3"/>` : '')
+    body = wall + planks(640, 4, 52, ['#f6dcb4', '#f3d5a8'])
       + at(46, 770, K.piece(0, 16), -20) + at(346, 790, K.piece(1, 18), 24)
       + at(kind === 'crane' ? 40 : 352, 680, K.fruit(16, kind === 'gacha' ? 0 : 1));
   } else if (kind === 'settings') {

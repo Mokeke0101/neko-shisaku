@@ -8,7 +8,7 @@
 // 3. いえの窓が ぽっと明るくなる。
 // 結果は先に乱数で決め（RS01-S14）、たずねる順を、決めた いえで終わるように組む。
 import { C } from '../art.js';
-import { catSitting } from '../cats.js';
+import { catSitting, catName } from '../cats.js';
 import { audio } from '../audio.js';
 import { ease, frames, wait } from '../fx.js';
 import { createGame, grid, plate, nearest, wander, TINTS, f } from './common.js';
@@ -17,7 +17,9 @@ export function visitPlan(n, decided, rand = Math.random) {
   return wander(n, n <= 2 ? 3 : 3 + Math.floor(rand() * 2), decided, rand);
 }
 export const T = { walk: 820, look: 460, post: 600, light: 400 };
-export const yubinDuration = (visits) => visits * T.walk + (visits - 1) * T.look + T.post + T.light + 200;
+// ときどき出る別の動き（v12）：風で てがみが とばされ、ぴょんと とんで つかまえる
+export const GUST = 640;
+export const yubinDuration = (visits, gust = false) => visits * T.walk + (visits - 1) * T.look + T.post + T.light + 200 + (gust ? GUST : 0);
 
 // いえ（下のまん中 0,0 から上へ・はば w・高さ h）
 function house(w, h, k) {
@@ -46,20 +48,25 @@ export function createYubin(deps) {
     draw(g) {
       const { n, W, H, choices } = g;
       const cols = n <= 4 ? 2 : 3;
-      const cells = grid(n, { x: 8, y: 6, w: W - 16, h: H - 12 }, cols, 10);
+      const cells = grid(n, { x: 4, y: 6, w: W - 8, h: H - 12 }, cols, 6);
       const plateH = Math.max(22, Math.min(32, cells[0].h * 0.3));
       const hh = Math.max(26, Math.min(110, cells[0].h - plateH - 6));
       const hw = Math.min(cells[0].w * 0.7, hh * 1.1);
       const doors = cells.map((c) => ({ cx: c.cx, cy: c.y + c.h - plateH - 2 }));
-      const sk = Math.max(0.14, Math.min(0.42, hh / 230));
+      const sk = Math.max(0.16, Math.min(0.56, hh / 175));
       Object.assign(g, { cells, plateH, hh, hw, doors, sk });
       let s = '';
       cells.forEach((c, i) => {
         s += `<g transform="translate(${f(doors[i].cx)} ${f(doors[i].cy)})"><g class="house" data-i="${i}">${house(hw, hh, i)}</g></g>`;
-        s += plate(i, c.x + 4, c.y + c.h - plateH, c.w - 8, plateH, choices[i]).svg;
+        // いえの よこの 木（かざり。となりの いえに かからない所）
+        if (i % 2 === 0) s += `<g transform="translate(${f(doors[i].cx - hw * 0.62)} ${f(doors[i].cy)})"><path d="M0,0 V${f(-hh * 0.3)}" stroke="#9b5f3a" stroke-width="2.4"/><circle cy="${f(-hh * 0.4)}" r="${f(hh * 0.13)}" fill="#a3bd6e" stroke="#86a256" stroke-width="1.6"/></g>`;
+        s += plate(i, c.x, c.y + c.h - plateH, c.w, plateH, choices[i]).svg;
       });
       g.start = { x: g.W - 30, y: doors[0].cy };
-      s += `<g class="yb-pos" transform="translate(${f(g.start.x)} ${f(g.start.y)})"><g class="yb-in" transform="scale(${f(sk)})"><g class="yb-cat">${catSitting(g.cat, { look: { x: -1, y: 0 } })}</g></g><g class="yb-letter" transform="translate(0 ${f(-30 * sk)})">${letter(Math.max(12, 70 * sk))}</g></g>`;
+      s += `<g class="yb-pos" transform="translate(${f(g.start.x)} ${f(g.start.y)})"><g class="yb-in" transform="scale(${f(sk)})"><g class="yb-cat">${catSitting(g.cat, { look: { x: -1, y: 0 } })}</g>`
+        // ゆうびやさんの ぼうしと かばん
+        + `<path d="M-30,-58 Q0,-92 30,-58 Z" fill="#6f9fcb" stroke="#4f78a3" stroke-width="3"/><path d="M-38,-56 H34 q8,0 8,6 H-38 Z" fill="#4f78a3"/><circle cy="-70" r="6" fill="#fde3a6" stroke="#d9b04d" stroke-width="2"/>`
+        + `<path d="M-30,10 L30,46" stroke="#9b5f3a" stroke-width="5"/><rect x="18" y="38" width="38" height="30" rx="6" fill="#d9a066" stroke="#9b5f3a" stroke-width="3"/><path d="M18,48 H56" stroke="#9b5f3a" stroke-width="3"/></g><g class="yb-letter" transform="translate(${f(46 * sk)} ${f(14 * sk)})">${letter(Math.max(12, 70 * sk))}</g></g>`;
       return s;
     },
     after(g) {
@@ -85,10 +92,29 @@ export function createYubin(deps) {
           if (st !== walk.st) { walk.st = st; audio.step(st); }
         });
       };
+      // ときどき：風で てがみが とばされる（1けん目の後）
+      delete g.stage.dataset.variant;
+      const gust = plan.length >= 3 && Math.random() < 0.3;
       for (let k = 0; k < plan.length; k++) {
         const i = plan[k];
-        say(k === 0 ? 'てがみを とどけに いくよ' : 'つぎの いえへ…');
+        say(k === 0 ? `${catName(g.cat)}が てがみを とどけに いくよ` : 'つぎの いえへ…');
         await walk(spot(i));
+        if (gust && k === 1) {
+          g.stage.dataset.variant = 'gust';
+          say('あっ！ てがみが とんだ！');
+          audio.toss();
+          const ly = 14 * g.sk;
+          const lx = 46 * g.sk;
+          await frames(GUST * 0.55, (t) => R.letter.setAttribute('transform', `translate(${f(lx - Math.sin(t * Math.PI) * 24)} ${f(ly - t * 60)}) rotate(${f(t * 300)})`));
+          say('ぴょん！ セーフ');
+          audio.hop(2);
+          await frames(GUST * 0.45, (t) => {
+            R.inn.setAttribute('transform', `translate(0 ${f(-Math.sin(Math.PI * t) * 40)}) scale(${f(g.sk)})`);
+            R.letter.setAttribute('transform', `translate(${f(lx)} ${f(ly - 60 * (1 - t))}) rotate(${f(300 * (1 - t))})`);
+          });
+          R.inn.setAttribute('transform', `scale(${f(g.sk)})`);
+          R.letter.setAttribute('transform', `translate(${f(lx)} ${f(ly)})`);
+        }
         if (k === plan.length - 1) break;
         say('ここかな…？');
         audio.hover(k);
@@ -102,7 +128,7 @@ export function createYubin(deps) {
       const box = { x: g.doors[got].cx - g.hw * 0.06 - g.at.x, y: g.doors[got].cy - g.hh * 0.58 * 0.23 - g.at.y };
       await frames(T.post, (t) => {
         const e = ease.inOutSine(t);
-        R.letter.setAttribute('transform', `translate(${f(box.x * e)} ${f(-30 * g.sk + (box.y + 30 * g.sk) * e - Math.sin(Math.PI * t) * 16)}) scale(${f(1 - 0.6 * e)})`);
+        R.letter.setAttribute('transform', `translate(${f(46 * g.sk + (box.x - 46 * g.sk) * e)} ${f(14 * g.sk + (box.y - 14 * g.sk) * e - Math.sin(Math.PI * t) * 16)}) scale(${f(1 - 0.6 * e)})`);
       });
       R.letter.setAttribute('opacity', '0');
       audio.pop();

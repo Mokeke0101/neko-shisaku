@@ -36,7 +36,9 @@ export function dashPlan(n, decided, rounds, rand = Math.random) {
 }
 export const ROUNDS = 4;
 export const T = { chant: 1000, turn: 260, freeze: 420, touch: 500 };
-export const darumaDuration = () => ROUNDS * (T.chant + T.turn + T.freeze) + T.touch;
+// ときどき出る別の動き（v12）：1回だけ おにが はやくちで いって、すぐ ふりむく（こねこたちが あわてて止まる）
+export const FAST = 0.5;
+export const darumaDuration = (fast = false) => ROUNDS * (T.chant + T.turn + T.freeze) + T.touch - (fast ? T.chant * (1 - FAST) : 0);
 
 export function createDaruma(deps) {
   const R = {};
@@ -51,18 +53,24 @@ export function createDaruma(deps) {
     draw(g) {
       const { n, W, H, choices } = g;
       const top = 4;
-      const laneH = Math.max(24, Math.min(54, (H - top - 6) / n));
+      const laneH = Math.max(24, Math.min(72, (H - top - 6) / n));
       const plateH = Math.max(22, Math.min(32, laneH - 4));
       const plateW = Math.min(150, Math.max(116, W * 0.36));
       const oniW = Math.max(56, Math.min(96, W * 0.2));
       const y0 = top + Math.max(0, (H - top - 6 - laneH * n) / 2);
       const lanes = choices.map((_, i) => y0 + laneH * (i + 0.5));
-      const ks = Math.max(0.17, Math.min(0.4, (laneH * 0.86) / 100));
+      const ks = Math.max(0.17, Math.min(0.52, (laneH * 0.86) / 100));
       Object.assign(g, { lanes, laneH, plateW, oniW, ks, x0: 8 + plateW + 50 * ks + 2, x1: W - oniW - 50 * ks });
+      // おにの いる 大きな木（みきに かおを つけて かぞえる）
+      const tx = W - oniW / 2 - 6;
       let s = `<rect x="${f(W - oniW - 6)}" y="4" width="${f(oniW)}" height="${f(H - 8)}" rx="14" fill="#f3d9b0" stroke="#c99a62" stroke-width="2.4"/>`
+        + `<path d="M${f(tx - oniW * 0.18)},${f(H - 8)} L${f(tx - oniW * 0.14)},${f(H * 0.18)} L${f(tx + oniW * 0.14)},${f(H * 0.18)} L${f(tx + oniW * 0.18)},${f(H - 8)} Z" fill="#c99a62" opacity="0.55"/>`
+        + `<ellipse cx="${f(tx)}" cy="${f(H * 0.14)}" rx="${f(oniW * 0.46)}" ry="${f(Math.min(H * 0.12, oniW * 0.4))}" fill="#a3bd6e" stroke="#86a256" stroke-width="2"/>`
+        + `<ellipse cx="${f(tx - oniW * 0.18)}" cy="${f(H * 0.1)}" rx="${f(oniW * 0.2)}" ry="${f(Math.min(H * 0.06, oniW * 0.2))}" fill="#bdd68c"/>`
         + `<path d="M${f(g.x1 + 50 * ks)},6 V${f(H - 6)}" stroke="${C.momiji}" stroke-width="2" stroke-dasharray="6 6" opacity="0.6"/>`;
       choices.forEach((label, i) => {
         s += `<path d="M${f(8 + plateW)},${f(lanes[i])} H${f(g.x1)}" stroke="#e2bd87" stroke-width="2" stroke-dasharray="2 8" stroke-linecap="round"/>`;
+        if (i % 2 === 1) s += `<path d="M${f((8 + plateW + g.x1) / 2)},${f(lanes[i] + laneH * 0.42)} q-2,-7 -6,-9 M${f((8 + plateW + g.x1) / 2)},${f(lanes[i] + laneH * 0.42)} q2,-8 6,-10" stroke="#a3bd6e" stroke-width="2" fill="none" stroke-linecap="round"/>`;
         s += plate(i, 8, lanes[i] - plateH / 2, plateW, plateH, label).svg;
       });
       choices.forEach((_, i) => { s += `<g class="kit" data-i="${i}"><g class="kit-in" transform="scale(${f(ks)})">${catFace(g.cat, { look: { x: 1, y: 0 } })}</g></g>`; });
@@ -84,16 +92,20 @@ export function createDaruma(deps) {
     async perform(g, decided, say) {
       const plan = dashPlan(g.n, decided, ROUNDS);
       const words = ['だ', 'る', 'ま', 'さ', 'ん', 'が'];
+      delete g.stage.dataset.variant;
+      const fastAt = Math.random() < 0.3 ? 1 + Math.floor(Math.random() * 2) : -1;
       for (let r = 0; r < ROUNDS; r++) {
+        const fast = r === fastAt;
+        if (fast) g.stage.dataset.variant = 'fast';
         // だるまさんが…（すすむ）
         backOf(g);
         R.call.setAttribute('opacity', '0');
         const from = pos.slice();
         const to = plan[r];
         let said = -1;
-        await frames(T.chant, (t) => {
+        await frames(fast ? T.chant * FAST : T.chant, (t) => {
           const w = Math.min(words.length - 1, Math.floor(t * words.length));
-          if (w !== said) { said = w; say(`${words.slice(0, w + 1).join('')}…`); audio.step(w); }
+          if (w !== said) { said = w; say(fast ? 'だるまさんが ころんだっ！（はやい！）' : `${words.slice(0, w + 1).join('')}…`); audio.step(w); }
           pos = from.map((p, i) => p + (to[i] - p) * ease.inOutSine(t));
           place(g);
           R.kits.forEach((el, i) => el.querySelector('.kit-in').setAttribute('transform', `translate(0 ${f(-Math.abs(Math.sin(t * Math.PI * 4 + i)) * 4)}) scale(${f(g.ks)})`));
@@ -105,7 +117,12 @@ export function createDaruma(deps) {
         faceOf(g);
         R.call.setAttribute('opacity', '1');
         R.kits.forEach((el) => el.querySelector('.kit-in').setAttribute('transform', `scale(${f(g.ks)})`));
-        await wait(T.turn + T.freeze);
+        if (fast) {
+          // あわてて止まる：こねこが ぷるぷる
+          await frames(T.turn + T.freeze, (t) => R.kits.forEach((el, i) => el.querySelector('.kit-in').setAttribute('transform', `translate(${f(Math.sin(t * 40 + i) * 1.6 * (1 - t))} 0) scale(${f(g.ks)})`)));
+        } else {
+          await wait(T.turn + T.freeze);
+        }
       }
       // タッチ
       const got = pos.indexOf(Math.max(...pos)); // さいしょに おにへ着いた こねこ

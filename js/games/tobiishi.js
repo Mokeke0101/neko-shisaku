@@ -62,7 +62,7 @@ export function createTobiishi({ view, stage, result, play, getChoices, getWeigh
       const x = i % 2 === 0 ? W * 0.32 : W * 0.68;
       return { x, y };
     });
-    const catS = Math.max(0.16, Math.min(0.32, (rowH * 0.95) / 120));
+    const catS = Math.max(0.16, Math.min(0.4, (rowH * 1.05) / 120));
     const bankAt = { x: W * 0.3, y: H - bankH * 0.45 };
     geo = { n, W, H, stones, stoneW, stoneH, catS, bankAt, bankH, top, used };
 
@@ -80,6 +80,12 @@ export function createTobiishi({ view, stage, result, play, getChoices, getWeigh
     s += `<path d="M0,${H - bankH} Q${W / 2},${H - bankH - 12} ${W},${H - bankH} V${H} H0 Z" fill="#dfe9bf"/>`;
     s += `<path d="M0,${H - bankH} Q${W / 2},${H - bankH - 12} ${W},${H - bankH}" stroke="#b9cc85" stroke-width="3" fill="none"/>`;
     s += [0.12, 0.55, 0.85].map((fx) => `<path d="M${(W * fx).toFixed(1)},${(H - 8).toFixed(1)} q3,-12 0,-20 M${(W * fx + 6).toFixed(1)},${(H - 8).toFixed(1)} q4,-10 6,-16" stroke="#a9c17a" stroke-width="2.4" fill="none" stroke-linecap="round"/>`).join('');
+    // はすの葉と かえる（v12。石の ない 川の はし）
+    const pad = (x, y, r, frog) => `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)})"><path d="M0,0 L${r},${-r * 0.2} A${r},${r * 0.55} 0 1 1 ${r * 0.9},${r * 0.25} Z" fill="#a3bd6e" stroke="#86a256" stroke-width="1.6"/>`
+      + (frog ? `<g transform="translate(${-r * 0.2} ${-r * 0.35})"><ellipse rx="${r * 0.42}" ry="${r * 0.3}" fill="#86c26e" stroke="#5f9a4d" stroke-width="1.4"/><circle cx="${-r * 0.2}" cy="${-r * 0.28}" r="${r * 0.13}" fill="#ffffff" stroke="#5f9a4d" stroke-width="1"/><circle cx="${r * 0.2}" cy="${-r * 0.28}" r="${r * 0.13}" fill="#ffffff" stroke="#5f9a4d" stroke-width="1"/><circle cx="${-r * 0.2}" cy="${-r * 0.27}" r="${r * 0.05}" fill="#4a3a33"/><circle cx="${r * 0.2}" cy="${-r * 0.27}" r="${r * 0.05}" fill="#4a3a33"/></g>` : '') + '</g>';
+    const pr = Math.max(12, Math.min(22, W * 0.05));
+    s += pad(W * 0.84, H - bankH - pr * 0.9, pr, true) + pad(W * 0.1, farH + pr * 0.9, pr * 0.8, false);
+    s += `<g class="tb-fish" visibility="hidden"><path d="M-14,0 Q0,-9 12,0 Q0,9 -14,0 Z M12,0 L20,-6 L20,6 Z" fill="#f7b4a6" stroke="#d98a7a" stroke-width="1.6"/><circle cx="-7" cy="-1.5" r="1.4" fill="#4a3a33"/></g>`;
     // とびいし
     let minLabel = Infinity;
     stones.forEach((p, i) => {
@@ -103,6 +109,7 @@ export function createTobiishi({ view, stage, result, play, getChoices, getWeigh
     refs = {
       pos: svg.querySelector('.tb-pos'),
       catG: svg.querySelector('.tb-cat'),
+      fish: svg.querySelector('.tb-fish'),
       cells: Array.from(svg.querySelectorAll('.cell')),
     };
     placeCat(spotOf(-1));
@@ -192,6 +199,8 @@ export function createTobiishi({ view, stage, result, play, getChoices, getWeigh
       await wait(lookMs / looks);
     }
     // 2. ぴょん、ぴょん
+    delete stage.dataset.variant;
+    const fishAt = steps.length >= 2 && Math.random() < 0.3 ? 0 : -1;
     for (let k = 0; k < steps.length; k++) {
       const to = at + steps[k];
       const target = spotOf(to);
@@ -210,6 +219,22 @@ export function createTobiishi({ view, stage, result, play, getChoices, getWeigh
       audio.step(k);
       lightCell(at, false);
       const last = k === steps.length - 1;
+      if (k === fishAt) {
+        // ときどき出る別の動き（v12）：さかなが ぴょんと はねて、こねこが びっくり
+        stage.dataset.variant = 'fish';
+        const fx = pos.x + (at % 2 === 0 ? 1 : -1) * geo.W * 0.22;
+        const fy = pos.y + 78 * geo.catS;
+        showHint(result, 'わっ！ さかな！');
+        setCat('strain', { x: Math.sign(fx - pos.x), y: 0 });
+        refs.fish.setAttribute('visibility', 'visible');
+        audio.pop();
+        await frames(600, (t) => {
+          refs.fish.setAttribute('transform', `translate(${(fx + (t - 0.5) * 40).toFixed(1)} ${(fy - Math.sin(Math.PI * t) * 56).toFixed(1)}) rotate(${(-40 + 80 * t).toFixed(0)}) scale(1.3)`);
+          placeCat(pos, 1 + 0.1 * Math.sin(Math.PI * Math.min(1, t * 3)));
+        });
+        refs.fish.setAttribute('visibility', 'hidden');
+        placeCat(pos, 0.9);
+      }
       if (!last) {
         // 次の石と その先の石を見くらべる
         setCat('normal', lookTo(pos, at + 1));

@@ -29,7 +29,6 @@ import { createGacha } from './gacha.js';
 import { createKanransha } from './kanransha.js';
 import { createShabon } from './shabon.js';
 import { createJarashi } from './jarashi.js';
-import { createBowling } from './bowling.js';
 import { createHikoki } from './hikoki.js';
 import { createWatage } from './watage.js';
 import { createHimo } from './himo.js';
@@ -40,8 +39,8 @@ import { createDaruma } from './daruma.js';
 export const GAMES = [
   { id: 'roulette', group: 'まわる・ころがる', name: 'にくきゅうルーレット', lines: ['にくきゅう', 'ルーレット'], desc: 'はりが とまった ところ', play: 'まわす', kind: '回って止まる', use: '2〜12こ', create: createRoulette },
   { id: 'saikoro', group: 'まわる・ころがる', name: 'ねこ さいころ', lines: ['ねこ', 'さいころ'], desc: 'うえを むいた め', play: 'ころがす', kind: '転がって止まる', use: '2〜6こ', max: 6, create: createSaikoro },
-  { id: 'kanransha', group: 'まわる・ころがる', name: 'ねこの かんらんしゃ', lines: ['ねこの', 'かんらんしゃ'], desc: 'したに とまった ゴンドラ', play: 'のる', kind: '回って止まる（かんらんしゃ）', use: '2〜12こ', create: createKanransha },
-  { id: 'stamp', group: 'めくって あつめる', name: 'にくきゅうスタンプ', lines: ['にくきゅう', 'スタンプ'], desc: 'ねこの てで ぽんと おす', play: 'スタンプ', kind: 'めくる・集める', use: '2〜12こ', create: createStamp },
+  { id: 'kanransha', group: 'まわる・ころがる', name: 'ねこの かんらんしゃ', lines: ['ねこの', 'かんらんしゃ'], desc: 'てっぺんに とまった ゴンドラ', play: 'まわす', kind: '回って止まる（かんらんしゃ）', use: '2〜12こ', create: createKanransha },
+  { id: 'stamp', group: 'めくって あつめる', name: 'にくきゅうスタンプ', lines: ['にくきゅう', 'スタンプ'], desc: 'アズの てで ぽんと おす', play: 'スタンプ', kind: 'めくる・集める', use: '2〜12こ', create: createStamp },
   { id: 'mekuri', group: 'めくって あつめる', name: 'ぺらぺら めくり', lines: ['ぺらぺら', 'めくり'], desc: 'めくるのを やめた ページ', play: 'めくる', kind: 'めくる（ページ）', use: '2〜12こ', create: createMekuri },
   { id: 'nobi', group: 'たかさに とどく', name: 'のびのび せいくらべ', lines: ['のびのび', 'せいくらべ'], desc: 'のびた たかさで きまる', play: 'のびる', kind: '高さ・量へ届く', use: '2〜12こ', create: createNobi },
   { id: 'tower', group: 'たかさに とどく', name: 'だんボール タワー', lines: ['だんボール', 'タワー'], desc: 'つみあがった たかさ', play: 'つむ', kind: '高さへ届く（積む）', use: '2〜12こ', create: createTower },
@@ -49,7 +48,7 @@ export const GAMES = [
   { id: 'negaeri', group: 'ねこの きまぐれ', name: 'ねこの ねがえり', lines: ['ねこの', 'ねがえり'], desc: 'あたまが むいた ほう', play: 'ごろん', kind: '猫の気まぐれ（向き）', use: '2〜8こ', max: 8, create: createNegaeri },
   { id: 'hidamari', group: 'ねこの きまぐれ', name: 'ひだまり ねこ', lines: ['ひだまり', 'ねこ'], desc: 'まるくなった ざぶとん', play: 'ひなたぼっこ', kind: '猫の気まぐれ（ひだまり）', use: '2〜12こ', create: createHidamari },
   { id: 'shabon', group: 'ねこの きまぐれ', name: 'ねこの しゃぼんだま', lines: ['ねこの', 'しゃぼんだま'], desc: 'さいごに のこった たま', play: 'ふーっ', kind: '猫の気まぐれ（しゃぼんだま）', use: '2〜12こ', create: createShabon },
-  { id: 'jarashi', group: 'ねこの きまぐれ', name: 'ねこじゃらし', lines: ['ねこじゃらし', 'とびつき'], desc: 'ねこが とびついた 1ぽん', play: 'ふりふり', kind: '猫の気まぐれ（とびつく）', use: '2〜12こ', create: createJarashi },
+  { id: 'jarashi', group: 'ねこの きまぐれ', name: 'ねこじゃらし', lines: ['ねこじゃらし', 'とびつき'], desc: 'アズが とびついた 1ぽん', play: 'ふりふり', kind: '猫の気まぐれ（とびつく）', use: '2〜12こ', create: createJarashi },
   { id: 'kuji', group: 'かくれた ものを あてる', name: 'まねきねこ おみくじ', lines: ['まねきねこ', 'おみくじ'], desc: 'でてきた ぼうの ばんごう', play: 'ふる', kind: '隠して当てる（くじ）', use: '2〜12こ', create: createKuji },
   { id: 'sagasu', group: 'かくれた ものを あてる', name: 'おもちゃ さがし', lines: ['おもちゃ', 'さがし'], desc: 'おもちゃが あった はこ', play: 'さがす', kind: '隠して当てる（さがす）', use: '2〜12こ', create: createSagasu },
   { id: 'gacha', group: 'かくれた ものを あてる', name: 'ねこ ガチャ', lines: ['ねこ', 'ガチャ'], desc: 'でてきた カプセルの ばんごう', play: 'まわす', kind: '隠して当てる（ガチャ）', use: '2〜12こ', create: createGacha },
@@ -62,7 +61,6 @@ export const GAMES = [
   { id: 'daruma', group: 'きょうそう', name: 'ねこの だるまさん', lines: ['だるまさんが', 'ころんだ'], desc: 'さいしょに タッチした こねこ', play: 'はじめる', kind: '競争する（とまって すすむ）', use: '2〜12こ', create: createDaruma },
   { id: 'mato', group: 'ねらって あてる', name: 'ねこパンチ まとあて', lines: ['ねこパンチ', 'まとあて'], desc: 'たまが あたった まと', play: 'ねらう', kind: '当てる（的当て）', use: '2〜12こ', create: createMato },
   { id: 'wanage', group: 'ねらって あてる', name: 'ねこの わなげ', lines: ['ねこの', 'わなげ'], desc: 'わが はいった ぼう', play: 'なげる', kind: '当てる（わなげ）', use: '2〜12こ', create: createWanage },
-  { id: 'bowling', group: 'ねらって あてる', name: 'ねこの ボウリング', lines: ['ねこの', 'ボウリング'], desc: 'さいごまで たっていた ピン', play: 'ころがす', kind: '当てる（ボウリング）', use: '2〜12こ', create: createBowling },
   { id: 'sugoroku', group: 'ぴょんぴょん すすむ', name: 'ねこ すごろく', lines: ['ねこ', 'すごろく'], desc: 'こまが とまった ます', play: 'さいころ', kind: '盤を進む', use: '2〜12こ', create: createSugoroku },
   { id: 'tobiishi', group: 'ぴょんぴょん すすむ', name: 'こねこの とびいし', lines: ['こねこの', 'とびいし'], desc: 'とまった いし', play: 'とぶ', kind: '盤を進む（とびいし）', use: '2〜12こ', create: createTobiishi },
   { id: 'otoshi', group: 'おちて はいる', name: 'カリカリ おとし', lines: ['カリカリ', 'おとし'], desc: 'おさらに はいった ところ', play: 'おとす', kind: '上から落ちて入る', use: '2〜12こ', create: createOtoshi },

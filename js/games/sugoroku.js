@@ -145,6 +145,9 @@ export function createSugoroku({ view, stage, result, play, getChoices, getWeigh
     // スタートの ござ
     s += `<g><ellipse cx="${startAt.x}" cy="${startAt.y + 4}" rx="34" ry="15" fill="#f4e2c0" stroke="${C.woodDeep}" stroke-width="2"/>`
       + `<text x="${startAt.x}" y="${startAt.y + 30}" font-size="13" font-weight="700" fill="${C.inkSoft}" text-anchor="middle" dominant-baseline="central">スタート</text></g>`;
+    // 猫の ざぶとん（v12）
+    s += `<rect x="${(catAt.x - 62 * catS).toFixed(1)}" y="${(catAt.y + 66 * catS).toFixed(1)}" width="${(124 * catS).toFixed(1)}" height="${(18 * catS).toFixed(1)}" rx="${(8 * catS).toFixed(1)}" fill="#a985c9" stroke="#7d5fa0" stroke-width="2"/>`
+      + `<circle cx="${(catAt.x - 56 * catS).toFixed(1)}" cy="${(catAt.y + 68 * catS).toFixed(1)}" r="${(4 * catS).toFixed(1)}" fill="#f6d55e"/><circle cx="${(catAt.x + 56 * catS).toFixed(1)}" cy="${(catAt.y + 68 * catS).toFixed(1)}" r="${(4 * catS).toFixed(1)}" fill="#f6d55e"/>`;
     // 猫
     s += `<g transform="translate(${catAt.x} ${catAt.y}) scale(${catS.toFixed(3)})"><g class="sg-cat">${catSitting(cat, { look: { x: -1, y: 0.3 } })}</g></g>`;
     // さいころ
@@ -325,6 +328,26 @@ export function createSugoroku({ view, stage, result, play, getChoices, getWeigh
       showHint(result, `${dice[k]} すすむ`);
       at = await walk(at, dice[k]);
       await wait(k === dice.length - 1 ? 150 : 250);
+    }
+    // ときどき出る別の動き（v12）：いきおいで 1ます いきすぎて、もどる
+    delete stage.dataset.variant;
+    if (at < n - 1 && Math.random() < 0.3) {
+      stage.dataset.variant = 'over';
+      showHint(result, 'あっ、いきすぎ…');
+      const back = at;
+      await walk(at, 1);
+      audio.heart();
+      await wait(220);
+      showHint(result, 'もどって…');
+      const c = geo.cells[back];
+      const p0 = { ...piece };
+      lightCell(back + 1, false);
+      await frames(320, (t) => placePiece(p0.x + (c.sx - p0.x) * ease.inOutSine(t), p0.y + (c.sy - p0.y) * ease.inOutSine(t), Math.sin(Math.PI * t) * 16, 1));
+      piece = { x: c.sx, y: c.sy };
+      placePiece(piece.x, piece.y, 0, 1);
+      lightCell(back, true);
+      audio.hop(back);
+      at = back;
     }
     const landed = at;
     stage.dataset.landed = String(landed);

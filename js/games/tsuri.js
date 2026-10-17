@@ -73,7 +73,7 @@ export function createTsuri({ view, stage, result, play, getChoices, getWeights,
     const x0 = 8 + tagW + 10; // さかなが およぐ はんいの左
     const x1 = W - 12;
     const lineX = x0 + (x1 - x0) * 0.45;
-    const fishS = Math.max(7, Math.min(13, bandH * 0.26));
+    const fishS = Math.max(7, Math.min(18, bandH * 0.32));
     const catS = Math.max(0.3, Math.min(0.46, (topRoom - 10) / 160));
     const catAt = { x: W - 14 - 80 * catS, y: waterTop - 6 - 78 * catS };
     const rodTip = { x: lineX, y: Math.max(8, waterTop - topRoom * 0.75) };
@@ -89,6 +89,12 @@ export function createTsuri({ view, stage, result, play, getChoices, getWeights,
     // さんばし
     s += `<rect x="${(lineX - 20).toFixed(1)}" y="${(waterTop - 10).toFixed(1)}" width="${(W - lineX + 16).toFixed(1)}" height="10" rx="3" fill="#e3bb84" stroke="#b98a52" stroke-width="2"/>`;
     s += `<rect x="${(W - 30).toFixed(1)}" y="${(waterTop - 4).toFixed(1)}" width="8" height="24" fill="#c99a62"/>`;
+    // さんばしの バケツと、池の 水草（v12）
+    const bk = Math.max(12, Math.min(20, topRoom * 0.2));
+    s += `<g transform="translate(${(lineX + 8 + bk).toFixed(1)} ${(waterTop - 10).toFixed(1)})"><path d="M${-bk},${-bk * 1.3} h${bk * 2} l${-bk * 0.2},${bk * 1.3} h${-bk * 1.6} Z" fill="#cfe0ea" stroke="#7aa7c4" stroke-width="2"/><path d="M${-bk},${-bk * 1.3} q${bk},${-bk * 1.1} ${bk * 2},0" stroke="#7aa7c4" stroke-width="1.6" fill="none"/><ellipse cy="${-bk * 1.3}" rx="${bk}" ry="${bk * 0.25}" fill="#a9cfd5"/></g>`;
+    [[14, H - 6, 1], [W - 18, H - 6, 0.8]].forEach(([x, y, k]) => {
+      s += `<path d="M${x},${y} q-4,-22 2,-40 M${x + 6},${y} q4,-18 -2,-32 M${x - 6},${y} q-6,-14 0,-26" stroke="#86a256" stroke-width="${(3 * k).toFixed(1)}" fill="none" stroke-linecap="round" opacity="0.7"/>`;
+    });
     // 深さの線と札、さかな
     let minLabel = Infinity;
     choices.forEach((label, i) => {
@@ -245,6 +251,15 @@ export function createTsuri({ view, stage, result, play, getChoices, getWeights,
       showHint(result, 'きた…！');
       audio.heart();
       await frames(T.bite, (t) => { setTackle(hookY, 0.5 + 0.5 * Math.min(1, t * 2)); tick(d); });
+      // ときどき出る別の動き（v12）：おおもの！ ひっぱりあいが 長くなる
+      delete stage.dataset.variant;
+      if (Math.random() < 0.3) {
+        stage.dataset.variant = 'big';
+        showHint(result, 'おおもの…！ がんばれ！');
+        setCat('strain', { x: -1, y: 0.6 });
+        audio.stretch(0.7);
+        await frames(700, (t) => { setTackle(hookY + Math.sin(t * Math.PI * 8) * 4, 1); placeFish(d, near + Math.sin(t * Math.PI * 10) * 6, t * 60); tick(d); });
+      }
     }
     const landed = depthAt(hookY); // はりが いた深さ
     // つりあげる：さかなが はりと いっしょに 水の上へ

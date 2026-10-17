@@ -10,7 +10,7 @@
 // 結果は先に乱数で決め（RS01-S14）、積む箱の数を、決めた高さになる数にする。
 // どの高さもお祝いし、高いほどお祝いを大きくする（RS01-S09・S15）。高さの札はどれも同じ間かく（出やすさは札に表れない：RS01-S21）。
 import { C } from '../art.js';
-import { catSitting } from '../cats.js';
+import { catSitting, pawPrint } from '../cats.js';
 import { audio } from '../audio.js';
 import { pickWeighted } from '../odds.js';
 import { celebrate, clearCelebration, ease, frames, wait, levelOf } from '../fx.js';
@@ -44,15 +44,15 @@ export function createTower({ view, stage, result, play, getChoices, getWeights,
     if (!W || !H) return;
     const floorY = H - 14;
     const topRoom = Math.max(50, Math.min(80, H * 0.14));
-    const bh = Math.min(56, (floorY - topRoom) / n);
+    const bh = Math.min(70, (floorY - topRoom) / n);
     const tagW = Math.max(118, Math.min(140, W * 0.35));
     const tagX = W - 6 - tagW;
-    const catZone = Math.max(64, Math.min(84, W * 0.2));
+    const catZone = Math.max(64, Math.min(96, W * 0.23));
     const bw = Math.max(60, Math.min(112, (tagX - catZone - 30) * 0.8));
     const tx = catZone + 10 + (tagX - 16 - catZone - 10) / 2;
     const th = Math.max(20, Math.min(40, bh - 4));
     const levelY = (i) => floorY - bh * (i + 1); // 箱 i の上の面
-    const catS = Math.max(0.3, Math.min(0.46, catZone / 170));
+    const catS = Math.max(0.3, Math.min(0.56, catZone / 160));
     const catHome = { x: catZone / 2 + 4, y: floorY - 78 * catS };
     geo = { n, W, H, floorY, bh, bw, tx, tagX, tagW, th, levelY, catS, catHome };
 
@@ -73,6 +73,11 @@ export function createTower({ view, stage, result, play, getChoices, getWeights,
         + `<text class="cell-label" x="${tagX + tagW / 2}" y="${y.toFixed(1)}" font-size="${size.toFixed(1)}" fill="${C.ink}" text-anchor="middle" dominant-baseline="central">${escapeXml(c)}</text>`
         + `</g>`;
     });
+    // 猫の うしろの、たたんだ だんボールの山（v12）
+    const pileX = catHome.x - 4;
+    for (let k = 0; k < 4; k++) {
+      s += `<rect x="${(pileX - catZone * 0.42 + k * 2).toFixed(1)}" y="${(floorY - 8 - k * 8).toFixed(1)}" width="${(catZone * 0.84).toFixed(1)}" height="7" rx="2" fill="${['#e9c591', '#e3bb84', '#eecd9d', '#e9c591'][k]}" stroke="#b98a52" stroke-width="1.6" transform="rotate(${(k % 2 ? -3 : 2)} ${pileX.toFixed(1)} ${(floorY - k * 8).toFixed(1)})"/>`;
+    }
     // 積んだ箱（遊ぶ時に足す）と、手に持つ箱
     s += `<g class="stack"></g>`;
     s += `<g class="spare" visibility="hidden"></g>`;
@@ -104,6 +109,7 @@ export function createTower({ view, stage, result, play, getChoices, getWeights,
     const fill = ['#e9c591', '#e3bb84', '#eecd9d'][k % 3];
     return `<rect x="${(-w / 2).toFixed(1)}" y="${(-h / 2).toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" rx="4" fill="${fill}" stroke="#b98a52" stroke-width="2"/>`
       + `<rect x="${(-w * 0.09).toFixed(1)}" y="${(-h / 2).toFixed(1)}" width="${(w * 0.18).toFixed(1)}" height="${h.toFixed(1)}" fill="#f6dfb8" opacity="0.9"/>`
+      + (h > 22 ? `<g transform="translate(${(w * 0.28).toFixed(1)} ${(h * 0.06).toFixed(1)})" opacity="0.5">${pawPrint('#b98a52', Math.min(9, h * 0.22))}</g>` : '')
       + `<path d="M${(-w / 2 + 4).toFixed(1)},${(-h / 2 + 4).toFixed(1)} L${(-w / 2 + 12).toFixed(1)},${(-h / 2 + 4).toFixed(1)}" stroke="#b98a52" stroke-width="1.6" stroke-linecap="round" opacity="0.7"/>`;
   }
 
@@ -195,6 +201,18 @@ export function createTower({ view, stage, result, play, getChoices, getWeights,
       const at = await lift(k, hesitate);
       await drop(k, at);
       audio.hop(k);
+    }
+    // ときどき出る別の動き（v12）：塔が ぐらぐら 大きく ゆれて、ひやっとする
+    delete stage.dataset.variant;
+    if (decided >= 2 && Math.random() < 0.3) {
+      stage.dataset.variant = 'wobble';
+      showHint(result, 'ぐらぐら…！');
+      setCat('strain', { x: 1, y: -1 });
+      audio.heart();
+      await frames(800, (t) => refs.stack.setAttribute('transform', `rotate(${(Math.sin(t * Math.PI * 5) * 5 * (1 - t)).toFixed(2)} ${tx} ${geo.floorY})`));
+      refs.stack.removeAttribute('transform');
+      showHint(result, 'ふぅ… セーフ');
+      setCat('normal', { x: 1, y: -1 });
     }
     // 2. 決めた高さ：次の箱を持ったまま まよう（いちばん上の札なら、持たずに見上げる）
     if (decided < n - 1) {

@@ -10,7 +10,7 @@
 // 結果は先に乱数で決め（RS01-S14）、ねがえりの角度の並びを、決めた札の向きで終わるように組む。
 // 札はどれも同じ大きさで、同じ間かくに並ぶ（出やすさは札に表れない：RS01-S21）。
 import { C } from '../art.js';
-import { catCurled } from '../cats.js';
+import { catCurled, pawPrint } from '../cats.js';
 import { audio } from '../audio.js';
 import { pickWeighted } from '../odds.js';
 import { celebrate, clearCelebration, ease, frames, wait, levelOf } from '../fx.js';
@@ -73,7 +73,9 @@ export function createNegaeri({ view, stage, result, play, getChoices, getWeight
     });
     // 猫から見た札の向き（だ円なので、並びの角度とは少し違う）
     const dirs = tags.map((t) => ((Math.atan2(t.x - cx, -(t.y - cy)) * 180) / Math.PI + 360) % 360);
-    const rugR = Math.max(44, Math.min(rx - tagW / 2 + 18, ry * 0.55, 120, sides ? W / 2 - 6 - tagW - 8 : Infinity));
+    // ラグの大きさ：いちばん近い札の四角まで（v12 で、札に かからない かぎり大きく）
+    const gapTo = (t) => Math.hypot(Math.max(0, Math.abs(t.x - cx) - tagW / 2), Math.max(0, Math.abs(t.y - cy) - tagH / 2));
+    const rugR = Math.max(44, Math.min(130, ...tags.map(gapTo).map((d) => d - 12)));
     const catS = Math.min(1, (rugR * 0.95) / 64);
     geo = { n, W, H, cx, cy, tags, dirs, tagW, tagH, rugR, catS };
 
@@ -83,6 +85,12 @@ export function createNegaeri({ view, stage, result, play, getChoices, getWeight
     s += `<circle cx="${cx}" cy="${cy}" r="${(rugR + 8).toFixed(1)}" fill="#f7c4b4" opacity="0.55"/>`
       + `<circle cx="${cx}" cy="${cy}" r="${rugR.toFixed(1)}" fill="#fde3d6" stroke="#f1b8a3" stroke-width="3"/>`
       + `<circle cx="${cx}" cy="${cy}" r="${(rugR * 0.72).toFixed(1)}" fill="none" stroke="#fffaf0" stroke-width="3" stroke-dasharray="4 7" stroke-linecap="round"/>`;
+    // ラグの ふちの 肉球もようと、ねずみの おもちゃ（v12）
+    for (let k = 0; k < 8; k++) {
+      const a = ((k + 0.5) / 8) * Math.PI * 2;
+      s += `<g transform="translate(${(cx + Math.cos(a) * rugR * 0.86).toFixed(1)} ${(cy + Math.sin(a) * rugR * 0.86).toFixed(1)}) rotate(${((a * 180) / Math.PI + 90).toFixed(0)})" opacity="0.4">${pawPrint('#f1b8a3', Math.max(5, rugR * 0.07))}</g>`;
+    }
+    s += `<g transform="translate(${(cx - rugR * 0.62).toFixed(1)} ${(cy + rugR * 0.66).toFixed(1)}) scale(${Math.max(0.7, rugR / 90).toFixed(2)})"><ellipse rx="10" ry="6" fill="#d6cfc0" stroke="#8f8499" stroke-width="1.6"/><circle cx="-7" cy="-5" r="3" fill="#d6cfc0" stroke="#8f8499" stroke-width="1.2"/><path d="M10,0 q8,2 10,-6" stroke="#8f8499" stroke-width="1.6" fill="none"/><circle cx="-8" cy="-1" r="1" fill="#4a3a33"/></g>`;
     // 札と、ラグへの点線
     let minLabel = Infinity;
     choices.forEach((label, i) => {
@@ -194,6 +202,8 @@ export function createNegaeri({ view, stage, result, play, getChoices, getWeight
     // 1. すやすや
     showHint(result, 'すやすや…');
     for (let k = 0; k < 2; k++) { puffZ(); await wait(450); }
+    delete stage.dataset.variant;
+    const bubbleAt = seq.length >= 2 && Math.random() < 0.3 ? 0 : -1;
     // 2. ごろん、ごろん（右まわりにも左まわりにも）
     for (let k = 0; k < seq.length; k++) {
       const last = k === seq.length - 1;
@@ -210,6 +220,21 @@ export function createNegaeri({ view, stage, result, play, getChoices, getWeight
         heading = from + delta * 0.5;
         await roll(delta * 0.5, 650);
       } else {
+        if (k === bubbleAt) {
+          // ときどき出る別の動き（v12）：はなちょうちんが ふくらんで、ぱちん！
+          stage.dataset.variant = 'bubble';
+          showHint(result, 'すぴー…');
+          const h = (heading * Math.PI) / 180;
+          const bx = geo.cx + Math.sin(h) * 46 * geo.catS + 8;
+          const by = geo.cy - Math.cos(h) * 46 * geo.catS - 6;
+          const b = svgEl('circle', { cx: bx.toFixed(1), cy: by.toFixed(1), r: '2', fill: '#eaf6fb', 'fill-opacity': '0.7', stroke: '#9fc8cf', 'stroke-width': '1.6' });
+          refs.z.appendChild(b);
+          await frames(700, (t) => b.setAttribute('r', (2 + 14 * geo.catS * t).toFixed(1)));
+          audio.pop();
+          showHint(result, 'ぱちん！');
+          b.remove();
+          await frames(220, (t) => setHeading(heading, 1 + 0.12 * Math.sin(Math.PI * t)));
+        }
         showHint(result, 'ごろん…');
         await roll(delta, 820);
         lightTag(seq[k], false);

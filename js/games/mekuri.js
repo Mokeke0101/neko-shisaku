@@ -8,7 +8,7 @@
 // 結果は先に乱数で決め（RS01-S14）、めくる ページの並びを、決めた ページで終わるように組む。
 // ページは どれも同じ大きさで、一覧の札も同じ大きさ（出やすさは表れない：RS01-S21）。
 import { C } from '../art.js';
-import { catSitting, catPaw } from '../cats.js';
+import { catSitting, catPaw, pawPrint } from '../cats.js';
 import { audio } from '../audio.js';
 import { pickWeighted } from '../odds.js';
 import { celebrate, clearCelebration, ease, frames, wait, levelOf } from '../fx.js';
@@ -56,10 +56,10 @@ export function createMekuri({ view, stage, result, play, getChoices, getWeights
     const listRowH = Math.max(30, Math.min(44, (H * 0.5) / rows));
     const listH = listRowH * rows;
     // カードと一覧を続けて置き、全体を上下の真ん中に寄せる
-    const padH = Math.max(110, Math.min(220, H - listH - 4 - 18 - 18));
+    const padH = Math.max(110, Math.min(300, H - listH - 4 - 18 - 18));
     const padTop = 18 + Math.max(0, (H - 4 - 18 - (padH + 18 + listH)) / 2);
     const listY = padTop + padH + 18;
-    const catZone = Math.max(70, Math.min(100, W * 0.24));
+    const catZone = Math.max(70, Math.min(110, W * 0.26));
     const padW = Math.min(300, W - catZone - 24);
     const padX = 10 + (W - catZone - 10 - padW) / 2;
     const colGap = 10;
@@ -71,7 +71,7 @@ export function createMekuri({ view, stage, result, play, getChoices, getWeights
       const x = 10 + c * (colW + colGap) + (inRow === 1 ? (colW + colGap) / 2 : 0);
       return { x, y: listY + r * listRowH, w: colW, h: listRowH - 6 };
     });
-    const catS = Math.max(0.3, Math.min(0.5, catZone / 170));
+    const catS = Math.max(0.3, Math.min(0.62, catZone / 150));
     const catAt = { x: W - catZone / 2 - 4, y: padTop + padH - 78 * catS };
     geo = { n, W, H, padX, padTop, padW, padH, cells, catS, catAt };
 
@@ -127,11 +127,20 @@ export function createMekuri({ view, stage, result, play, getChoices, getWeights
     const len = Math.max(charCount(label), 1);
     const size = Math.max(16, Math.min(48, (padW - 40) / len, padH * 0.36));
     const tint = ['#fffaf0', '#fff6ea', '#fdfbf3'][i % 3];
+    // ページの すみの 小さな絵（v12）：ページごとに 肉球・さかな・ハート・ほし を じゅんに
+    const dx = padX + padW - 30;
+    const dy = padTop + padH - 30;
+    const doodle = [
+      `<g transform="translate(${dx} ${dy})" opacity="0.55">${pawPrint('#f1b8a3', 14)}</g>`,
+      `<g transform="translate(${dx} ${dy})" opacity="0.6"><path d="M-12,0 Q-2,-9 8,0 Q-2,9 -12,0 Z M8,0 L14,-6 L14,6 Z" fill="#cfe0ea" stroke="#7aa7c4" stroke-width="1.4"/></g>`,
+      `<g transform="translate(${dx} ${dy})" opacity="0.6"><path d="M0,8 C-12,-2 -8,-12 0,-5 C8,-12 12,-2 0,8 Z" fill="#fbd9e2" stroke="#e391ad" stroke-width="1.4"/></g>`,
+      `<g transform="translate(${dx} ${dy})" opacity="0.6"><path d="M0,-10 L3,-3 L10,-3 L4,2 L6,9 L0,5 L-6,9 L-4,2 L-10,-3 L-3,-3 Z" fill="#fde3a6" stroke="#d9b04d" stroke-width="1.2"/></g>`,
+    ][i % 4];
     g.innerHTML = `<rect x="${(padX + 6).toFixed(1)}" y="${(padTop + 8).toFixed(1)}" width="${(padW - 12).toFixed(1)}" height="${(padH - 14).toFixed(1)}" rx="10" fill="${tint}" stroke="#e6cfae" stroke-width="2"/>`
       + `<path d="M${(padX + 16).toFixed(1)},${(padTop + 22).toFixed(1)} H${(padX + padW - 16).toFixed(1)}" stroke="#f1b8a3" stroke-width="2" stroke-dasharray="2 6" stroke-linecap="round"/>`
       + `<circle cx="${(padX + padW / 2).toFixed(1)}" cy="${(padTop + 22 + padH * 0.13).toFixed(1)}" r="${Math.min(16, padH * 0.1).toFixed(1)}" fill="#fde3d6"/>`
       + `<text x="${(padX + padW / 2).toFixed(1)}" y="${(padTop + 22 + padH * 0.13).toFixed(1)}" font-size="${Math.min(18, padH * 0.11).toFixed(1)}" font-weight="700" fill="${C.momiji}" text-anchor="middle" dominant-baseline="central">${i + 1}</text>`
-      + `<text x="${(padX + padW / 2).toFixed(1)}" y="${(padTop + padH * 0.62).toFixed(1)}" font-size="${size.toFixed(1)}" font-weight="700" fill="${C.ink}" text-anchor="middle" dominant-baseline="central">${escapeXml(label)}</text>`;
+      + `<text x="${(padX + padW / 2).toFixed(1)}" y="${(padTop + padH * 0.62).toFixed(1)}" font-size="${size.toFixed(1)}" font-weight="700" fill="${C.ink}" text-anchor="middle" dominant-baseline="central">${escapeXml(label)}</text>` + doodle;
   }
 
   // ページの はしを持ち上げる形（lift 0〜1）。とじ具（上）を軸に、下から めくれる
@@ -206,6 +215,27 @@ export function createMekuri({ view, stage, result, play, getChoices, getWeights
       if (k === seq.length - 3) showHint(result, 'どこで とめようかな…');
       await flip(seq[k], flipTime(k, seq.length), k);
       await wait(60);
+    }
+    // ときどき出る別の動き（v12）：1まい めくりすぎて、「あっ」と もどす
+    delete stage.dataset.variant;
+    if (n > 1 && Math.random() < 0.3) {
+      stage.dataset.variant = 'back';
+      let over = decided;
+      while (over === decided) over = Math.floor(Math.random() * n);
+      await flip(over, 420, seq.length);
+      showHint(result, 'あっ、めくりすぎた！');
+      refs.catG.innerHTML = catSitting(cat, { mood: 'strain', look: { x: -1, y: 0.4 } });
+      await wait(240);
+      // もどす：前の ページが 上から おりてくる
+      drawPage(refs.under, over);
+      drawPage(refs.top, decided);
+      refs.top.dataset.page = String(decided);
+      audio.pluck(1);
+      await frames(420, (t) => { liftTop(1 - ease.inOutSine(t)); placePaw(Math.sin(Math.PI * t) * 0.6); });
+      liftTop(0);
+      placePaw(0);
+      lightCell(decided);
+      showHint(result, 'どこで とめようかな…');
     }
     // 2. 次の ページの はしを持ち上げては もどす（まよう）
     let other = decided;

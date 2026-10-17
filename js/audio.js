@@ -175,6 +175,19 @@ export const audio = {
   pop() {
     this.tone(660, { decay: 0.12, gain: 0.22, glideTo: 990 });
   },
+  // 結果が出た時の「にゃー」（v12）。アズ（mike）は少し高く、イズ（saba）は少し低い。上がって下がる2つの音で鳴き声にする
+  meow(kind = 'mike', at = 0) {
+    if (!this.ready()) return;
+    const f0 = kind === 'saba' ? 520 : 640;
+    this.tone(f0, { type: 'triangle', at, attack: 0.05, decay: 0.2, gain: 0.14, glideTo: f0 * 1.5 });
+    this.tone(f0 * 1.5, { type: 'triangle', at: at + 0.2, attack: 0.02, decay: 0.34, gain: 0.13, glideTo: f0 * 0.86 });
+    this.tone(f0 * 3, { at: at + 0.05, attack: 0.04, decay: 0.42, gain: 0.03, glideTo: f0 * 2.4 });
+  },
+  // ねこ ガチャ：コインを入れる「ちゃりん」
+  coin() {
+    this.bell(91, 0, 0.16);
+    this.bell(96, 0.09, 0.14);
+  },
 
   // あしあと あみだ：横の線が出る音と、足あと
   rung(i) {

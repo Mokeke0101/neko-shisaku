@@ -34,24 +34,34 @@ export function createHikoki(deps) {
     resultLabel: 'おりたのは',
     draw(g) {
       const { n, W, H, choices } = g;
-      const skyH = Math.max(60, Math.min(120, H * 0.22));
+      const skyH = Math.max(64, Math.min(150, H * 0.26));
       const cols = n <= 4 ? 2 : 3;
-      const cells = grid(n, { x: 8, y: skyH + 4, w: W - 16, h: H - skyH - 10 }, cols, 8);
+      const cells = grid(n, { x: 4, y: skyH + 4, w: W - 8, h: H - skyH - 10 }, cols, 6);
       const plateH = Math.max(22, Math.min(32, cells[0].h * 0.34));
       const mats = cells.map((c) => ({ cx: c.cx, cy: Math.max(c.y + (c.h - plateH) * 0.55, c.y + c.h - plateH - 30) })); // 札の すぐ上
-      const ps = Math.max(18, Math.min(40, cells[0].w * 0.26));
-      const sk = skyH / 190;
+      const ps = Math.max(20, Math.min(54, cells[0].w * 0.34));
+      const sk = skyH / 175;
       Object.assign(g, { cells, plateH, mats, ps, skyH, sk, start: { x: 40 + 70 * sk, y: skyH * 0.45 } });
       let s = '';
       cells.forEach((c, i) => {
         const m = mats[i];
-        const rx = Math.min(c.w * 0.36, 40);
-        const ry = Math.max(6, Math.min(14, (c.h - plateH) * 0.18));
-        s += `<ellipse cx="${f(m.cx)}" cy="${f(m.cy)}" rx="${f(rx)}" ry="${f(ry)}" fill="#e4efd2" stroke="#a3bd6e" stroke-width="2"/>`
-          + `<ellipse cx="${f(m.cx)}" cy="${f(m.cy)}" rx="${f(rx * 0.5)}" ry="${f(ry * 0.5)}" fill="none" stroke="#a3bd6e" stroke-width="1.6" stroke-dasharray="3 4"/>`;
-        s += plate(i, c.x + 4, c.y + c.h - plateH, c.w - 8, plateH, choices[i]).svg;
+        // おりる場所：ピクニックの しきもの（ななめから見た 四角）
+        const rx = Math.min(c.w * 0.4, 48);
+        const ry = Math.max(7, Math.min(16, (c.h - plateH) * 0.2));
+        const [ca, cb] = [['#f7b4a6', '#fffaf0'], ['#cfe0ea', '#fffaf0'], ['#fde3a6', '#fffaf0'], ['#cfe3c0', '#fffaf0']][i % 4];
+        let sheet = `<path d="M${f(-rx)},${f(ry)} L${f(-rx * 0.8)},${f(-ry)} L${f(rx * 0.8)},${f(-ry)} L${f(rx)},${f(ry)} Z" fill="${cb}" stroke="#c99a62" stroke-width="1.6" stroke-linejoin="round"/>`;
+        for (let k = 0; k < 4; k++) {
+          const u0 = k / 4;
+          const u1 = (k + 0.5) / 4;
+          sheet += `<path d="M${f(-rx + 2 * rx * u0)},${f(ry)} L${f(-rx * 0.8 + 1.6 * rx * u0)},${f(-ry)} L${f(-rx * 0.8 + 1.6 * rx * u1)},${f(-ry)} L${f(-rx + 2 * rx * u1)},${f(ry)} Z" fill="${ca}" opacity="0.8"/>`;
+        }
+        s += `<g transform="translate(${f(m.cx)} ${f(m.cy)})">${sheet}</g>`;
+        s += plate(i, c.x, c.y + c.h - plateH, c.w, plateH, choices[i]).svg;
       });
-      s += `<g transform="translate(${f(40)} ${f(skyH * 0.52)}) scale(${f(sk)})"><g class="hk-cat">${catSitting(g.cat, { look: { x: 1, y: 0 } })}</g></g>`;
+      // 空の 小さな雲と、右上の ふきながし
+      s += `<g transform="translate(${f(W * 0.6)} ${f(skyH * 0.32)})" opacity="0.85"><path d="M-22,6 q-2,-12 10,-12 q4,-10 16,-6 q12,-4 14,8 q8,2 4,10 Z" fill="#ffffff"/></g>`
+        + `<g transform="translate(${f(W - 26)} ${f(skyH * 0.95)})"><path d="M0,0 V${f(-skyH * 0.75)}" stroke="#9b5f3a" stroke-width="2.6"/><g transform="translate(0 ${f(-skyH * 0.75)})"><g class="hk-sock"><path d="M0,0 L-30,5 L-30,13 L0,16 Z" fill="#f7a6a0" stroke="#d97f7a" stroke-width="1.6"/><path d="M-10,1.6 V14.4 M-20,3.3 V13.4" stroke="#fffaf0" stroke-width="3"/></g></g></g>`;
+      s += `<g transform="translate(${f(44)} ${f(skyH * 0.52)}) scale(${f(sk)})"><g class="hk-cat">${catSitting(g.cat, { look: { x: 1, y: 0 } })}</g></g>`;
       s += `<g class="wind"></g><g class="plane" transform="translate(${f(g.start.x)} ${f(g.start.y)})">${plane(ps)}</g>`;
       return s;
     },
@@ -59,6 +69,7 @@ export function createHikoki(deps) {
       R.plane = g.svg.querySelector('.plane');
       R.cat = g.svg.querySelector('.hk-cat');
       R.wind = g.svg.querySelector('.wind');
+      g.svg.querySelector('.hk-sock').animate([{ transform: 'skewY(0deg) scaleX(1)' }, { transform: 'skewY(6deg) scaleX(0.92)' }, { transform: 'skewY(0deg) scaleX(1)' }], { duration: 1600, iterations: Infinity });
     },
     async perform(g, decided, say) {
       const { W } = g;
@@ -68,6 +79,16 @@ export function createHikoki(deps) {
       // 道：とばした所 → 高く上がる → 場所の上を とおる → 決めた場所へ おりる
       const plan = flightPlan(g.n, decided);
       const pts = [g.start, { x: W * 0.55, y: Math.max(8, g.skyH * 0.2) }];
+      // ときどき：空で くるりんと 1回 宙がえり
+      delete g.stage.dataset.variant;
+      const loop = Math.random() < 0.3;
+      let looped = 0;
+      if (loop) {
+        g.stage.dataset.variant = 'loop';
+        const c = { x: W * 0.62, y: Math.max(30, g.skyH * 0.55) };
+        const r = Math.min(34, g.skyH * 0.32);
+        [-0.5, 0, 0.5, 1, 1.5].forEach((q) => pts.push({ x: c.x + Math.cos(Math.PI * q) * r + q * 6, y: c.y - Math.sin(Math.PI * q) * r }));
+      }
       plan.forEach((i, k) => {
         const m = g.mats[i];
         const last = k === plan.length - 1;
@@ -86,6 +107,7 @@ export function createHikoki(deps) {
         const p = along(pts, u);
         const deg = Math.max(-50, Math.min(50, (p.a * 180) / Math.PI));
         R.plane.setAttribute('transform', `translate(${f(p.x)} ${f(p.y)}) rotate(${f(deg)})`);
+        if (loop && u > 0.12 && !looped) { looped = 1; say('くるりん！'); audio.hop(2); }
         if (u > 0.5 && !said) { said = 1; say('どこに おりるかな…'); audio.heart(); }
         if (Math.floor(t * 4) > blew) { blew = Math.floor(t * 4); gust(g, p); audio.slide(0.3); }
       });

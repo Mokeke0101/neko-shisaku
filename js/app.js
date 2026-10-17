@@ -27,6 +27,13 @@ function buildGames() {
   // 決め方の仕組みの見出し（RS01-S07）。一覧は1本のまま、見出しで区切る。
   // 見出しとそのカードを1つの かたまりにし、ゲームが1本だけの かたまりは1列ぶん（となりに並べる）、2本以上は2列ぶんにする
   const secs = {};
+  // お気に入り（v12）：星を押したゲームを、一覧の いちばん上に もう1度 ならべる（カードを写す）
+  const fav = document.createElement('section');
+  fav.className = 'menu-sec menu-fav';
+  fav.id = 'menu-fav';
+  fav.hidden = true;
+  fav.innerHTML = '<h3 class="menu-fav-title"><span class="fav-mark" aria-hidden="true"></span>おきにいり</h3><div class="menu-cards" id="menu-fav-cards"></div>';
+  menu.appendChild(fav);
   for (const g of GAMES) {
     if (!secs[g.group]) {
       const n = GAMES.filter((x) => x.group === g.group).length;
@@ -49,7 +56,8 @@ function buildGames() {
     card.setAttribute('aria-label', g.name);
     card.innerHTML = `<span class="menu-art" data-art="${g.id}" aria-hidden="true"></span>`
       + `<span class="menu-name">${g.lines.map((l) => `<span>${l}</span>`).join('')}</span>`
-      + `<span class="menu-desc">${g.desc}</span>`;
+      + `<span class="menu-desc">${g.desc}</span>`
+      + `<span class="fav-toggle" role="button" aria-label="${g.name}を おきにいりに する" data-fav="${g.id}"></span>`;
     secs[g.group].appendChild(card);
     const v = document.createElement('section');
     v.id = `view-${g.id}`;
@@ -167,6 +175,23 @@ paintPurpose();
 const gameById = (id) => GAMES.find((g) => g.id === id);
 const fits = (g) => store.list().length <= maxOf(g);
 const limitText = (g) => `2〜${maxOf(g)}こ の とき`;
+// お気に入りの かたまりを作り直す（星を押した順）。カードの星の色も合わせる
+const STAR = '<svg viewBox="-12 -12 24 24"><path d="M0,-9 L2.6,-3.3 L8.6,-2.8 L4,1.3 L5.4,7.4 L0,4.2 L-5.4,7.4 L-4,1.3 L-8.6,-2.8 L-2.6,-3.3 Z" stroke-width="1.8" stroke-linejoin="round"/></svg>';
+function renderFavs() {
+  document.querySelectorAll('.fav-toggle:empty, .fav-mark:empty').forEach((el) => { el.innerHTML = STAR; });
+  const box = $('menu-fav-cards');
+  box.textContent = '';
+  for (const id of store.data.favorites) {
+    const src = document.querySelector(`#menu .menu-card[data-go="${id}"]:not(.is-fav)`);
+    if (!src) continue;
+    const c = src.cloneNode(true);
+    c.classList.add('is-fav');
+    box.appendChild(c);
+  }
+  $('menu-fav').hidden = box.childElementCount === 0;
+  $('menu-fav').classList.toggle('is-single', box.childElementCount === 1);
+  document.querySelectorAll('#menu .menu-card').forEach((card) => card.classList.toggle('is-favorite', store.isFavorite(card.dataset.go)));
+}
 // ホームのカード：いまの選択肢の数を扱えないゲームは、うすくして押せなくし、扱える数を添える
 function refreshMenu() {
   document.querySelectorAll('#menu .menu-card').forEach((card) => {
@@ -261,6 +286,19 @@ $('omakase').addEventListener('click', () => {
   audio.tap();
   omakase();
 });
+
+// カードの星：お気に入りに入れる・はずす（カードを開かない）
+document.addEventListener('click', (e) => {
+  const fv = e.target.closest('[data-fav]');
+  if (!fv) return;
+  e.stopImmediatePropagation();
+  e.preventDefault();
+  audio.tap();
+  store.toggleFavorite(fv.dataset.fav);
+  store.save();
+  renderFavs();
+  refreshMenu();
+}, true);
 
 document.addEventListener('click', (e) => {
   const b = e.target.closest('[data-go]');
@@ -412,12 +450,14 @@ function refreshCache() {
 onLook(() => {
   paintScenes();
   paintCats();
+  renderFavs();
   views[current].falling.start();
   if (games[current] && !games[current].isBusy()) openGame(current);
 });
 
 // ---- 起動 ----
 setupSettings();
+renderFavs();
 refreshMenu();
 loadYotei();
 views.home.falling.start();

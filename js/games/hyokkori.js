@@ -11,7 +11,7 @@ import { C } from '../art.js';
 import { catFace, catPaw } from '../cats.js';
 import { audio } from '../audio.js';
 import { ease, frames, wait } from '../fx.js';
-import { createGame, grid, plate, wander, f } from './common.js';
+import { createGame, grid, plate, wander, other, f } from './common.js';
 
 export function peekPlan(n, decided, rand = Math.random) {
   return wander(n, 7 + Math.floor(rand() * 3), decided, rand);
@@ -19,8 +19,10 @@ export function peekPlan(n, decided, rand = Math.random) {
 // k 番目に顔を出している時間（ミリ秒）。total は 顔を出す回数
 export const peekTime = (k, total) => 300 + 340 * Math.pow(total <= 1 ? 1 : k / (total - 1), 1.6);
 export const T = { hush: 700, final: 520, wave: 700 };
-export function hyokkoriDuration(count) {
-  let s = 0;
+// ときどき出る別の動き（v12）：とちゅうで 2ひき いっしょに 顔を出す（「あれ？ 2ひき？」）
+export const TWIN = 620;
+export function hyokkoriDuration(count, twin = false) {
+  let s = twin ? TWIN : 0;
   for (let k = 0; k < count - 1; k++) s += peekTime(k, count - 1);
   return s + T.hush + T.final + T.wave;
 }
@@ -32,22 +34,26 @@ export function createHyokkori(deps) {
     resultLabel: 'でてきたのは',
     draw(g) {
       const { n, W, H, choices } = g;
-      const cols = n <= 4 ? 2 : 3;
-      const cells = grid(n, { x: 8, y: 6, w: W - 16, h: H - 12 }, cols, 8);
-      const plateH = Math.max(22, Math.min(32, cells[0].h * 0.32));
-      const hr = Math.max(14, Math.min(46, cells[0].w * 0.3, (cells[0].h - plateH) * 0.5));
+      const cols = n <= 6 ? 2 : 3;
+      const cells = grid(n, { x: 4, y: 6, w: W - 8, h: H - 12 }, cols, 6);
+      const plateH = Math.max(22, Math.min(32, cells[0].h * 0.3));
+      const hr = Math.max(14, Math.min(58, cells[0].w * 0.36, (cells[0].h - plateH) * 0.42));
       const holes = cells.map((c) => ({ cx: c.cx, cy: c.y + c.h - plateH - hr * 0.28 - 4 }));
-      const fk = (hr * 1.6) / 100; // こねこの顔の大きさ
+      const fk = (hr * 1.9) / 100; // こねこの顔の大きさ
       Object.assign(g, { cells, plateH, hr, holes, fk });
       let s = '<defs>';
-      holes.forEach((h, i) => { s += `<clipPath id="hk${i}"><rect x="${f(h.cx - hr * 1.4)}" y="${f(h.cy - hr * 3)}" width="${f(hr * 2.8)}" height="${f(hr * 3)}"/></clipPath>`; });
+      holes.forEach((h, i) => { s += `<clipPath id="hk${i}"><rect x="${f(h.cx - hr * 1.4)}" y="${f(h.cy - hr * 3.4)}" width="${f(hr * 2.8)}" height="${f(hr * 3.4)}"/></clipPath>`; });
       s += '</defs>';
       cells.forEach((c, i) => {
         const h = holes[i];
-        s += `<ellipse cx="${f(h.cx)}" cy="${f(h.cy)}" rx="${f(hr * 1.05)}" ry="${f(hr * 0.34)}" fill="#7a5233"/>`
-          + `<g clip-path="url(#hk${i})"><g class="kit" data-i="${i}" transform="translate(${f(h.cx)} ${f(h.cy + hr * 1.6)})"><g transform="scale(${f(fk)})">${catFace(g.cat, { look: { x: 0, y: 0.3 } })}</g></g></g>`
+        // はたけの 土の もりあがりと、草・小さな め（かざり）
+        s += `<ellipse cx="${f(h.cx)}" cy="${f(h.cy + hr * 0.08)}" rx="${f(hr * 1.5)}" ry="${f(hr * 0.5)}" fill="#e2c08e" opacity="0.75"/>`
+          + [-1, 1].map((sg) => `<path d="M${f(h.cx + sg * hr * 1.42)},${f(h.cy + hr * 0.2)} q${f(-sg * 2)},${f(-hr * 0.42)} ${f(sg * hr * 0.12)},${f(-hr * 0.5)} M${f(h.cx + sg * hr * 1.42)},${f(h.cy + hr * 0.2)} q${f(sg * hr * 0.14)},${f(-hr * 0.3)} ${f(sg * hr * 0.3)},${f(-hr * 0.32)}" stroke="#86a256" stroke-width="2.4" fill="none" stroke-linecap="round"/>`).join('')
+          + (i % 3 === 1 ? `<g transform="translate(${f(h.cx - hr * 1.15)} ${f(h.cy - hr * 0.1)})"><path d="M0,0 v${f(-hr * 0.34)}" stroke="#86a256" stroke-width="2"/><ellipse cx="${f(-hr * 0.1)}" cy="${f(-hr * 0.36)}" rx="${f(hr * 0.11)}" ry="${f(hr * 0.06)}" fill="#a6dc98" transform="rotate(-30 ${f(-hr * 0.1)} ${f(-hr * 0.36)})"/><ellipse cx="${f(hr * 0.1)}" cy="${f(-hr * 0.4)}" rx="${f(hr * 0.11)}" ry="${f(hr * 0.06)}" fill="#a6dc98" transform="rotate(30 ${f(hr * 0.1)} ${f(-hr * 0.4)})"/></g>` : '')
+          + `<ellipse cx="${f(h.cx)}" cy="${f(h.cy)}" rx="${f(hr * 1.05)}" ry="${f(hr * 0.34)}" fill="#7a5233"/>`
+          + `<g clip-path="url(#hk${i})"><g class="kit" data-i="${i}" transform="translate(${f(h.cx)} ${f(h.cy + hr * 1.9)})"><g transform="scale(${f(fk)})">${catFace(g.cat, { look: { x: 0, y: 0.3 } })}</g></g></g>`
           + `<path d="M${f(h.cx - hr * 1.2)},${f(h.cy)} A${f(hr * 1.2)},${f(hr * 0.42)} 0 0 0 ${f(h.cx + hr * 1.2)},${f(h.cy)}" fill="none" stroke="#c99a62" stroke-width="${f(Math.max(3, hr * 0.16))}" stroke-linecap="round"/>`;
-        s += plate(i, c.x + 4, c.y + c.h - plateH, c.w - 8, plateH, choices[i]).svg;
+        s += plate(i, c.x, c.y + c.h - plateH, c.w, plateH, choices[i]).svg;
       });
       s += '<g class="waver"></g>';
       return s;
@@ -60,9 +66,12 @@ export function createHyokkori(deps) {
       const plan = peekPlan(g.n, decided);
       const up = (i, p) => {
         const h = g.holes[i];
-        R.kits[i].setAttribute('transform', `translate(${f(h.cx)} ${f(h.cy + g.hr * 1.6 - p * g.hr * 2.0)})`);
+        R.kits[i].setAttribute('transform', `translate(${f(h.cx)} ${f(h.cy + g.hr * 1.9 - p * g.hr * 2.4)})`);
       };
       say('どこから でてくるかな…');
+      const { stage, n } = g;
+      delete stage.dataset.variant;
+      const twinAt = n >= 3 && Math.random() < 0.35 ? 2 + Math.floor(Math.random() * 3) : -1;
       // 1. ひょこひょこ
       const shown = plan.length - 1;
       for (let k = 0; k < shown; k++) {
@@ -72,6 +81,18 @@ export function createHyokkori(deps) {
         await frames(dur, (t) => up(i, Math.sin(Math.PI * t) * (0.7 + 0.3 * Math.min(1, dur / 500))));
         up(i, 0);
         if (k === Math.floor(shown / 2)) say('ひょこ、ひょこ…');
+        if (k === twinAt) {
+          // ときどき：2ひき いっしょに
+          stage.dataset.variant = 'twin';
+          const a = plan[k + 1] === i ? other(n, i) : i;
+          const b = other(n, a);
+          say('あれ？ 2ひき？');
+          audio.hop(1);
+          audio.hop(3);
+          await frames(TWIN, (t) => { const p = Math.sin(Math.PI * t); up(a, p); up(b, p * 0.9); });
+          up(a, 0);
+          up(b, 0);
+        }
       }
       // 2. しーん
       say('しーん…');

@@ -161,6 +161,34 @@ svg text { font-family: var(--font); }
 .menu-sec.is-single { grid-column: auto; }
 .menu-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .menu-sec.is-single .menu-cards { grid-template-columns: 1fr; }
+/* お気に入り（v12）：カードの右上の星と、一覧の いちばん上の かたまり */
+.menu-card { position: relative; }
+.fav-toggle {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 34px;
+  height: 34px;
+  padding: 6px;
+  display: block;
+}
+.fav-toggle svg, .fav-mark svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.fav-toggle path { fill: var(--paper); stroke: var(--line-strong); }
+.menu-card.is-favorite .fav-toggle path, .fav-mark path { fill: #ffd36b; stroke: #d9b04d; }
+.menu-fav-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 4px;
+  white-space: nowrap;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--chestnut);
+  letter-spacing: 0.08em;
+}
+.menu-fav-title::after { content: ""; flex: 1; height: 2px; border-radius: 1px; background: #f3d36b; }
+.fav-mark { width: 20px; height: 20px; display: inline-block; }
+.menu-fav[hidden] { display: none; }
 /* 決め方の仕組みの見出し */
 .menu-group {
   display: flex;
@@ -370,6 +398,27 @@ svg text { font-family: var(--font); }
   background: var(--paper);
 }
 .panel-title { margin: 0 0 4px; font-size: 19px; font-weight: 700; }
+/* 選択肢の組（v12） */
+.set-tabs { display: flex; gap: 8px; margin: 8px 0 10px; }
+.set-tab {
+  appearance: none;
+  flex: 1;
+  min-width: 0;
+  height: 42px;
+  padding: 0 6px;
+  border: 3px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  touch-action: manipulation;
+}
+.set-tab.is-on { background: var(--yellow); border-color: var(--yellow-edge); color: var(--ink); }
+.set-name-row { display: flex; align-items: center; gap: 10px; }
+.set-name-label { flex: none; font-size: 14px; color: var(--ink-soft); }
 .panel-hint { margin: 2px 0 8px; font-size: 13px; color: var(--ink-soft); line-height: 1.5; }
 .choice-list { list-style: none; margin: 8px 0 12px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .choice-row { display: flex; align-items: center; gap: 8px; }
@@ -478,6 +527,21 @@ svg text { font-family: var(--font); }
 
 /* ---- お祝いの葉っぱ ---- */
 .fx { position: fixed; inset: 0; z-index: 40; pointer-events: none; overflow: hidden; }
+/* 大当たり（v12） */
+.fx-jackpot { position: absolute; inset: 0; }
+.jp-text {
+  position: absolute; left: 0; right: 0; top: 24%;
+  text-align: center; font-size: 46px; font-weight: 700; letter-spacing: 0.08em;
+  color: #ffcf4a; -webkit-text-stroke: 2px #c8615c; paint-order: stroke fill;
+  text-shadow: 0 4px 0 rgba(200, 97, 92, 0.25);
+}
+.jp-cat { position: absolute; bottom: 190px; width: 140px; height: 140px; }
+.jp-cat svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.jp-left { left: 10px; }
+.jp-right { right: 10px; }
+/* 結果の ひとこと（v12）：猫の顔と、アズ・イズの ことば */
+.result-say { display: inline-flex; align-items: center; gap: 6px; letter-spacing: 0.04em; color: var(--ink); }
+.say-face { width: 26px; height: 26px; flex: none; overflow: visible; }
 .fx-piece { position: absolute; left: 0; top: 0; width: 30px; height: 30px; will-change: transform, opacity; }
 .fx-piece svg, .leaf-fall svg { width: 100%; height: 100%; display: block; overflow: visible; }
 

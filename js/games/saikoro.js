@@ -98,8 +98,12 @@ export function createSaikoro({ view, stage, result, play, getChoices, getWeight
         + `<text class="${isChoice ? 'cell-label' : 'spare-label'}" x="${tx + 6}" y="${cy.toFixed(1)}" font-size="${(isChoice ? size : Math.min(size, 17)).toFixed(1)}" fill="${isChoice ? C.ink : C.inkSoft}" dominant-baseline="central">${escapeXml(label)}</text>`
         + `</g>`;
     }
-    // 床
+    // 床と、まるい ラグ（v12）。ラグの はしに、毛糸玉と ねずみの おもちゃ
     s += `<ellipse cx="${W / 2}" cy="${floorY + 2}" rx="${W * 0.48}" ry="9" fill="#e9c99a" opacity="0.55"/>`;
+    s += `<ellipse cx="${(W * 0.45).toFixed(1)}" cy="${(floorY - 4).toFixed(1)}" rx="${(W * 0.44).toFixed(1)}" ry="${Math.max(10, (floorY - playTop) * 0.12).toFixed(1)}" fill="#f8cbbb" opacity="0.55" stroke="#e3a074" stroke-width="2" stroke-dasharray="6 5"/>`;
+    const ty = floorY - 10;
+    s += `<g transform="translate(${(catAt.x - 92 * catS).toFixed(1)} ${ty.toFixed(1)})"><circle r="9" fill="#cfe0ea" stroke="#7aa7c4" stroke-width="2"/><path d="M-7,-2 Q0,-9 7,-2 M-7,3 Q0,-4 7,3" stroke="#7aa7c4" stroke-width="1.2" fill="none"/></g>`
+      + `<g transform="translate(${(W * 0.12 + 14).toFixed(1)} ${(floorY - 8).toFixed(1)})"><ellipse rx="10" ry="6" fill="#d6cfc0" stroke="#8f8499" stroke-width="1.6"/><circle cx="-7" cy="-5" r="3" fill="#d6cfc0" stroke="#8f8499" stroke-width="1.2"/><path d="M10,0 q8,2 10,-6" stroke="#8f8499" stroke-width="1.6" fill="none"/><circle cx="-8" cy="-1" r="1" fill="#4a3a33"/></g>`;
     // さいころの影と、さいころ
     s += `<ellipse class="die-shadow" cx="0" cy="0" rx="${dieS * 0.5}" ry="${dieS * 0.12}" fill="#a0703f" opacity="0.2"/>`;
     s += `<g class="die"><g class="die-in"></g></g>`;
@@ -183,10 +187,13 @@ export function createSaikoro({ view, stage, result, play, getChoices, getWeight
     const to = { x: dieRest.x - span * (0.5 + Math.random() * 0.5), y: dieRest.y };
     let next = 0;
     const tumble = long ? 1600 : 1150;
+    // ときどき出る別の動き（v12）：さいころが ぽーんと 高く はねる
+    const high = Math.random() < 0.3;
+    if (high) { stage.dataset.variant = 'high'; showHint(result, 'ぽーん！'); }
     await frames(tumble, (t) => {
       const e = ease.outCubic(t);
       const x = from.x + (to.x - from.x) * e;
-      const bounce = Math.abs(Math.sin(t * Math.PI * 3)) * 54 * (1 - t) * (1 - t);
+      const bounce = Math.abs(Math.sin(t * Math.PI * 3)) * (high ? 110 : 54) * (1 - t) * (1 - t);
       placeDie(x, from.y - bounce, -720 * e);
       const now = t * tumble;
       if (now >= next) {
@@ -236,6 +243,7 @@ export function createSaikoro({ view, stage, result, play, getChoices, getWeight
     const decided = pickWeighted(weights); // 結果を先に決める（出やすさ：RS01-S21）
     stage.dataset.decided = String(decided);
     delete stage.dataset.landed;
+    delete stage.dataset.variant;
     const t0 = performance.now();
     const faces = rollPlan(n, decided);
     stage.dataset.faces = faces.join(',');

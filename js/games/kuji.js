@@ -76,6 +76,12 @@ export function createKuji({ view, stage, result, play, getChoices, getWeights, 
     let s = '';
     // 地面のかげ
     s += `<ellipse cx="${(catAt.x + boxAt.x) / 2}" cy="${topH - 2}" rx="${W * 0.36}" ry="10" fill="#d9b07a" opacity="0.28"/>`;
+    // 招き猫の 赤い ざぶとんと、小判の山（v12）
+    s += `<rect x="${(catAt.x - 70 * sc).toFixed(1)}" y="${(topH - 16 * sc - 4).toFixed(1)}" width="${(140 * sc).toFixed(1)}" height="${(16 * sc).toFixed(1)}" rx="${(7 * sc).toFixed(1)}" fill="#e8664a" stroke="#b5452f" stroke-width="2"/>`;
+    const kx = Math.max(24 * sc + 4, catAt.x - 92 * sc);
+    for (let k = 0; k < 4; k++) {
+      s += `<ellipse cx="${(kx + (k % 2) * 8 * sc).toFixed(1)}" cy="${(topH - 6 - k * 7 * sc).toFixed(1)}" rx="${(15 * sc).toFixed(1)}" ry="${(7 * sc).toFixed(1)}" fill="#f6d55e" stroke="#c9a032" stroke-width="1.6"/>`;
+    }
     // 招き猫（三毛猫）。片方の手を上げて招く
     s += `<g transform="translate(${catAt.x} ${catAt.y}) scale(${sc.toFixed(3)})">`
       + `<g class="kuji-cat">${catSitting(cat)}</g>`
@@ -209,8 +215,25 @@ export function createKuji({ view, stage, result, play, getChoices, getWeights, 
     // 2. かたむけて、棒をゆっくり出す
     showHint(result, 'でてくるよ…');
     await frames(420, (t) => setBox(-24 * ease.inOutSine(t)));
+    // ときどき出る別の動き（v12）：棒が とちゅうで ひっかかり、もう1回 ふると 出てくる
+    delete stage.dataset.variant;
+    const stuck = Math.random() < 0.3;
+    const slideTo = (a, b, dur) => frames(dur, (t) => refs.stick.setAttribute('transform', `translate(0 ${(stickL * (1 - (a + (b - a) * ease.outCubic(t)))).toFixed(2)})`));
     audio.slide(1.3);
-    await frames(1300, (t) => refs.stick.setAttribute('transform', `translate(0 ${(stickL * (1 - ease.outCubic(t))).toFixed(2)})`));
+    if (stuck) {
+      stage.dataset.variant = 'stuck';
+      await slideTo(0, 0.45, 650);
+      showHint(result, 'あれ？ ひっかかった…');
+      audio.heart();
+      await wait(260);
+      showHint(result, 'ふりっ！');
+      audio.rattle();
+      await frames(380, (t) => setBox(-24 + Math.sin(t * Math.PI * 4) * 6));
+      setBox(-24);
+      await slideTo(0.45, 1, 700);
+    } else {
+      await slideTo(0, 1, 1300);
+    }
     await wait(320);
     refs.tagNum.textContent = String(decided + 1);
     audio.pop();

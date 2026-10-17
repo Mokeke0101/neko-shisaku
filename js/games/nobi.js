@@ -84,6 +84,11 @@ export function createNobi({ view, stage, result, play, getStages, getWeights, g
         + `</g>`;
       s += `<path class="cut" data-i="${i}" d="M${px - pw / 2 + 3},${y} H${px + pw / 2 - 3}" stroke="${C.momiji}" stroke-width="4" stroke-linecap="round"/>`;
     });
+    // 上から つり下がった おもちゃ（v12）：猫は これを めざして のびる
+    const toyX = cx + 40 * k;
+    s += `<g transform="translate(${toyX.toFixed(1)} -4)"><g class="nb-toy"><path d="M0,0 V${(16 + 14 * k).toFixed(1)}" stroke="#9b5f3a" stroke-width="1.6"/>`
+      + `<g transform="translate(0 ${(22 + 14 * k).toFixed(1)})"><ellipse rx="${(6 * k).toFixed(1)}" ry="${(11 * k).toFixed(1)}" fill="#fde3a6" stroke="#d9b04d" stroke-width="1.6"/>`
+      + `<path d="M0,${(-10 * k).toFixed(1)} V${(10 * k).toFixed(1)} M${(-4 * k).toFixed(1)},${(-4 * k).toFixed(1)} L0,0 L${(4 * k).toFixed(1)},${(-4 * k).toFixed(1)} M${(-4 * k).toFixed(1)},${(3 * k).toFixed(1)} L0,${(7 * k).toFixed(1)} L${(4 * k).toFixed(1)},${(3 * k).toFixed(1)}" stroke="#d9b04d" stroke-width="1.2" fill="none"/></g></g></g>`;
     // 猫
     const L = d.line;
     s += `<defs><clipPath id="${clipId}"><rect class="torso-clip" x="${cx - 30 * k}" y="0" width="${60 * k}" height="10" rx="${26 * k}"/></clipPath></defs>`;
@@ -120,6 +125,7 @@ export function createNobi({ view, stage, result, play, getStages, getWeights, g
       pawR: svg.querySelector('.pawR'),
       tags: Array.from(svg.querySelectorAll('.tag')),
     };
+    svg.querySelector('.nb-toy').animate([{ transform: 'rotate(-8deg)' }, { transform: 'rotate(8deg)' }, { transform: 'rotate(-8deg)' }], { duration: 2400, iterations: Infinity, easing: 'ease-in-out' });
     setReach(restReach);
     stage.dataset.count = String(n);
     stage.dataset.cat = d.id;
@@ -217,6 +223,9 @@ export function createNobi({ view, stage, result, play, getStages, getWeights, g
     }
     refs.cat.removeAttribute('transform');
     // 2. 印ごとに、のびて ふんばる
+    // ときどき出る別の動き（v12）：とちゅうで ずるっと すべって、もう いちど のびる
+    delete stage.dataset.variant;
+    const slipAt = decided >= 1 && Math.random() < 0.3 ? Math.floor(Math.random() * decided) : -1;
     for (let j = 0; j <= decided; j++) {
       setMood('up');
       showHint(result, j === 0 ? 'ぐーん…' : 'ぐぐっ…');
@@ -228,6 +237,15 @@ export function createNobi({ view, stage, result, play, getStages, getWeights, g
       setMood('strain');
       showHint(result, j === n - 1 ? 'いちばん うえ…！' : 'まだ のびる…？');
       await hold(marks[j], T.hold(j), j);
+      if (j === slipAt) {
+        stage.dataset.variant = 'slip';
+        showHint(result, 'ずるっ…！');
+        audio.hop(0);
+        await moveTo(marks[j] + 22 * k, 240, ease.outCubic);
+        showHint(result, 'まだまだ！');
+        setMood('strain');
+        await moveTo(marks[j], 360, ease.inOutSine);
+      }
     }
     // 3. ぴたっ
     const top = marks[decided];

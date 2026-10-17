@@ -1,11 +1,13 @@
-// 猫のキャラクター（RS01-S20）：パステル三毛猫とサバトラ。
+// 猫のキャラクター（RS01-S20）：パステル三毛猫の「アズ」と、サバトラの「イズ」（v12 で依頼者が名前を決めた）。
+// 画面で猫を指す言葉は、ゲームの題名を除いて、この名前を使う。
 // 見た目は、描いた案（下の DESIGNS）の中から依頼者が選んだ A の案に決まった（docs/決めたことの記録.md）。アプリは CAT_DESIGN の案だけを使う。
 // B・C の案は、見比べの絵を描く道具（tools/render-cats.mjs）のために残している。アプリの画面には出ない。
 // どのゲームにも2匹のどちらか1匹を出す。どちらが出るかは GAME_CAT が決める。
 // 絵はすべてコードで描く SVG（RS01-S18）。絵文字は使わない（RS01-S14）。
 
-export const GAME_CAT = { roulette: 'mike', stamp: 'mike', nobi: 'saba', hana: 'saba', kuji: 'mike', amida: 'saba', race: 'mike', mato: 'saba', sugoroku: 'mike', otoshi: 'saba', maigo: 'mike', tower: 'saba', sagasu: 'mike', saikoro: 'saba', negaeri: 'mike', mekuri: 'saba', wanage: 'mike', tsuri: 'saba', tobiishi: 'mike', hidamari: 'saba', crane: 'mike', gacha: 'saba', kanransha: 'mike', shabon: 'saba', jarashi: 'mike', bowling: 'saba', hikoki: 'mike', watage: 'saba', himo: 'mike', hyokkori: 'saba', yubin: 'mike', daruma: 'saba' };
-export const CAT_NAMES = { mike: 'パステル三毛猫', saba: 'サバトラ' };
+export const GAME_CAT = { roulette: 'mike', stamp: 'mike', nobi: 'saba', hana: 'saba', kuji: 'mike', amida: 'saba', race: 'mike', mato: 'saba', sugoroku: 'mike', otoshi: 'saba', maigo: 'mike', tower: 'saba', sagasu: 'mike', saikoro: 'saba', negaeri: 'mike', mekuri: 'saba', wanage: 'mike', tsuri: 'saba', tobiishi: 'mike', hidamari: 'saba', crane: 'mike', gacha: 'saba', kanransha: 'mike', shabon: 'saba', jarashi: 'mike', hikoki: 'mike', watage: 'saba', himo: 'mike', hyokkori: 'saba', yubin: 'mike', daruma: 'saba' };
+export const CAT_NAMES = { mike: 'アズ', saba: 'イズ' };
+export const catName = (d) => CAT_NAMES[d.kind];
 export const CAT_DESIGN = { mike: 'mike-a', saba: 'saba-a' };
 
 const PINK = '#f7b4a6';
@@ -83,7 +85,7 @@ const nid = (p) => `${p}${++uid}`;
 const f = (n) => Math.round(n * 100) / 100;
 
 // ---- 顔 ----
-// 中心 0,0、だいたい半径 50。mood は 'normal'・'happy'（にっこり）・'strain'（ぐぬぬ）。look は目の向き（-1〜1）
+// 中心 0,0、だいたい半径 50。mood は 'normal'・'happy'（にっこり）・'strain'（ぐぬぬ）・'puff'（ふーっと ふく）。look は目の向き（-1〜1）
 export function catFace(d, { mood = 'normal', blink = false, look = null } = {}) {
   const L = d.line;
   const { rx, ry } = d.head;
@@ -96,7 +98,7 @@ export function catFace(d, { mood = 'normal', blink = false, look = null } = {})
     eyes = `<path d="M${-ex - 7},0 Q${-ex},-9 ${-ex + 7},0 M${ex - 7},0 Q${ex},-9 ${ex + 7},0" stroke="${EYE}" stroke-width="4" fill="none" stroke-linecap="round"/>`;
   } else if (mood === 'strain') {
     eyes = `<path d="M${-ex - 6},-5 L${-ex + 5},0 L${-ex - 6},5 M${ex + 6},-5 L${ex - 5},0 L${ex + 6},5" stroke="${EYE}" stroke-width="3.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
-  } else if (blink) {
+  } else if (blink || mood === 'puff') {
     eyes = `<path d="M${-ex - 6},1 Q${-ex},4 ${-ex + 6},1 M${ex - 6},1 Q${ex},4 ${ex + 6},1" stroke="${EYE}" stroke-width="3.5" fill="none" stroke-linecap="round"/>`;
   } else if (d.eyes === 'big') {
     eyes = [-ex, ex].map((x) => `<ellipse cx="${f(x + lx)}" cy="${f(ly)}" rx="6.8" ry="8.4" fill="${EYE}"/>`
@@ -109,6 +111,7 @@ export function catFace(d, { mood = 'normal', blink = false, look = null } = {})
   }
   let mouth;
   if (mood === 'happy') mouth = `<path d="M-7,13 Q0,24 7,13 Z" fill="#e7776c" stroke="${L}" stroke-width="2.2" stroke-linejoin="round"/>`;
+  else if (mood === 'puff') mouth = `<ellipse cx="0" cy="17" rx="4.4" ry="5" fill="#e7776c" stroke="${L}" stroke-width="2.2"/>`;
   else if (mood === 'strain') mouth = `<path d="M-7,16 q3.5,-3.5 7,0 q3.5,3.5 7,0" fill="none" stroke="${L}" stroke-width="2.4" stroke-linecap="round"/>`;
   else mouth = `<path d="M0,12 Q-3,18 -8,15 M0,12 Q3,18 8,15" fill="none" stroke="${L}" stroke-width="2.4" stroke-linecap="round"/>`;
   const earL = `M${-rx + 4},-14 L${-rx + 8},-48 L-10,-34 Z`;
@@ -129,7 +132,9 @@ export function catFace(d, { mood = 'normal', blink = false, look = null } = {})
     + `<g clip-path="url(#${clip})">${d.face(d)}${muzzle}</g>`
     + `<ellipse cx="0" cy="2" rx="${rx}" ry="${ry}" fill="none" stroke="${L}" stroke-width="3.2"/>`
     + eyes
-    + `<ellipse cx="${-rx + 17}" cy="13" rx="7" ry="4.4" fill="${d.blush}" opacity="0.55"/><ellipse cx="${rx - 17}" cy="13" rx="7" ry="4.4" fill="${d.blush}" opacity="0.55"/>`
+    + (mood === 'puff'
+      ? `<ellipse cx="${-rx + 16}" cy="14" rx="10" ry="7" fill="${d.blush}" opacity="0.8"/><ellipse cx="${rx - 16}" cy="14" rx="10" ry="7" fill="${d.blush}" opacity="0.8"/>`
+      : `<ellipse cx="${-rx + 17}" cy="13" rx="7" ry="4.4" fill="${d.blush}" opacity="0.55"/><ellipse cx="${rx - 17}" cy="13" rx="7" ry="4.4" fill="${d.blush}" opacity="0.55"/>`)
     + `<path d="M-4.2,8 h8.4 l-4.2,4.4 Z" fill="${d.nose}" stroke="${d.nose}" stroke-width="1.6" stroke-linejoin="round"/>`
     + mouth
     + `</g>`;

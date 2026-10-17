@@ -18,7 +18,9 @@ export function tugPlan(n, decided, rand = Math.random) {
   return wander(n, n <= 2 ? 3 : 3 + Math.floor(rand() * 2), decided, rand);
 }
 export const T = { tug: 780, pull: 1900, lift: 560 };
-export const himoDuration = (tugs) => (tugs - 1) * (T.tug + 120) + T.pull + T.lift + 300;
+// ときどき出る別の動き（v12）：ひっぱる とちゅうで ひもが ひっかかり、ぐいぐい ひいて ほどく
+export const SNAG = 560;
+export const himoDuration = (tugs, snag = false) => (tugs - 1) * (T.tug + 120) + T.pull + T.lift + 300 + (snag ? SNAG : 0);
 
 export function createHimo(deps) {
   const R = {};
@@ -31,8 +33,8 @@ export function createHimo(deps) {
       const cols = n <= 4 ? 2 : 3;
       const rows = Math.ceil(n / cols);
       const plateH = Math.max(22, Math.min(34, (H - footH - 20) / rows - 14));
-      const cells = grid(n, { x: 10, y: 14, w: W - 20, h: H - footH - 18 }, cols, 8).map((c) => ({ ...c, py: c.y + (c.h - plateH) / 2 }));
-      const fs = Math.min(0.5, (footH * 0.4) / 100); // 猫の顔の大きさ（ゲームの場所の下に収める）
+      const cells = grid(n, { x: 6, y: 14, w: W - 12, h: H - footH - 18 }, cols, 6).map((c) => ({ ...c, py: c.y + (c.h - plateH) / 2 }));
+      const fs = Math.min(0.72, (footH * 0.5) / 100); // 猫の顔の大きさ（ゲームの場所の下に収める）
       const faceY = H - 50 * fs - 2;
       const knot = { x: W * 0.5, y: faceY - 50 * fs - 16 };
       // たばの所の ひもの並び（札の並びと まぜる）
@@ -52,7 +54,16 @@ export function createHimo(deps) {
         s += `<path class="str" data-i="${i}" d="${d}" stroke="#c9b9a4" stroke-width="2.4" fill="none" stroke-linecap="round"/>`;
       });
       s += '</g><g class="glow"></g>';
-      cells.forEach((c, i) => { s += `<g class="hang" data-i="${i}">${plate(i, c.x + 2, c.py, c.w - 4, plateH, choices[i]).svg}</g>`; });
+      cells.forEach((c, i) => { s += `<g class="hang" data-i="${i}">${plate(i, c.x, c.py, c.w, plateH, choices[i]).svg}</g>`; });
+      // 店の 看板「ひもくじ」と、あめの つぼ（たばの左右）
+      const jr = Math.max(14, Math.min(30, footH * 0.2));
+      [[knot.x - W * 0.3, 0], [knot.x + W * 0.3, 1]].forEach(([x, k]) => {
+        const y = H - jr * 1.3 - 4;
+        s += `<g transform="translate(${f(x)} ${f(y)})"><rect x="${f(-jr)}" y="${f(-jr * 0.9)}" width="${f(jr * 2)}" height="${f(jr * 2.1)}" rx="${f(jr * 0.45)}" fill="#eaf6fb" fill-opacity="0.85" stroke="#9fc8cf" stroke-width="2"/><rect x="${f(-jr * 0.8)}" y="${f(-jr * 1.15)}" width="${f(jr * 1.6)}" height="${f(jr * 0.38)}" rx="3" fill="${k ? '#a985c9' : '#f7a6a0'}"/>`
+          + [0, 1, 2, 3, 4].map((j) => `<circle cx="${f(-jr * 0.5 + (j % 3) * jr * 0.5)}" cy="${f(jr * 0.75 - Math.floor(j / 3) * jr * 0.55)}" r="${f(jr * 0.24)}" fill="${['#fde3a6', '#f7b4a6', '#cfe3c0', '#cfe0ea', '#ece2f4'][(j + k * 2) % 5]}"/>`).join('') + '</g>';
+      });
+      const signW = Math.min(110, W * 0.28);
+      s += `<g transform="translate(${f(Math.max(signW / 2 + 6, knot.x - W * 0.3))} ${f(H - jr * 2.6 - 22)})"><rect x="${f(-signW / 2)}" y="-13" width="${f(signW)}" height="26" rx="13" fill="#fffaf0" stroke="#e3a074" stroke-width="2.4"/><text y="1" font-size="15" font-weight="700" fill="#c8615c" text-anchor="middle" dominant-baseline="central">ひいてね！</text></g>`;
       // たばと猫
       s += `<ellipse cx="${f(knot.x)}" cy="${f(knot.y + 4)}" rx="${f(spread / 2 + 8)}" ry="7" fill="#f6e3c3" stroke="#c99a62" stroke-width="2"/>`;
       s += `<g transform="translate(${f(knot.x)} ${f(faceY)}) scale(${f(fs)})"><g class="hm-face">${catFace(g.cat, { look: { x: 0, y: -1 } })}</g></g>`
@@ -97,10 +108,26 @@ export function createHimo(deps) {
       R.glow.appendChild(line);
       R.face.innerHTML = catFace(g.cat, { mood: 'strain', look: { x: 0, y: -1 } });
       audio.stretch(T.pull / 1000);
-      await frames(T.pull, (t) => {
-        line.setAttribute('stroke-dashoffset', f(-len * (1 - ease.inOutSine(t))));
-        pawAt(e.x, e.y + 14 + 18 * Math.min(1, t * 3));
+      // ときどき：とちゅうで ひっかかる
+      delete g.stage.dataset.variant;
+      const snag = Math.random() < 0.3;
+      const pullTo = async (a, b, dur) => frames(dur, (t) => {
+        const u = a + (b - a) * t;
+        line.setAttribute('stroke-dashoffset', f(-len * (1 - ease.inOutSine(u))));
+        pawAt(e.x, e.y + 14 + 18 * Math.min(1, u * 3));
       });
+      if (snag) {
+        g.stage.dataset.variant = 'snag';
+        await pullTo(0, 0.5, T.pull * 0.5);
+        say('あれ？ ひっかかった…');
+        audio.heart();
+        await frames(SNAG, (t) => pawAt(e.x + Math.sin(t * Math.PI * 8) * 4, e.y + 32 + Math.abs(Math.sin(t * Math.PI * 4)) * 6));
+        say('ぐいっ！');
+        audio.stretch(T.pull / 2000);
+        await pullTo(0.5, 1, T.pull * 0.5);
+      } else {
+        await pullTo(0, 1, T.pull);
+      }
       // 3. 色が とどいた札が ぴょこんと上がる
       const got = Number(line.dataset.i); // ひっぱった ひもの先の札
       audio.pop();

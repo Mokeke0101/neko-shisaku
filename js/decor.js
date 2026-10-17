@@ -358,8 +358,8 @@ const SPECIAL = {
   halloween: { sagasu: { br: 'pumpkinCat' }, otoshi: { bl: 'candyBowl' } },
 };
 
-// 画面ごとの番号（並びを ずらして、ゲームごとに ちがう組み合わせにする）
-const KINDS = ['home', 'roulette', 'saikoro', 'stamp', 'mekuri', 'nobi', 'tower', 'hana', 'negaeri', 'hidamari', 'kuji', 'sagasu', 'amida', 'maigo', 'race', 'mato', 'wanage', 'sugoroku', 'tobiishi', 'otoshi', 'tsuri', 'crane', 'gacha', 'kanransha', 'shabon', 'jarashi', 'bowling', 'hikoki', 'watage', 'himo', 'hyokkori', 'yubin', 'daruma', 'settings'];
+// 画面ごとの番号（並びを ずらして、ゲームごとに ちがう組み合わせにする）。'-' は v12 で消した ボウリングの番号（ほかの画面の飾りが変わらないように残す）
+const KINDS = ['home', 'roulette', 'saikoro', 'stamp', 'mekuri', 'nobi', 'tower', 'hana', 'negaeri', 'hidamari', 'kuji', 'sagasu', 'amida', 'maigo', 'race', 'mato', 'wanage', 'sugoroku', 'tobiishi', 'otoshi', 'tsuri', 'crane', 'gacha', 'kanransha', 'shabon', 'jarashi', '-', 'hikoki', 'watage', 'himo', 'hyokkori', 'yubin', 'daruma', 'settings'];
 
 // 飾りの3つの場所の絵（SVG の中身）。季節の飾り（いまは冬）と、行事の飾り（いまは12〜2月の行事）。無い時は空
 export function decorLayers(kind, lk) {

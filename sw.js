@@ -4,7 +4,7 @@
 // 公開し直す時は VERSION を上げる（js/version.js の APP_VERSION と同じ値にする）。
 'use strict';
 
-const VERSION = 'v11';
+const VERSION = 'v12';
 const CACHE = `nekokime-${VERSION}`;
 // 書体（約 4.2 MB）は版と分けて保存し、版を上げても取り直さない（RS01-S03）。書体のファイルを替えた時だけ FONT_VERSION を上げる
 const FONT_VERSION = 'f1';
@@ -64,7 +64,6 @@ const FILES = [
   './js/games/kanransha.js',
   './js/games/shabon.js',
   './js/games/jarashi.js',
-  './js/games/bowling.js',
   './js/games/hikoki.js',
   './js/games/watage.js',
   './js/games/himo.js',
