@@ -75,7 +75,7 @@ export function createGacha(deps) {
       g.outlet = { x: mx - bodyW * 0.22, y: bodyY + bodyH * 0.74 };
       g.tray = { x: Math.max(capR + 6, mx - bodyW / 2 - capR * 1.6), y: floor - capR };
       g.handle = { x: mx + bodyW * 0.24, y: bodyY + bodyH * 0.64, r: Math.min(bodyH * 0.26, domeR * 0.36) };
-      g.slot = { x: mx + bodyW * 0.24, y: bodyY + bodyH * 0.24 };
+      g.slot = { x: mx + bodyW * 0.32, y: bodyY + bodyH * 0.24 };
       let s = `<ellipse cx="${f(mx)}" cy="${f(floor + 2)}" rx="${f(bodyW * 0.75)}" ry="6" fill="#a0703f" opacity="0.18"/>`;
       // 耳（まるい窓の上）
       const ear = (sg) => `<path d="M${f(mx + sg * domeR * 0.3)},${f(domeY - domeR * 0.92)} L${f(mx + sg * domeR * 0.74)},${f(domeY - domeR * 1.24)} L${f(mx + sg * domeR * 0.82)},${f(domeY - domeR * 0.56)} Z" fill="#f7a6a0" stroke="#d97f7a" stroke-width="3" stroke-linejoin="round"/>`
@@ -85,12 +85,16 @@ export function createGacha(deps) {
       s += `<rect x="${f(mx - bodyW / 2)}" y="${f(bodyY)}" width="${f(bodyW)}" height="${f(bodyH)}" rx="14" fill="#f7a6a0" stroke="#d97f7a" stroke-width="3"/>`
         + `<rect x="${f(mx - bodyW / 2 - 4)}" y="${f(bodyY - 4)}" width="${f(bodyW + 8)}" height="12" rx="6" fill="#fde3a6" stroke="#d9b04d" stroke-width="2"/>`;
       // 看板「ねこガチャ」と、ランプ
-      const signW = bodyW * 0.52;
+      // 看板は 台の左はしから コインの口の手前まで。文字は 看板の まるい はしに かからない大きさにする
+      // （台が小さい時に 文字が看板から はみ出していた：v12 の後に依頼者が見つけた）。とても小さい時は「ガチャ」だけ
       const signH = Math.max(16, bodyH * 0.22);
       const signX = mx - bodyW * 0.46;
+      const signW = g.slot.x - capR * 0.7 - 4 - signX;
       const signY = bodyY + bodyH * 0.13;
+      const fit = (len) => Math.min(signH * 0.64, (signW - signH * 0.8) / (len + 0.1));
+      const signText = fit(5) >= 8.5 ? 'ねこガチャ' : 'ガチャ';
       s += `<rect x="${f(signX)}" y="${f(signY)}" width="${f(signW)}" height="${f(signH)}" rx="${f(signH / 2)}" fill="#fffaf0" stroke="#d97f7a" stroke-width="2"/>`
-        + `<text x="${f(signX + signW / 2)}" y="${f(signY + signH / 2 + 0.5)}" font-size="${f(Math.max(12, Math.min(signH * 0.66, (signW - 6) / 5)))}" font-weight="700" fill="#c8615c" text-anchor="middle" dominant-baseline="central">ねこガチャ</text>`;
+        + `<text class="ga-sign" x="${f(signX + signW / 2)}" y="${f(signY + signH / 2 + 0.5)}" font-size="${f(fit(signText.length))}" font-weight="700" fill="#c8615c" text-anchor="middle" dominant-baseline="central">${signText}</text>`;
       for (let k = 0; k < 3; k++) s += `<circle class="lamp" cx="${f(signX + signW * (0.2 + k * 0.3))}" cy="${f(signY + signH + Math.max(7, bodyH * 0.1))}" r="${f(Math.max(3, bodyH * 0.05))}" fill="#fff1c4" stroke="#d9b04d" stroke-width="1.4"/>`;
       // コインの口
       s += `<rect x="${f(g.slot.x - capR * 0.7)}" y="${f(g.slot.y - capR * 0.45)}" width="${f(capR * 1.4)}" height="${f(capR * 0.9)}" rx="${f(capR * 0.25)}" fill="#fffaf0" stroke="#d97f7a" stroke-width="2"/>`

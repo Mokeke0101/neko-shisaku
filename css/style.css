@@ -505,6 +505,7 @@ svg text { font-family: var(--font); }
 .status { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 4px 0 10px; font-size: 14px; }
 .status dt { color: var(--ink-soft); white-space: nowrap; }
 .status dd { margin: 0; font-weight: 700; text-align: right; }
+.cat-mini svg { display: inline-block; width: 34px; height: 34px; vertical-align: middle; }
 .is-ok { color: var(--ok); }
 .is-ng { color: var(--ng); }
 

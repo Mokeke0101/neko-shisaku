@@ -9,6 +9,7 @@
 // 花びらはどれも同じ大きさ（出やすさは、抜く順で決まり、花びらの大きさには表れない：RS01-S21）。
 import { C } from '../art.js';
 import { look } from '../look.js';
+import { warmDay } from '../kits.js';
 import { catSitting, catPaw } from '../cats.js';
 import { audio } from '../audio.js';
 import { pickWeighted } from '../odds.js';
@@ -112,8 +113,8 @@ export function createHana({ view, stage, result, play, getChoices, getWeights, 
       const rr = r0 * 0.62 * Math.sqrt((k + 0.5) / 14);
       s += `<circle cx="${fx + Math.cos(a) * rr}" cy="${fy + Math.sin(a) * rr}" r="${Math.max(1.6, r0 * 0.07)}" fill="${C.kakiDeep}" opacity="0.75"/>`;
     }
-    // 花の まわりを とぶ はち（v12）
-    s += `<g transform="translate(${(fx - Rf * 0.85).toFixed(1)} ${(fy - Rf * 0.85).toFixed(1)})"><g class="hana-bee"><ellipse rx="9" ry="7" fill="#f6d55e" stroke="#8c6e5a" stroke-width="1.6"/><path d="M-3,-6.5 V6.5 M2,-6.8 V6.8" stroke="#8c6e5a" stroke-width="2"/><ellipse cx="-2" cy="-9" rx="5" ry="3.4" fill="#ffffff" opacity="0.85" stroke="#cfe0ea" stroke-width="1"/><ellipse cx="4" cy="-9" rx="5" ry="3.4" fill="#ffffff" opacity="0.85" stroke="#cfe0ea" stroke-width="1"/><circle cx="6" cy="-1" r="1.3" fill="#4a3a33"/></g></g>`;
+    // 花の まわりを とぶ はち（v12）。あたたかい季節の昼だけ（v13）
+    s += `<g${warmDay(look) ? '' : ' visibility="hidden"'} transform="translate(${(fx - Rf * 0.85).toFixed(1)} ${(fy - Rf * 0.85).toFixed(1)})"><g class="hana-bee"><ellipse rx="9" ry="7" fill="#f6d55e" stroke="#8c6e5a" stroke-width="1.6"/><path d="M-3,-6.5 V6.5 M2,-6.8 V6.8" stroke="#8c6e5a" stroke-width="2"/><ellipse cx="-2" cy="-9" rx="5" ry="3.4" fill="#ffffff" opacity="0.85" stroke="#cfe0ea" stroke-width="1"/><ellipse cx="4" cy="-9" rx="5" ry="3.4" fill="#ffffff" opacity="0.85" stroke="#cfe0ea" stroke-width="1"/><circle cx="6" cy="-1" r="1.3" fill="#4a3a33"/></g></g>`;
     // 右下で見ている猫
     s += `<g transform="translate(${catAt.x} ${catAt.y}) scale(${catAt.s})"><g class="hana-cat">${catSitting(cat)}</g></g>`;
     // 猫の手

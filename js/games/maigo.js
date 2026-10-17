@@ -9,6 +9,8 @@
 // 結果は先に乱数で決め（RS01-S14）、分かれ道ごとに、決めた出口へ続く道を選ぶ。
 // 出口の札はどれも同じ大きさ（出やすさは札の大きさに表れない：RS01-S21）。
 import { C } from '../art.js';
+import { look as nowLook } from '../look.js';
+import { seasonFlier } from '../kits.js';
 import { catSitting } from '../cats.js';
 import { audio } from '../audio.js';
 import { pickWeighted } from '../odds.js';
@@ -141,7 +143,7 @@ export function createMaigo({ view, stage, result, play, getChoices, getWeights,
         + `<path d="M${sx - 10},${(sy - 40).toFixed(1)} h22 l6,6 l-6,6 h-22 Z" fill="#f3d9b0" stroke="#9b5f3a" stroke-width="1.6"/>`
         + `<text x="${sx + 3}" y="${(sy - 33.5).toFixed(1)}" font-size="12" font-weight="700" fill="#9b5f3a" text-anchor="middle" dominant-baseline="central">？</text>`;
     }
-    s += `<g class="mg-fly" visibility="hidden"><path d="M0,0 C-8,-10 -14,-2 -8,4 C-4,7 -1,4 0,1 Z M0,0 C8,-10 14,-2 8,4 C4,7 1,4 0,1 Z" fill="#fde3a6" stroke="#d9b04d" stroke-width="1.2"/><path d="M0,-3 V5" stroke="#8c6e5a" stroke-width="1.6" stroke-linecap="round"/></g>`;
+    s += `<g class="mg-fly" visibility="hidden">${seasonFlier(nowLook).svg}</g>`;
     // 足あと
     s += `<g class="prints"></g>`;
     // 出口の札
@@ -263,11 +265,11 @@ export function createMaigo({ view, stage, result, play, getChoices, getWeights,
       audio.hover(0);
       await wait(320);
     }
-    // ときどき出る別の動き（v12）：ちょうちょが とんできて、目で おいかける
+    // ときどき出る別の動き（v12）：ちょうちょ（季節の生き物）が とんできて、目で おいかける
     delete stage.dataset.variant;
     if (Math.random() < 0.3) {
       stage.dataset.variant = 'fly';
-      showHint(result, 'あ、ちょうちょ…');
+      showHint(result, `あ、${seasonFlier(nowLook).name}…`);
       refs.fly.setAttribute('visibility', 'visible');
       const y0 = start.y - geo.kit * 1.2;
       await frames(900, (t) => {

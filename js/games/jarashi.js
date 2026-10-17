@@ -8,6 +8,8 @@
 // 3. ぴょーんと とびついて、ねこじゃらしが しなる。
 // 結果は先に乱数で決め（RS01-S14）、ゆれる順を、決めた ねこじゃらしで終わるように組む。
 import { C } from '../art.js';
+import { look as nowLook } from '../look.js';
+import { seasonFlier } from '../kits.js';
 import { catSitting } from '../cats.js';
 import { audio } from '../audio.js';
 import { ease, frames, wait } from '../fx.js';
@@ -59,10 +61,10 @@ export function createJarashi(deps) {
         s += `<g transform="translate(${f(roots[i].cx)} ${f(roots[i].cy)})"><g class="tail" data-i="${i}">${foxtail(th, i)}</g></g>`;
         s += plate(i, c.x, c.y + c.h - plateH, c.w, plateH, choices[i]).svg;
       });
-      // 毛糸玉（アズの よこ）と、ひらひら とぶ ちょうちょ
+      // 毛糸玉（アズの よこ）と、ひらひら とぶ 季節の生き物（v13：kits.js の seasonFlier）
       const yr = Math.max(9, catH * 0.13);
       s += `<g transform="translate(${f(g.home.x - catH * 0.7)} ${f(g.home.y + catH * 0.38)})"><circle r="${f(yr)}" fill="#f4a7a3" stroke="#d97f7a" stroke-width="2"/><path d="M${f(-yr * 0.8)},${f(-yr * 0.2)} Q0,${f(-yr)} ${f(yr * 0.8)},${f(-yr * 0.2)} M${f(-yr * 0.8)},${f(yr * 0.3)} Q0,${f(-yr * 0.5)} ${f(yr * 0.8)},${f(yr * 0.3)}" stroke="#d97f7a" stroke-width="1.4" fill="none"/><path d="M${f(yr * 0.7)},${f(yr * 0.6)} q${f(yr)},${f(yr * 0.5)} ${f(yr * 1.8)},${f(yr * 0.1)}" stroke="#d97f7a" stroke-width="1.4" fill="none"/></g>`;
-      s += `<g transform="translate(${f(W * 0.82)} ${f(catH * 0.35)})"><g class="jr-fly"><path d="M0,0 C-8,-10 -14,-2 -8,4 C-4,7 -1,4 0,1 Z M0,0 C8,-10 14,-2 8,4 C4,7 1,4 0,1 Z" fill="#fde3a6" stroke="#d9b04d" stroke-width="1.2"/><path d="M0,-3 V5" stroke="#8c6e5a" stroke-width="1.6" stroke-linecap="round"/></g></g>`;
+      s += `<g transform="translate(${f(W * 0.82)} ${f(catH * 0.35)})"><g class="jr-fly">${seasonFlier(nowLook).svg}</g></g>`;
       s += `<g class="jr-pos" transform="translate(${f(g.home.x)} ${f(g.home.y)}) scale(${f(sk)})"><g class="jr-cat">${catSitting(g.cat, { look: { x: 0, y: 1 } })}</g></g>`;
       return s;
     },

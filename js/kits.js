@@ -654,4 +654,21 @@ export function kitFor(lk) {
   return kit;
 }
 export const isNight = (lk) => !!(EVENT[lk.event] && EVENT[lk.event].night);
+
+// ゲームの中を とぶ 小さな生き物（v13）。v12 で ちょうちょを いつも出していたが、冬や夜に ちょうちょは合わないため、
+// 季節と行事で かえる：春・夏 ちょうちょ、秋 とんぼ、冬 ことり（シマエナガ）、夏の夜 ほたる、ほかの夜 ながれぼし。
+// 絵は (0,0) を中心に はば 20 ほど。name は「あ、〇〇…」の ことばに使う
+const BUTTERFLY = `<path d="M0,0 C-8,-10 -14,-2 -8,4 C-4,7 -1,4 0,1 Z M0,0 C8,-10 14,-2 8,4 C4,7 1,4 0,1 Z" fill="#fde3a6" stroke="#d9b04d" stroke-width="1.2"/><path d="M0,-3 V5" stroke="#8c6e5a" stroke-width="1.6" stroke-linecap="round"/>`;
+export function seasonFlier(lk, tint = '#fde3a6') {
+  const season = SEASON[lk.season] ? lk.season : 'aki';
+  if (isNight(lk)) {
+    if (season === 'natsu') return { name: 'ほたる', svg: `<circle r="7" fill="#fff6b8" opacity="0.45"/><circle r="3.4" fill="#f6e46a" stroke="#d9c04d" stroke-width="1"/>` };
+    return { name: 'ながれぼし', svg: `<path d="M2,-2 L16,-12" stroke="#fff3b8" stroke-width="2.4" stroke-linecap="round" opacity="0.7"/>${starShape(13, '#fff3b8', '#e6c46a')}` };
+  }
+  if (season === 'fuyu') return { name: 'ことり', svg: shimaenaga(10) };
+  if (season === 'aki') return { name: 'とんぼ', svg: dragonfly(18) };
+  return { name: 'ちょうちょ', svg: BUTTERFLY.replace('#fde3a6', tint) };
+}
+// はち・かえる・てんとうむし を出してよい時（あたたかい季節の昼）
+export const warmDay = (lk) => (lk.season === 'haru' || lk.season === 'natsu') && !isNight(lk);
 export { at, f, rand };

@@ -3,7 +3,7 @@
 import { store, LIMITS, cleanLabel } from './store.js';
 import { audio } from './audio.js';
 import { icons } from './art.js';
-import { CAT_DESIGN, designById } from './cats.js';
+import { CAT_DESIGN, designById, catFace } from './cats.js';
 import { LEVELS, DEFAULT_LEVEL, weightsOf, percents } from './odds.js';
 import { dayNum, fmt, fmtMD, lookup, naturalSeason } from './schedule.js';
 import { FIRST_YEAR, LAST_YEAR } from './calendar.js';
@@ -195,8 +195,12 @@ export function renderSchedule() {
   const t = describe(today);
   set('st-season', t.season);
   set('st-event', t.event);
-  set('st-overlap', schedule.overlaps.length ? `${schedule.overlaps.length} か所` : 'なし', schedule.overlaps.length ? false : true);
-  schedule.overlaps.forEach((o) => addNote(`${o.type === 'season' ? '季節' : '行事'}の重なり：${o.text}`, true));
+  // 夏祭り・花火と世界猫の日の毎年2日の重なりは、わざと残した重なり（yotei.txt の説明）。誤りに見えないよう、数に入れない（v13）
+  const meant = (o) => o.type === 'event' && [o.a, o.b].includes('夏祭り・花火') && [o.a, o.b].includes('世界猫の日');
+  const real = schedule.overlaps.filter((o) => !meant(o));
+  set('st-overlap', real.length ? `${real.length} か所` : 'なし', real.length ? false : true);
+  real.forEach((o) => addNote(`${o.type === 'season' ? '季節' : '行事'}の重なり：${o.text}`, true));
+  if (schedule.overlaps.some(meant)) addNote('夏祭り・花火と 世界猫の日が重なる 8/7〜8/8 は、世界猫の日の見た目になります。');
   if (t.needsUpdate) addNote(`行事のカレンダーは ${LAST_YEAR}年までです。アップデートが必要です。節分とお月見は出しません。`, true);
 }
 
@@ -226,8 +230,9 @@ function renderTry() {
 // ---- ねこ ----
 export function renderCatStatus() {
   for (const kind of ['mike', 'saba']) {
-    const d = designById(CAT_DESIGN[kind]);
-    set(`st-cat-${kind}`, `${d.label}　${d.name}`);
+    // 顔の小さな絵（v13。v12 までは 見た目の案の名前「A ももいろ みけ」などを出していた。名前が アズ・イズに なったため、絵にした）
+    const el = document.getElementById(`st-cat-${kind}`);
+    if (el) el.innerHTML = `<span class="cat-mini"><svg viewBox="-60 -62 120 116">${catFace(designById(CAT_DESIGN[kind]))}</svg></span>`;
   }
 }
 

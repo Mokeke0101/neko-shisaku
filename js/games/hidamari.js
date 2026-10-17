@@ -10,6 +10,8 @@
 // 結果は先に乱数で決め（RS01-S14）、ひだまりの うつり方を、決めた ざぶとんで終わるように組む。
 // ざぶとんと札はどれも同じ大きさ（出やすさは表れない：RS01-S21）。
 import { C } from '../art.js';
+import { look as nowLook } from '../look.js';
+import { seasonFlier } from '../kits.js';
 import { catSitting, catCurled } from '../cats.js';
 import { audio } from '../audio.js';
 import { pickWeighted } from '../odds.js';
@@ -95,9 +97,9 @@ export function createHidamari({ view, stage, result, play, getChoices, getWeigh
         + `</g>`;
     });
     s += `<g class="hd-pos"><g class="hd-cat"></g></g>`;
-    // 上を ながれる 雲と、ときどき来る ちょうちょ（v12）
+    // 上を ながれる 雲と、ときどき来る 季節の生き物（v12。v13 から季節で かえる：kits.js の seasonFlier）
     s += `<g class="hd-cloud" transform="translate(-80 30)" opacity="0.9"><path d="M0,22 q-4,-14 10,-16 q4,-12 20,-8 q12,-8 24,2 q14,-2 14,12 q8,4 2,10 Z" fill="#ffffff" stroke="#e6eef4" stroke-width="2"/></g>`;
-    s += `<g class="hd-fly" visibility="hidden"><path d="M0,0 C-8,-10 -14,-2 -8,4 C-4,7 -1,4 0,1 Z M0,0 C8,-10 14,-2 8,4 C4,7 1,4 0,1 Z" fill="#fbd9e2" stroke="#e391ad" stroke-width="1.2"/><path d="M0,-3 V5" stroke="#8c6e5a" stroke-width="1.6" stroke-linecap="round"/></g>`;
+    s += `<g class="hd-fly" visibility="hidden">${seasonFlier(nowLook, '#fbd9e2').svg}</g>`;
     s += `<g class="hd-z"></g>`;
     svg.innerHTML = s;
     stage.textContent = '';
@@ -228,10 +230,10 @@ export function createHidamari({ view, stage, result, play, getChoices, getWeigh
       puffZ(seq[k]);
       await wait(T.rest);
       if (k === flyAt) {
-        // ときどき出る別の動き（v12）：ちょうちょが来て、目を さます
+        // ときどき出る別の動き（v12）：ちょうちょ（季節の生き物）が来て、目を さます
         stage.dataset.variant = 'fly';
         const c = geo.cells[seq[k]];
-        showHint(result, 'あ、ちょうちょ…');
+        showHint(result, `あ、${seasonFlier(nowLook).name}…`);
         curlOn(seq[k], 'happy');
         refs.fly.setAttribute('visibility', 'visible');
         await frames(900, (t) => refs.fly.setAttribute('transform', `translate(${(c.cx + geo.cushW * 0.6 - t * geo.cushW * 1.2).toFixed(1)} ${(c.cushY - geo.cushH * 0.9 - Math.sin(t * Math.PI * 3) * 10).toFixed(1)}) scale(${(1.7 * (1 - 0.3 * Math.abs(Math.sin(t * 20)))).toFixed(2)} 1.7)`));

@@ -9,6 +9,8 @@
 // 結果は先に乱数で決め（RS01-S14）、とぶ回数と1回ごとの はばを、決めた石で止まるように組む。
 // 石はどれも同じ大きさ（出やすさは表れない：RS01-S21）。下の石ほど手前、上の石ほど向こう岸に近い。
 import { C } from '../art.js';
+import { look as nowLook } from '../look.js';
+import { warmDay } from '../kits.js';
 import { catSitting } from '../cats.js';
 import { audio } from '../audio.js';
 import { pickWeighted } from '../odds.js';
@@ -84,7 +86,7 @@ export function createTobiishi({ view, stage, result, play, getChoices, getWeigh
     const pad = (x, y, r, frog) => `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)})"><path d="M0,0 L${r},${-r * 0.2} A${r},${r * 0.55} 0 1 1 ${r * 0.9},${r * 0.25} Z" fill="#a3bd6e" stroke="#86a256" stroke-width="1.6"/>`
       + (frog ? `<g transform="translate(${-r * 0.2} ${-r * 0.35})"><ellipse rx="${r * 0.42}" ry="${r * 0.3}" fill="#86c26e" stroke="#5f9a4d" stroke-width="1.4"/><circle cx="${-r * 0.2}" cy="${-r * 0.28}" r="${r * 0.13}" fill="#ffffff" stroke="#5f9a4d" stroke-width="1"/><circle cx="${r * 0.2}" cy="${-r * 0.28}" r="${r * 0.13}" fill="#ffffff" stroke="#5f9a4d" stroke-width="1"/><circle cx="${-r * 0.2}" cy="${-r * 0.27}" r="${r * 0.05}" fill="#4a3a33"/><circle cx="${r * 0.2}" cy="${-r * 0.27}" r="${r * 0.05}" fill="#4a3a33"/></g>` : '') + '</g>';
     const pr = Math.max(12, Math.min(22, W * 0.05));
-    s += pad(W * 0.84, H - bankH - pr * 0.9, pr, true) + pad(W * 0.1, farH + pr * 0.9, pr * 0.8, false);
+    s += pad(W * 0.84, H - bankH - pr * 0.9, pr, warmDay(nowLook)) + pad(W * 0.1, farH + pr * 0.9, pr * 0.8, false);
     s += `<g class="tb-fish" visibility="hidden"><path d="M-14,0 Q0,-9 12,0 Q0,9 -14,0 Z M12,0 L20,-6 L20,6 Z" fill="#f7b4a6" stroke="#d98a7a" stroke-width="1.6"/><circle cx="-7" cy="-1.5" r="1.4" fill="#4a3a33"/></g>`;
     // とびいし
     let minLabel = Infinity;

@@ -9,6 +9,8 @@
 // 3. さいごは ゆっくり おりて、花が ぽんと さく。
 // 結果は先に乱数で決め（RS01-S14）、ただよう道を、決めた花だんで終わるように組む。
 import { C } from '../art.js';
+import { look as nowLook } from '../look.js';
+import { warmDay } from '../kits.js';
 import { catFace } from '../cats.js';
 import { audio } from '../audio.js';
 import { ease, frames, wait } from '../fx.js';
@@ -75,7 +77,8 @@ export function createWatage(deps) {
       [[W * 0.06, 0.95, 0.8], [W * 0.94, 0.9, 1], [W * 0.86, 0.98, 0.7]].forEach(([x, yk, k]) => {
         s += `<path d="M${f(x)},${f(skyH * yk + 6)} V${f(skyH * yk - 18 * k)}" stroke="#86a256" stroke-width="2"/><g transform="translate(${f(x)} ${f(skyH * yk - 20 * k)})">${flower(7 * k)}</g>`;
       });
-      s += `<g transform="translate(${f(W * 0.9)} ${f(skyH * 0.3)})"><g class="wt-bug"><ellipse rx="7" ry="6" fill="#e8664a" stroke="#9b3b2a" stroke-width="1.4"/><path d="M0,-6 V6" stroke="#9b3b2a" stroke-width="1.2"/><circle cx="-3" cy="-1" r="1.4" fill="#4a3a33"/><circle cx="3" cy="2" r="1.4" fill="#4a3a33"/><circle cx="0" cy="-7" r="3" fill="#4a3a33"/></g></g>`;
+      // てんとうむしは あたたかい季節の昼だけ（v13）。冬・夜・秋は、動かない すがたを 消しておく
+      s += `<g transform="translate(${f(W * 0.9)} ${f(skyH * 0.3)})"${warmDay(nowLook) ? '' : ' visibility="hidden"'}><g class="wt-bug"><ellipse rx="7" ry="6" fill="#e8664a" stroke="#9b3b2a" stroke-width="1.4"/><path d="M0,-6 V6" stroke="#9b3b2a" stroke-width="1.2"/><circle cx="-3" cy="-1" r="1.4" fill="#4a3a33"/><circle cx="3" cy="2" r="1.4" fill="#4a3a33"/><circle cx="0" cy="-7" r="3" fill="#4a3a33"/></g></g>`;
       const fs = skyH / 120;
       s += `<g transform="translate(${f(head.x + 50 * fs + 44)} ${f(Math.max(48 * fs, head.y))}) scale(${f(fs)})"><g class="wt-face">${catFace(g.cat, { look: { x: -1, y: 0 } })}</g></g><g class="wind"></g>`;
       return s;

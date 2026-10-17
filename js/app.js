@@ -88,6 +88,12 @@ buildGames();
 // ---- 絵を置く ----
 // 起動した時は、端末の日付で季節だけを決める（行事は、予定のテキストを読んでから）
 const todayNum = () => { const now = new Date(); return dayNum(now.getFullYear(), now.getMonth() + 1, now.getDate()); };
+// ホーム画面のアイコン（v13）：iPhone は「ホーム画面に追加」した時のアイコンを持ち続けるため、
+// 追加する日の季節の絵を渡す（行事の絵にすると、行事の後も ずっと残るため、季節だけにした）
+onLook((lk) => {
+  const el = document.querySelector('link[rel="apple-touch-icon"]');
+  if (el) el.setAttribute('href', `icons/apple-touch-icon-${lk.season}.png`);
+});
 setLook(naturalSeason(todayNum()).id, '');
 // 季節と行事の飾り（画面の いちばん上の帯と、下の左右の角。ゲームの絵より奥に置く）
 function paintDecor(kind) {

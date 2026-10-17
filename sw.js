@@ -4,7 +4,7 @@
 // 公開し直す時は VERSION を上げる（js/version.js の APP_VERSION と同じ値にする）。
 'use strict';
 
-const VERSION = 'v12';
+const VERSION = 'v13';
 const CACHE = `nekokime-${VERSION}`;
 // 書体（約 4.2 MB）は版と分けて保存し、版を上げても取り直さない（RS01-S03）。書体のファイルを替えた時だけ FONT_VERSION を上げる
 const FONT_VERSION = 'f1';
@@ -72,6 +72,10 @@ const FILES = [
   './js/games/daruma.js',
   './js/games/list.js',
   './icons/apple-touch-icon.png',
+  './icons/apple-touch-icon-haru.png',
+  './icons/apple-touch-icon-natsu.png',
+  './icons/apple-touch-icon-aki.png',
+  './icons/apple-touch-icon-fuyu.png',
   './icons/icon-192.png',
   './icons/icon-512.png',
   // STARTUP-FILES:BEGIN
