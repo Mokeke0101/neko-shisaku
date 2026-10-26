@@ -45,7 +45,7 @@ export const GAMES = [
   { id: 'nobi', group: 'たかさに とどく', name: 'のびのび せいくらべ', lines: ['のびのび', 'せいくらべ'], desc: 'のびた たかさで きまる', play: 'のびる', kind: '高さ・量へ届く', use: '2〜12こ', create: createNobi },
   { id: 'tower', group: 'たかさに とどく', name: 'だんボール タワー', lines: ['だんボール', 'タワー'], desc: 'つみあがった たかさ', play: 'つむ', kind: '高さへ届く（積む）', use: '2〜12こ', create: createTower },
   { id: 'hana', group: 'ねこの きまぐれ', name: 'はなびら うらない', lines: ['はなびら', 'うらない'], desc: 'さいごに のこる 1まい', play: 'うらなう', kind: '猫の気まぐれ（のこる）', use: '2〜12こ', create: createHana },
-  { id: 'negaeri', group: 'ねこの きまぐれ', name: 'ねこの ねがえり', lines: ['ねこの', 'ねがえり'], desc: 'あたまが むいた ほう', play: 'ごろん', kind: '猫の気まぐれ（向き）', use: '2〜8こ', max: 8, create: createNegaeri },
+  { id: 'negaeri', group: 'ねこの きまぐれ', name: 'ねこの ねがえり', lines: ['ねこの', 'ねがえり'], desc: 'ころがって ねむった クッション', play: 'ごろん', kind: '猫の気まぐれ（ねどこ）', use: '2〜8こ', max: 8, create: createNegaeri },
   { id: 'hidamari', group: 'ねこの きまぐれ', name: 'ひだまり ねこ', lines: ['ひだまり', 'ねこ'], desc: 'まるくなった ざぶとん', play: 'ひなたぼっこ', kind: '猫の気まぐれ（ひだまり）', use: '2〜12こ', create: createHidamari },
   { id: 'shabon', group: 'ねこの きまぐれ', name: 'ねこの しゃぼんだま', lines: ['ねこの', 'しゃぼんだま'], desc: 'さいごに のこった たま', play: 'ふーっ', kind: '猫の気まぐれ（しゃぼんだま）', use: '2〜12こ', create: createShabon },
   { id: 'jarashi', group: 'ねこの きまぐれ', name: 'ねこじゃらし', lines: ['ねこじゃらし', 'とびつき'], desc: 'アズが とびついた 1ぽん', play: 'ふりふり', kind: '猫の気まぐれ（とびつく）', use: '2〜12こ', create: createJarashi },

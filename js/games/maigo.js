@@ -6,6 +6,10 @@
 // 結果が出るまでの「どうなるんだろう？」と思わせる時間（RS01-S19）
 // 1. 子猫が、あたりを見回してから歩きだす。
 // 2. 分かれ道に来るたびに止まり、道を見比べる。ときどき違う道へ一歩入りかけて、戻ってくる。
+// 道の形は4種類（v16）：分かれ道・あみだ（かくかく）・くねくね道・橋のある道（小川と橋）。どれも同じ「木」の形で、描き方だけが違う。
+// 道の形は ゲームを開いた時（と選択肢の数が変わった時）に決め、遊んでいる間は かえない（v15 までは「あるく」を押すと
+// 描き直しで 道が作り直され、見えていた道と ちがう道を歩く不具合があった）。子猫は 描いた道と同じ線を歩く。
+// 出口は 木の立てふだ（選択肢を じかに書く）。
 // 結果は先に乱数で決め（RS01-S14）、分かれ道ごとに、決めた出口へ続く道を選ぶ。
 // 出口の札はどれも同じ大きさ（出やすさは札の大きさに表れない：RS01-S21）。
 import { C } from '../art.js';
@@ -58,12 +62,18 @@ export function leafRange(node) {
   return node.children.length ? node.children.flatMap(leafRange) : [node.leaf];
 }
 
+export const PATTERNS = ['fork', 'kaku', 'kune', 'bridge'];
+export const PATTERN_NAMES = { fork: '分かれ道', kaku: 'あみだ', kune: 'くねくね道', bridge: '橋のある道' };
+
 export function createMaigo({ view, stage, result, play, getChoices, getWeights, getCat, getPurpose }) {
   let geo = null;
   let busy = false;
   let refs = {};
   let cat = null;
   let tree = null;
+  let treeN = 0;
+  let pattern = 'fork';
+  let patternNo = Math.floor(Math.random() * PATTERNS.length);
 
   function render() {
     const choices = getChoices();
@@ -72,7 +82,13 @@ export function createMaigo({ view, stage, result, play, getChoices, getWeights,
     const W = stage.clientWidth;
     const H = stage.clientHeight;
     if (!W || !H) return;
-    tree = makeTree(n);
+    // 道は 選択肢の数が変わった時だけ 作り直す（遊ぶたびの描き直しでは かえない）
+    if (!tree || treeN !== n) {
+      tree = makeTree(n);
+      treeN = n;
+      pattern = PATTERNS[patternNo % PATTERNS.length];
+      patternNo++;
+    }
     const D = Math.max(1, treeDepth(tree));
     const cardX = 4;
     const cardW = W - 8;
@@ -103,22 +119,67 @@ export function createMaigo({ view, stage, result, play, getChoices, getWeights,
     const svg = svgEl('svg', { viewBox: `0 0 ${W} ${H}` });
     let s = '';
     // 芝生の紙
-    s += `<rect x="${cardX + 3}" y="${cardY + 6}" width="${cardW}" height="${cardH}" rx="22" fill="#d9b07a" opacity="0.35"/>`;
-    s += `<rect x="${cardX}" y="${cardY}" width="${cardW}" height="${cardH}" rx="22" fill="#f1f3d6" stroke="${C.woodDeep}" stroke-width="3"/>`;
+    s += `<rect x="${cardX + 3}" y="${cardY + 6}" width="${cardW}" height="${cardH}" rx="22" fill="#a9c98f" opacity="0.35"/>`;
+    s += `<rect x="${cardX}" y="${cardY}" width="${cardW}" height="${cardH}" rx="22" fill="#dcecc4" stroke="#a9c98f" stroke-width="3"/>`;
+    for (let k = 0; k < 16; k++) {
+      const gx = cardX + 12 + ((k * 71) % (cardW - 24));
+      const gy = cardY + 10 + ((k * 43) % Math.max(10, cardH - 20));
+      s += `<path d="M${gx},${gy} l-3,-6 M${gx},${gy} l0,-8 M${gx},${gy} l3,-6" stroke="#a9c98f" stroke-width="1.5" stroke-linecap="round" opacity="0.7"/>`;
+    }
     // 道（ふちの色を下に、道の色を上に）
     const edges = [];
     const walkEdges = (node) => node.children.forEach((c) => { edges.push([node, c]); walkEdges(c); });
     walkEdges(tree);
+    const F = (v) => v.toFixed(1);
+    const wig = Math.max(4, Math.min(11, spacing * 0.3));
     const edgeD = ([a, b]) => {
-      const mx = a.x + Math.min(36, (b.x - a.x) * 0.5);
       const bx = b.children.length ? b.x : Math.min(b.x, a.x + Math.max(40, (xEnd - 40 - xRoot) / D));
-      let d = `M${a.x.toFixed(1)},${a.y.toFixed(1)} C${mx.toFixed(1)},${a.y.toFixed(1)} ${(bx - Math.min(36, (bx - a.x) * 0.5)).toFixed(1)},${b.y.toFixed(1)} ${bx.toFixed(1)},${b.y.toFixed(1)}`;
-      if (!b.children.length && bx < xEnd) d += ` L${xEnd.toFixed(1)},${b.y.toFixed(1)}`;
-      return d;
+      const tail = !b.children.length && bx < xEnd ? ` L${F(xEnd)},${F(b.y)}` : '';
+      if (pattern === 'kaku') {
+        // あみだ：横 → たて → 横 の かくかく道
+        const mx = a.x + Math.max(10, (bx - a.x) * 0.3);
+        return `M${F(a.x)},${F(a.y)} H${F(mx)} V${F(b.y)} H${F(bx)}${tail}`;
+      }
+      const c1 = a.x + Math.min(36, (bx - a.x) * 0.5);
+      const c2 = bx - Math.min(36, (bx - a.x) * 0.5);
+      if (pattern === 'kune') {
+        // くねくね道：分かれ道の曲線に、両はしで 0 になる ゆれを足す
+        const N = 24;
+        const pts = [];
+        for (let q = 0; q <= N; q++) {
+          const t = q / N;
+          const u = 1 - t;
+          const x = u * u * u * a.x + 3 * u * u * t * c1 + 3 * u * t * t * c2 + t * t * t * bx;
+          const y = u * u * u * a.y + 3 * u * u * t * a.y + 3 * u * t * t * b.y + t * t * t * b.y;
+          pts.push(`${F(x)},${F(y + Math.sin(t * Math.PI * 3) * Math.sin(t * Math.PI) * wig)}`);
+        }
+        return `M${pts.join(' L')}${tail}`;
+      }
+      return `M${F(a.x)},${F(a.y)} C${F(c1)},${F(a.y)} ${F(c2)},${F(b.y)} ${F(bx)},${F(b.y)}${tail}`;
     };
     const ds = edges.map(edgeD);
-    s += `<path d="M${(cardX + 14).toFixed(1)},${tree.y.toFixed(1)} L${tree.x.toFixed(1)},${tree.y.toFixed(1)} ${ds.join(' ')}" stroke="#e6c99a" stroke-width="${road + 5}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
-    s += `<path d="M${(cardX + 14).toFixed(1)},${tree.y.toFixed(1)} L${tree.x.toFixed(1)},${tree.y.toFixed(1)} ${ds.join(' ')}" stroke="#fbf1dc" stroke-width="${road}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+    // 橋のある道：出口の手前を たてに ながれる 小川
+    const riverW = Math.max(14, Math.min(24, spacing * 0.6));
+    const xr = xEnd - riverW / 2 - 10;
+    if (pattern === 'bridge') {
+      let rv = `M${F(xr)},${F(cardY + 2)}`;
+      for (let y = cardY + 2; y < cardY + cardH - 2; y += 24) rv += ` Q${F(xr + 6)},${F(y + 12)} ${F(xr)},${F(Math.min(cardY + cardH - 2, y + 24))}`;
+      s += `<path d="${rv}" stroke="#9fc8cf" stroke-width="${F(riverW + 4)}" fill="none"/><path d="${rv}" stroke="#cfe8ef" stroke-width="${F(riverW)}" fill="none"/>`
+        + `<path d="${rv}" stroke="#ffffff" stroke-width="1.6" fill="none" stroke-dasharray="6 14" opacity="0.8"/>`;
+    }
+    const roadD = `M${F(cardX + 14)},${F(tree.y)} L${F(tree.x)},${F(tree.y)} ${ds.join(' ')}`;
+    s += `<path d="${roadD}" stroke="#d9b886" stroke-width="${road + 5}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+    s += `<path d="${roadD}" stroke="#f6e3bf" stroke-width="${road}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+    if (pattern === 'bridge') {
+      // 出口へ行く道ごとに 木の橋
+      ys.forEach((y) => {
+        const bw = riverW + 12;
+        const bh = road + 6;
+        s += `<rect x="${F(xr - bw / 2)}" y="${F(y - bh / 2)}" width="${F(bw)}" height="${F(bh)}" rx="2" fill="#e3bb84" stroke="#9b6b3a" stroke-width="1.4"/>`
+          + Array.from({ length: 4 }, (_, q) => `<path d="M${F(xr - bw / 2 + ((q + 1) * bw) / 5)},${F(y - bh / 2)} v${F(bh)}" stroke="#b98a52" stroke-width="1"/>`).join('')
+          + `<path d="M${F(xr - bw / 2)},${F(y - bh / 2)} h${F(bw)} M${F(xr - bw / 2)},${F(y + bh / 2)} h${F(bw)}" stroke="#9b6b3a" stroke-width="2"/>`;
+      });
+    }
     // 分かれ道の小さな花
     const forks = [];
     const walkForks = (node) => { if (node.children.length) { forks.push(node); node.children.forEach(walkForks); } };
@@ -153,7 +214,9 @@ export function createMaigo({ view, stage, result, play, getChoices, getWeights,
       const size = Math.max(12, Math.min(22, th * 0.62, ((tagW - 16) / len) * 0.98));
       minLabel = Math.min(minLabel, size);
       s += `<g class="tag" data-i="${i}">`
-        + `<rect class="tag-bg" x="${tagX}" y="${y - th / 2}" width="${tagW}" height="${th}" rx="${Math.min(12, th / 2)}" fill="#ffffff" stroke="${C.woodDeep}" stroke-width="2"/>`
+        + `<rect x="${tagX + 2}" y="${y - th / 2 + 3}" width="${tagW}" height="${th}" rx="${Math.min(8, th / 2)}" fill="#9b6b3a"/>`
+        + `<rect class="tag-bg" x="${tagX}" y="${y - th / 2}" width="${tagW}" height="${th}" rx="${Math.min(8, th / 2)}" fill="#f2d3a2" stroke="#b98a52" stroke-width="2"/>`
+        + `<circle cx="${tagX + 6}" cy="${y}" r="1.6" fill="#b98a52"/><circle cx="${tagX + tagW - 6}" cy="${y}" r="1.6" fill="#b98a52"/>`
         + `<text class="cell-label" x="${tagX + tagW / 2}" y="${y}" font-size="${size.toFixed(1)}" fill="${C.ink}" text-anchor="middle" dominant-baseline="central">${escapeXml(choices[i])}</text>`
         + `</g>`;
     });
@@ -175,6 +238,10 @@ export function createMaigo({ view, stage, result, play, getChoices, getWeights,
     stage.dataset.count = String(n);
     stage.dataset.cat = cat.id;
     stage.dataset.minLabel = minLabel.toFixed(1);
+    stage.dataset.pattern = pattern;
+    // 道の木の形（分かれ方と 出口の並び）。押す前と後で 同じかを確かめる道具が使う
+    const sig = (nd) => (nd.children.length ? `(${nd.children.map(sig).join(',')})` : String(nd.leaf));
+    stage.dataset.tree = `${pattern}:${sig(tree)}`;
   }
 
   function placeKitten(x, y, lift = 0, flip = false) {
@@ -237,6 +304,7 @@ export function createMaigo({ view, stage, result, play, getChoices, getWeights,
 
   function reset() {
     clearCelebration();
+    tree = null; // ゲームを開くたびに 新しい道（形も 4種類を順に）
     render();
     showHint(result, '「あるく」を おしてね');
     play.textContent = 'あるく';
@@ -266,9 +334,12 @@ export function createMaigo({ view, stage, result, play, getChoices, getWeights,
       await wait(320);
     }
     // ときどき出る別の動き（v12）：ちょうちょ（季節の生き物）が とんできて、目で おいかける
-    delete stage.dataset.variant;
-    if (Math.random() < 0.3) {
-      stage.dataset.variant = 'fly';
+    // 動きの ちがい（3B：4つ）：ふつう・とぶ生き物を目で おう・分かれ道で ひとやすみ（あくび）・さいごに かけだす
+    const vr = Math.random();
+    const variant = vr < 0.25 ? 'fly' : vr < 0.5 ? 'rest' : vr < 0.75 ? 'dash' : 'plain';
+    stage.dataset.variant = variant;
+    const restAt = route.length ? Math.floor(Math.random() * route.length) : -1;
+    if (variant === 'fly') {
       showHint(result, `あ、${seasonFlier(nowLook).name}…`);
       refs.fly.setAttribute('visibility', 'visible');
       const y0 = start.y - geo.kit * 1.2;
@@ -298,6 +369,14 @@ export function createMaigo({ view, stage, result, play, getChoices, getWeights,
         await wait(k === route.length - 1 ? 320 : 210);
       }
       const go = kids[route[k]];
+      if (variant === 'rest' && k === restAt) {
+        // ひとやすみ：すわって ふわぁ…
+        showHint(result, 'ちょっと ひとやすみ… ふわぁ');
+        setLook('puff', { x: 0, y: -1 });
+        audio.heart();
+        await wait(520);
+        setLook('normal', { x: 1, y: 0 });
+      }
       if (k === peekAt && kids.length > 1) {
         // 違う道へ一歩入りかけて、戻る
         const wrongJ = route[k] === 0 ? 1 : route[k] - 1;
@@ -313,8 +392,9 @@ export function createMaigo({ view, stage, result, play, getChoices, getWeights,
         await wait(160);
       }
       const { pts } = pathPoints(geo.edgeD([node, go]));
-      showHint(result, k === route.length - 1 ? 'もうすぐ でぐち…' : 'こっちだ！');
-      await walkAlong(pts, speed * (k === route.length - 1 ? 0.75 : 1));
+      const lastLeg = k === route.length - 1;
+      if (lastLeg && variant === 'dash') { showHint(result, 'わーい！ かけだすよ'); setLook('happy', { x: 1, y: 0 }); await frames(400, (t) => placeKitten(node.x, node.y, Math.abs(Math.sin(t * Math.PI * 2)) * 8)); } else showHint(result, lastLeg ? 'もうすぐ でぐち…' : 'こっちだ！');
+      await walkAlong(pts, speed * (lastLeg ? (variant === 'dash' ? 1.3 : 0.75) : 1));
       node = go;
     }
     // 3. 出口に着いた

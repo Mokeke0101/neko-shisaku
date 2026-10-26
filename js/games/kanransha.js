@@ -1,25 +1,28 @@
-// ねこの かんらんしゃ（決め方：回って止まる〈ゴンドラ〉。見せ方の部品：番号と色つきの一覧）。
-// 選択肢の数だけ ゴンドラが付いた かんらんしゃ。係の アズが レバーを ひくと、電球が ともって ぐるぐる まわる。
-// まわる速さに合わせて、空の雲・鳥・風船が ながれていく。だんだん ゆっくりになって止まり、
-// 「てっぺん」に止まった ゴンドラの後ろに 花火が上がる。そのゴンドラの番号の選択肢が結果になる。
-// にくきゅうルーレット（針が止まる）とは、止まる所が「てっぺん」で、景色が ながれ、花火で知らせる所が違う。
+// ねこの かんらんしゃ（決め方：回って止まる〈ゴンドラ〉。見せ方の部品：ゴンドラに じかに書いた選択肢）。
+// 選択肢の数だけ ゴンドラが付いた かんらんしゃ。選択肢は ゴンドラの胴に じかに書く（v16 で 下の一覧を やめた。長い名前は2行）。
+// 係の アズが レバーを ひくと、電球が ともって ぐるぐる まわる。まわる速さに合わせて、空の雲・鳥・風船が ながれていく。
+// だんだん ゆっくりになって止まり、「てっぺん」に止まった ゴンドラの後ろに 花火が上がる。そのゴンドラの選択肢が結果になる。
 //
 // 結果が出るまでの「どうなるんだろう？」と思わせる時間（RS01-S19）
 // 1. アズが レバーを ガチャンと ひく。電球が ともる。
-// 2. かんらんしゃが ぐるぐる まわり、雲や鳥が びゅーんと ながれる。だんだん ゆっくりに。てっぺんの ゴンドラの札が うすく光る。
-// 3. 1つ手前で止まりそうになり、ひと息 おいて、もう少し進む。
+// 2. かんらんしゃが ぐるぐる まわり、雲や鳥が びゅーんと ながれる。だんだん ゆっくりに。てっぺんの ゴンドラが うすく光る。
+// 3. 止まりそうで止まらない。動きの ちがい（3B：4つ）：
+//    ふつう（1つ手前で ひと息 おいて、もう少し進む）・もう いっしゅう・いきすぎて もどる・止まってから アズが もう1回 レバー
 // 4. てっぺんの ゴンドラが ゆれて、花火が ぱーんと上がる。
 // 結果は先に乱数で決め（RS01-S14）、止まる角度を、決めた ゴンドラが てっぺんに来る角度にする。
 import { C, cloud } from '../art.js';
 import { catSitting, catName } from '../cats.js';
 import { audio } from '../audio.js';
 import { ease, frames, wait } from '../fx.js';
-import { createGame, grid, plate, hintPlate, TINTS, f } from './common.js';
+import { createGame, hintPlate, TINTS, f } from './common.js';
+import { charCount, escapeXml } from '../ui.js';
 
 export const T = { lever: 520, spin: 3700, pause: 420, creep: 900, fire: 900 };
-// ときどき出る別の動き（v12）：止まりそうな所から「もう いっしゅう！」と もう1回 まわる
+// 長い動きの ちがい（もう いっしゅう・もう1回 レバー）で足す時間
 export const EXTRA = 900;
 export const kanranshaDuration = (extra = false) => T.lever + T.spin + T.pause + T.creep + T.fire + 100 + (extra ? EXTRA : 0);
+export const VARIANTS = ['plain', 'extra', 'back', 'again'];
+export const kanranshaVariant = (r = Math.random()) => VARIANTS[Math.min(3, Math.floor(r * 4))];
 
 // ゴンドラ i の、まわり始めの角度（度。0 が右、-90 が上）
 export const baseAngle = (i, n) => -90 + (360 * i) / n;
@@ -39,6 +42,38 @@ export function atTop(n, rot) {
   return best;
 }
 
+// 選択肢を ゴンドラに書く行に分ける（2行の時は 前を長く）
+export const splitLabel = (label, lines, room = 0) => {
+  const ch = [...label];
+  if (lines === 1 || ch.length < 2 || charCount(label) <= room) return [label];
+  const k = Math.ceil(ch.length / 2);
+  return [ch.slice(0, k).join(''), ch.slice(k).join('')];
+};
+// ゴンドラの大きさ・文字の大きさ・行の数・輪の半径を決める。
+// となりの ゴンドラの文字が どの角度でも重ならない半径（2つの中心の きょり ＞ 札の対角線）にする
+export function wheelLayout(labels, W, H) {
+  const n = labels.length;
+  const topH = 26;
+  const hang = 12; // つり手と屋根
+  const groundH = 16;
+  const sin = n <= 2 ? 1 : Math.sin(Math.PI / n);
+  for (const lines of [1, 2]) {
+    const longest = Math.max(1, ...labels.map((l) => Math.max(...splitLabel(l, lines).map((x) => charCount(x)))));
+    for (let size = 20; size >= 12; size -= 0.5) {
+      const gw = Math.max(40, longest * size + 10);
+      const win = lines === 1 ? size * 0.7 : 0; // 1行の時は 文字の上に まど
+      const gh = Math.max(26, lines * size * 1.1 + 7 + win);
+      const need = Math.hypot(gw + 2, gh + 2) / (2 * sin);
+      const rMax = Math.min(W / 2 - gw / 2 - 3, (H - topH - hang - gh - groundH) / 2, W * 0.42);
+      if (need <= rMax) return { lines, size, gw, gh, win, R: rMax, topH, hang, groundH };
+    }
+  }
+  const size = 12;
+  const gw = 4 * size + 10;
+  const gh = 2 * size * 1.1 + 7;
+  return { lines: 2, size, gw, gh, win: 0, R: Math.min(W / 2 - gw / 2 - 3, (H - topH - hang - gh - groundH) / 2), topH, hang, groundH };
+}
+
 // 空を ながれる物（雲・鳥・風船）。k は種類、x・y は はじめの場所、depth は 遠さ（大きいほど ゆっくり）
 const FLOATERS = [
   { k: 'cloud', x: 0.12, y: 0.12, s: 1, depth: 1.6 }, { k: 'cloud', x: 0.7, y: 0.3, s: 0.8, depth: 2.2 },
@@ -47,22 +82,53 @@ const FLOATERS = [
   { k: 'balloon', x: 0.93, y: 0.5, s: 0.85, depth: 1.8 },
 ];
 function floater(k, s, i) {
-  if (k === 'cloud') return cloud(70 * s);
+  if (k === 'cloud') return `<g opacity="0.85">${cloud(70 * s)}</g>`;
   if (k === 'bird') return `<path d="M${f(-9 * s)},0 q${f(4.5 * s)},${f(-6 * s)} ${f(9 * s)},0 q${f(4.5 * s)},${f(-6 * s)} ${f(9 * s)},0" stroke="#8b7d78" stroke-width="2" fill="none" stroke-linecap="round" transform="translate(${f(-4.5 * s)} 0)"/>`;
   const [col, edge] = TINTS[(i * 5) % TINTS.length];
   return `<path d="M0,${f(12 * s)} q${f(-4 * s)},${f(10 * s)} 0,${f(20 * s)}" stroke="#b9a48a" stroke-width="1.4" fill="none"/>`
     + `<ellipse rx="${f(9 * s)}" ry="${f(11 * s)}" fill="${col}" stroke="${edge}" stroke-width="2"/><ellipse cx="${f(-3 * s)}" cy="${f(-4 * s)}" rx="${f(2.2 * s)}" ry="${f(3.2 * s)}" fill="#ffffff" opacity="0.7"/>`;
 }
 
+// ゴンドラ（つり手 0,0 から下へ）。屋根・胴（選択肢を書く）・床の あつみ・まどの光
+function gondola(i, label, L) {
+  const { gw, gh, size, lines } = L;
+  const [col, edge] = TINTS[i % TINTS.length];
+  const y0 = L.hang;
+  const rx = Math.min(12, gh * 0.36);
+  const parts = splitLabel(label, lines, (gw - 10) / size);
+  const lh = size * 1.1;
+  const win = L.win;
+  let s = `<path d="M0,0 V${f(y0 - 4)}" stroke="#9b5f3a" stroke-width="2.2"/><circle r="3" fill="#fffaf0" stroke="#9b5f3a" stroke-width="1.6"/>`
+    // 屋根（まるい ふた と てっぺんの玉）
+    + `<path d="M${f(-gw * 0.4)},${f(y0 + 2)} Q0,${f(y0 - 9)} ${f(gw * 0.4)},${f(y0 + 2)} Z" fill="${edge}"/>`
+    + `<circle cy="${f(y0 - 4.5)}" r="2.6" fill="${edge}"/>`
+    // 床の あつみ（下に ずらした こい色）
+    + `<rect x="${f(-gw / 2)}" y="${f(y0 + 3.5)}" width="${f(gw)}" height="${f(gh)}" rx="${f(rx)}" fill="${edge}"/>`
+    + `<g class="cell" data-i="${i}"><rect class="cell-bg" x="${f(-gw / 2)}" y="${f(y0)}" width="${f(gw)}" height="${f(gh)}" rx="${f(rx)}" fill="${col}" stroke="${edge}" stroke-width="2"/>`
+    + (win ? `<rect x="${f(-gw / 2 + 5)}" y="${f(y0 + 4)}" width="${f(gw - 10)}" height="${f(win)}" rx="${f(win * 0.4)}" fill="#e6f3f7" stroke="${edge}" stroke-width="1.2"/>`
+      + `<path d="M${f(-gw / 2 + 10)},${f(y0 + 4 + win * 0.7)} l${f(win * 0.5)},${f(-win * 0.45)}" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>`
+      : `<rect x="${f(-gw / 2 + 4)}" y="${f(y0 + 3)}" width="${f(gw - 8)}" height="${f(Math.max(4, gh * 0.2))}" rx="${f(Math.max(2, gh * 0.1))}" fill="#ffffff" opacity="0.5"/>`);
+  parts.forEach((p, k) => {
+    const ty = y0 + win + (gh - win) / 2 + (k - (parts.length - 1) / 2) * lh + (win ? 1 : 0.5);
+    s += `<text class="cell-label" x="0" y="${f(ty)}" font-size="${f(size)}" fill="${C.ink}" text-anchor="middle" dominant-baseline="central">${escapeXml(p)}</text>`;
+  });
+  return s + '</g>';
+}
+
 export function createKanransha(deps) {
   const R = {};
   let rot = 0;
+  // ゴンドラは まわる速さに合わせて ふりこのように ゆれる（つり手が中心）
+  let sway = 0;
   const place = (g, r) => {
+    sway = sway * 0.85 + Math.max(-16, Math.min(16, -(r - rot) * 2.2)) * 0.15;
+    if (Math.abs(r - rot) > 60) sway = 0; // はじめに置く時
     rot = r;
+    R.bodies.forEach((el) => el.setAttribute('transform', `rotate(${f(sway)})`));
     R.wheel.setAttribute('transform', `translate(${f(g.cx)} ${f(g.cy)}) rotate(${f(r)})`);
     R.gons.forEach((el, i) => {
       const a = ((baseAngle(i, g.n) + r) * Math.PI) / 180;
-      el.setAttribute('transform', `translate(${f(g.cx + Math.cos(a) * g.rw)} ${f(g.cy + Math.sin(a) * g.rw)})`);
+      el.setAttribute('transform', `translate(${f(g.cx + Math.cos(a) * g.R)} ${f(g.cy + Math.sin(a) * g.R)})`);
     });
   };
   // 空の物を、回った分だけ ながす（dr は回った角度）
@@ -87,72 +153,69 @@ export function createKanransha(deps) {
     resultLabel: 'てっぺんは',
     draw(g) {
       const { n, W, H, choices, cat } = g;
-      const cols = n <= 5 ? 1 : 2;
-      const rows = Math.ceil(n / cols);
-      const rowH = Math.max(24, Math.min(40, (H * 0.5) / rows));
-      const listH = rows * rowH + (rows - 1) * 5 + 16;
-      const topH = H - listH - 6;
-      const cells = grid(n, { x: 12, y: topH + 8, w: W - 24, h: listH - 16 }, cols, 6);
-      const mark = 40; // てっぺんの しるしの場所
-      let rw = Math.min(W * 0.33, (topH - mark - 16) / 2.4);
-      const gw = Math.max(14, Math.min(44, ((2 * Math.PI * rw) / Math.max(n, 6)) * 0.62, rw * 0.42));
-      const gh = gw * 1.05;
-      rw = Math.max(30, Math.min(W * 0.33, (topH - mark - 8 - gh * 1.3) / 2));
-      const cx = W * 0.42;
-      const cy = mark + rw;
-      const skyH = topH - 10;
-      Object.assign(g, { cells, rw, gw, gh, cx, cy, topH, skyH });
+      const L = wheelLayout(choices, W, H);
+      const { R: rw, gw, gh, topH, hang, groundH } = L;
+      const cx = W / 2;
+      const ground = H - groundH;
+      // 輪の高さ：上の すきまと 下の すきまを だいたい半分ずつ（大きい画面で 上や下に よりすぎない）
+      const hiCy = topH + rw + 2;
+      const cy = hiCy + Math.max(0, ground - 10 - gh - hang - rw - hiCy) * 0.55;
+      Object.assign(g, { L, R: rw, gw, gh, cx, cy, skyH: H - groundH });
       g.fx = FLOATERS.map((fl) => fl.x * W);
-      g.fy = FLOATERS.map((fl) => fl.y * skyH);
-      const ground = Math.min(topH - 2, cy + rw + gh * 1.3);
+      g.fy = FLOATERS.map((fl) => fl.y * g.skyH);
       // 空を ながれる物（かんらんしゃの後ろ）
       let s = '<g class="kr-sky">';
       FLOATERS.forEach((fl, k) => { s += `<g class="kr-float" transform="translate(${f(g.fx[k])} ${f(g.fy[k])})">${floater(fl.k, fl.s, k)}</g>`; });
       s += '</g><g class="kr-fire"></g>';
-      s += `<path d="M${f(cx)},${f(cy)} L${f(cx - rw * 0.62)},${f(ground)} M${f(cx)},${f(cy)} L${f(cx + rw * 0.62)},${f(ground)}" stroke="#c99a62" stroke-width="${f(Math.max(4, rw * 0.07))}" stroke-linecap="round"/>`
-        + `<rect x="${f(cx - gw * 1.2)}" y="${f(ground - 6)}" width="${f(gw * 2.4)}" height="8" rx="3" fill="#e3bb84" stroke="#b98a52" stroke-width="1.6"/>`;
-      // 輪と柱（輪ごと回す）。ふちに 電球
-      let wheel = `<circle r="${f(rw)}" fill="none" stroke="#f7a6a0" stroke-width="${f(Math.max(3, rw * 0.05))}"/><circle r="${f(rw * 0.86)}" fill="none" stroke="#fde3a6" stroke-width="2"/>`;
-      for (let i = 0; i < Math.max(n, 8); i++) {
-        const a = (i / Math.max(n, 8)) * Math.PI * 2;
-        wheel += `<path d="M0,0 L${f(Math.cos(a) * rw)},${f(Math.sin(a) * rw)}" stroke="#f1d3a6" stroke-width="2"/>`;
+      // 地面の しばふ と、のりばの台
+      s += `<path d="M0,${f(ground + 4)} Q${f(W / 2)},${f(ground - 8)} ${W},${f(ground + 4)} V${H} H0 Z" fill="#cfe3c0"/>`
+        + `<path d="M0,${f(ground + 4)} Q${f(W / 2)},${f(ground - 8)} ${W},${f(ground + 4)}" stroke="#a9c98f" stroke-width="2.4" fill="none"/>`;
+      // 柱（Aの字）
+      const leg = Math.max(5, rw * 0.06);
+      s += `<path d="M${f(cx)},${f(cy)} L${f(cx - rw * 0.56)},${f(ground)} M${f(cx)},${f(cy)} L${f(cx + rw * 0.56)},${f(ground)}" stroke="#b98a52" stroke-width="${f(leg + 2.4)}" stroke-linecap="round"/>`
+        + `<path d="M${f(cx)},${f(cy)} L${f(cx - rw * 0.56)},${f(ground)} M${f(cx)},${f(cy)} L${f(cx + rw * 0.56)},${f(ground)}" stroke="#f1d3a6" stroke-width="${f(leg)}" stroke-linecap="round"/>`
+        + `<path d="M${f(cx - rw * 0.3)},${f(cy + (ground - cy) * 0.54)} H${f(cx + rw * 0.3)}" stroke="#d9b886" stroke-width="3" stroke-linecap="round"/>`;
+      // 輪（輪ごと回す）。外の輪と内の輪、ほね、ふちの電球
+      let wheel = `<circle r="${f(rw)}" fill="none" stroke="#d97f7a" stroke-width="${f(Math.max(4.4, rw * 0.05) + 2)}"/><circle r="${f(rw)}" fill="none" stroke="#f7a6a0" stroke-width="${f(Math.max(4.4, rw * 0.05))}"/>`
+        + `<circle r="${f(rw * 0.84)}" fill="none" stroke="#fde3a6" stroke-width="2.4"/><circle r="${f(rw * 0.42)}" fill="none" stroke="#fde3a6" stroke-width="2"/>`;
+      const spokes = Math.max(n, 8);
+      for (let i = 0; i < spokes; i++) {
+        const a = (i / spokes) * Math.PI * 2;
+        const b = ((i + 0.5) / spokes) * Math.PI * 2;
+        wheel += `<path d="M0,0 L${f(Math.cos(a) * rw)},${f(Math.sin(a) * rw)}" stroke="#f1d3a6" stroke-width="2.2"/>`
+          + `<path d="M${f(Math.cos(a) * rw * 0.84)},${f(Math.sin(a) * rw * 0.84)} L${f(Math.cos(b) * rw)},${f(Math.sin(b) * rw)}" stroke="#f6e0bd" stroke-width="1.4"/>`;
       }
-      const nb = 18;
+      const nb = Math.round(Math.max(16, rw / 7));
       for (let i = 0; i < nb; i++) {
         const a = ((i + 0.5) / nb) * Math.PI * 2;
-        wheel += `<circle class="bulb" cx="${f(Math.cos(a) * rw * 0.93)}" cy="${f(Math.sin(a) * rw * 0.93)}" r="${f(Math.max(2.2, rw * 0.035))}" fill="#fffaf0" stroke="#e3bb84" stroke-width="1"/>`;
+        wheel += `<circle class="bulb" cx="${f(Math.cos(a) * rw)}" cy="${f(Math.sin(a) * rw)}" r="${f(Math.max(2, rw * 0.026))}" fill="#fffaf0" stroke="#e3bb84" stroke-width="1"/>`;
       }
-      wheel += `<circle r="${f(rw * 0.12)}" fill="#fffaf0" stroke="#d97f7a" stroke-width="3"/>`;
+      wheel += `<circle r="${f(rw * 0.13)}" fill="#fffaf0" stroke="#d97f7a" stroke-width="3"/><circle r="${f(rw * 0.05)}" fill="#f7a6a0"/>`;
       s += `<g class="wheel">${wheel}</g>`;
       // ゴンドラ（つり下がって、いつも上を向く）
-      for (let i = 0; i < n; i++) {
-        const [col, edge] = TINTS[i % TINTS.length];
-        s += `<g class="gon" data-i="${i}"><path d="M0,0 V${f(gh * 0.2)}" stroke="#9b5f3a" stroke-width="2"/>`
-          + `<g class="gon-body"><rect x="${f(-gw / 2)}" y="${f(gh * 0.18)}" width="${f(gw)}" height="${f(gh)}" rx="${f(gw * 0.3)}" fill="${col}" stroke="${edge}" stroke-width="2"/>`
-          + `<rect x="${f(-gw * 0.34)}" y="${f(gh * 0.3)}" width="${f(gw * 0.68)}" height="${f(gh * 0.48)}" rx="${f(gw * 0.14)}" fill="#fffaf0"/>`
-          + `<text y="${f(gh * 0.55)}" font-size="${f(gh * 0.4)}" font-weight="700" fill="${C.ink}" text-anchor="middle" dominant-baseline="central">${i + 1}</text></g></g>`;
-      }
-      // てっぺんの しるし（星と、下向きの三角）
-      s += `<rect x="${f(cx - 17)}" y="${f(mark * 0.62 - 12)}" width="84" height="24" rx="12" fill="#fffaf0" stroke="#e2bd87" stroke-width="2"/>`
-        + `<g transform="translate(${f(cx)} ${f(mark * 0.62)})"><path d="M0,-9 L2.6,-3 L9,-2.6 L4,1.6 L5.6,8 L0,4.6 L-5.6,8 L-4,1.6 L-9,-2.6 L-2.6,-3 Z" fill="#fde3a6" stroke="#d9b04d" stroke-width="1.6" stroke-linejoin="round"/></g>`
-        + `<text x="${f(cx + 13)}" y="${f(mark * 0.62 + 0.5)}" font-size="13" font-weight="700" fill="#c8615c" dominant-baseline="central">てっぺん</text>`;
-      // 係の アズと レバー（右下）
-      const cs = Math.max(0.26, Math.min(0.5, rw / 190));
-      const catX = Math.min(W - 50 * cs - 4, cx + rw + gw * 0.5 + 60 * cs);
-      const catY = ground - 76 * cs;
-      const box = { x: catX - 70 * cs - 18, y: ground - 30 * cs - 14, w: 26, h: 30 * cs + 14 };
-      g.lever = { x: box.x + box.w / 2, y: box.y + 4, len: 30 * cs + 10 };
+      for (let i = 0; i < n; i++) s += `<g class="gon" data-i="${i}"><g class="gon-body">${gondola(i, choices[i], L)}</g></g>`;
+      // てっぺんの しるし（星の旗。てっぺんの つり手の真上）
+      const my = Math.max(12, cy - rw - 13);
+      s += `<g transform="translate(${f(cx)} ${f(my)})"><path d="M0,9 l-5,-7 h10 Z" fill="#e8664a"/>`
+        + `<rect x="-42" y="-11" width="84" height="18" rx="9" fill="#fffaf0" stroke="#e8664a" stroke-width="2"/>`
+        + `<path transform="translate(-28 -2) scale(0.62)" d="M0,-9 L2.6,-3 L9,-2.6 L4,1.6 L5.6,8 L0,4.6 L-5.6,8 L-4,1.6 L-9,-2.6 L-2.6,-3 Z" fill="#fde3a6" stroke="#d9b04d" stroke-width="2.4" stroke-linejoin="round"/>`
+        + `<text x="6" y="-1.5" font-size="12.5" font-weight="700" fill="#c8615c" text-anchor="middle" dominant-baseline="central">てっぺん</text></g>`;
+      // 係の アズと レバー（右下のすみ）
+      const cs = Math.max(0.24, Math.min(0.4, W / 900));
+      const catX = W - 46 * cs - 2;
+      const catY = ground - 70 * cs;
+      const box = { x: catX - 60 * cs - 22, y: ground - 24 * cs - 12, w: 22, h: 24 * cs + 12 };
+      g.lever = { x: box.x + box.w / 2, y: box.y + 4, len: 24 * cs + 10 };
       s += `<rect x="${f(box.x)}" y="${f(box.y)}" width="${f(box.w)}" height="${f(box.h)}" rx="5" fill="#cfe0ea" stroke="#7aa7c4" stroke-width="2"/>`
         + `<g class="kr-lever" transform="translate(${f(g.lever.x)} ${f(g.lever.y)}) rotate(-35)"><path d="M0,0 V${f(-g.lever.len)}" stroke="#8c6e5a" stroke-width="3" stroke-linecap="round"/><circle cy="${f(-g.lever.len)}" r="5" fill="#f7a6a0" stroke="#d97f7a" stroke-width="1.6"/></g>`
         + `<g transform="translate(${f(catX)} ${f(catY)}) scale(${f(cs)})"><g class="kr-cat">${catSitting(cat, { look: { x: -1, y: -0.6 } })}</g></g>`;
-      // 一覧
-      s += `<rect x="6" y="${f(topH + 2)}" width="${W - 12}" height="${f(listH)}" rx="16" fill="${C.paper}" stroke="${C.woodDeep}" stroke-width="3"/>`;
-      cells.forEach((c, i) => { s += plate(i, c.x, c.y, c.w, c.h, choices[i], { badge: i + 1, tint: TINTS[i % TINTS.length] }).svg; });
       return s;
     },
     after(g) {
       R.wheel = g.svg.querySelector('.wheel');
       R.gons = Array.from(g.svg.querySelectorAll('.gon'));
+      R.bodies = R.gons.map((el) => el.querySelector('.gon-body'));
+      sway = 0;
       R.cat = g.svg.querySelector('.kr-cat');
       R.lever = g.svg.querySelector('.kr-lever');
       R.floats = Array.from(g.svg.querySelectorAll('.kr-float'));
@@ -162,19 +225,23 @@ export function createKanransha(deps) {
     },
     async perform(g, decided, say) {
       const { svg, n, cat } = g;
-      // 1. アズが レバーを ひく
-      say(`${catName(cat)}が レバーを ひくよ`);
-      await frames(T.lever, (t) => {
+      const variant = kanranshaVariant();
+      g.stage.dataset.variant = variant;
+      const pull = (dur) => frames(dur, (t) => {
         const e = ease.outBack(Math.min(1, t * 1.6));
         R.lever.setAttribute('transform', `translate(${f(g.lever.x)} ${f(g.lever.y)}) rotate(${f(-35 + 70 * e)})`);
       });
+      // 1. アズが レバーを ひく
+      say(`${catName(cat)}が レバーを ひくよ`);
+      await pull(T.lever);
       audio.stamp();
       R.cat.innerHTML = catSitting(cat, { mood: 'happy', look: { x: -1, y: -1 } });
       // 2. まわる（景色が ながれる）
       const r0 = rot;
       const step = 360 / n;
       const target = stopAfter(n, decided, r0);
-      const near = target - step * 0.55; // 1つ手前で止まりそうになる所
+      // 止まりそうになる所：ふつうは1つ手前。いきすぎは 半分 すぎた所。もう1回 レバーは 2つ手前
+      const near = variant === 'back' ? target + step * 0.45 : variant === 'again' ? target - step * 1.5 : target - step * 0.55;
       say('まわる まわる…');
       let lit = -1;
       let ticked = atTop(n, r0);
@@ -197,13 +264,26 @@ export function createKanransha(deps) {
       R.cat.innerHTML = catSitting(cat, { look: { x: -0.6, y: -1 } });
       audio.heart();
       await wait(T.pause);
-      delete g.stage.dataset.variant;
-      if (Math.random() < 0.3) {
-        g.stage.dataset.variant = 'extra';
+      if (variant === 'extra') {
         say('もう いっしゅう！');
         audio.stamp();
         R.cat.innerHTML = catSitting(cat, { mood: 'happy', look: { x: -1, y: -1 } });
         await frames(T.creep + EXTRA, (t) => { place(g, near + (target + 360 - near) * ease.inOutSine(t)); tickFrame(); });
+      } else if (variant === 'back') {
+        // いきすぎた… と思ったら、ゆらりと もどる
+        say('あれ？ もどる…！');
+        R.cat.innerHTML = catSitting(cat, { mood: 'strain', look: { x: -1, y: -1 } });
+        await frames(T.creep, (t) => { place(g, near + (target - near) * ease.inOutSine(t)); tickFrame(); });
+      } else if (variant === 'again') {
+        // 止まっちゃった… アズが もう1回 レバーを ひく
+        say('とまっちゃった…？');
+        await wait(EXTRA * 0.4);
+        say('もう 1かい ガチャン！');
+        R.lever.setAttribute('transform', `translate(${f(g.lever.x)} ${f(g.lever.y)}) rotate(-35)`);
+        await pull(EXTRA * 0.6);
+        audio.stamp();
+        R.cat.innerHTML = catSitting(cat, { mood: 'happy', look: { x: -1, y: -1 } });
+        await frames(T.creep, (t) => { place(g, near + (target - near) * ease.inOutSine(t)); tickFrame(); });
       } else {
         say('もうちょっと…');
         await frames(T.creep, (t) => { place(g, near + (target - near) * ease.inOutSine(t)); tickFrame(); });
@@ -224,14 +304,15 @@ export function createKanransha(deps) {
 
   // てっぺんの ゴンドラの後ろに 花火を3つ
   function fireworks(g, i) {
-    const top = { x: g.cx, y: g.cy - g.rw + g.gh * 0.6 };
-    const spots = [{ x: top.x, y: top.y - g.gh * 0.2, r: g.rw * 0.55 }, { x: top.x - g.rw * 0.7, y: top.y + g.rw * 0.15, r: g.rw * 0.4 }, { x: top.x + g.rw * 0.75, y: top.y + g.rw * 0.05, r: g.rw * 0.42 }];
+    const top = { x: g.cx, y: g.cy - g.R + g.L.hang + g.gh / 2 };
+    const spots = [{ x: top.x, y: top.y - g.gh * 0.4, r: g.R * 0.5 }, { x: top.x - g.R * 0.7, y: top.y + g.R * 0.2, r: g.R * 0.36 }, { x: top.x + g.R * 0.72, y: top.y + g.R * 0.1, r: g.R * 0.38 }];
     R.fire.textContent = '';
     // てっぺんの ゴンドラの後ろを 光らせる
-    const glow = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    const glow = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
     glow.setAttribute('cx', f(top.x));
     glow.setAttribute('cy', f(top.y));
-    glow.setAttribute('r', f(g.gw * 0.95));
+    glow.setAttribute('rx', f(g.gw * 0.7));
+    glow.setAttribute('ry', f(g.gh * 0.7 + 10));
     glow.setAttribute('fill', '#fff1c4');
     glow.setAttribute('stroke', '#ffd36b');
     glow.setAttribute('stroke-width', '4');

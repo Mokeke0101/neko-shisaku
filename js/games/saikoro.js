@@ -53,7 +53,7 @@ function dieFace(face, d, line = C.line) {
 // 手前の面は、上の目と となり合う目（向かい合う目の和は 7）
 export const FRONT = { 1: 2, 2: 3, 3: 2, 4: 5, 5: 3, 6: 4 };
 export const dieH = (d) => d * 1.04;
-function die3D(face, d, line = C.line) {
+export function die3D(face, d, line = C.line) {
   const top = d * 0.6;
   const h = dieH(d);
   const y0 = -h / 2;

@@ -8,12 +8,15 @@
 // 3. 2回ふる時は、1回目に進んだ所から、2回目で どこまで行くか。
 // 結果は先に乱数で決め（RS01-S14）、さいころの目を、合わせて決めた ますに止まるように選ぶ（1ますめは1回、ほかは2回ふる）。
 // ますはどれも同じ大きさ（出やすさは ますの大きさに表れない：RS01-S21）。
+// v16：盤は 木の板、ますは 厚みのある タイル（下に こい色の あつみ・上に 光）。選択肢は ますに じかに書く。さいころは v15 の立体。
+// 動きの ちがい（3B：4つ）：ふつう・いきすぎて もどる・こまが つまずく・さいころを 高く なげる。
 import { C } from '../art.js';
 import { catSitting, catFace, catPaw } from '../cats.js';
 import { audio } from '../audio.js';
 import { pickWeighted } from '../odds.js';
 import { celebrate, clearCelebration, ease, frames, wait, levelOf } from '../fx.js';
 import { showHint, showResult, setBusy, centerOf, charCount, svgEl, escapeXml } from '../ui.js';
+import { die3D } from './saikoro.js';
 
 const SQ = ['#fde2d6', '#fdefc8', '#e4efd2', '#dde9f6', '#ece2f4', '#fbe3ea'];
 const SQ_EDGE = ['#e8664a', '#e0a93a', '#86a256', '#6f9fcb', '#a985c9', '#e391ad'];
@@ -65,16 +68,6 @@ export function splitLabel(text, w, h) {
   return { lines: best.lines, size: Math.max(12, two) };
 }
 
-// さいころの目の点の置き場（-1〜1）
-const PIPS = {
-  1: [[0, 0]],
-  2: [[-0.5, -0.5], [0.5, 0.5]],
-  3: [[-0.5, -0.5], [0, 0], [0.5, 0.5]],
-  4: [[-0.5, -0.5], [0.5, -0.5], [-0.5, 0.5], [0.5, 0.5]],
-  5: [[-0.5, -0.5], [0.5, -0.5], [0, 0], [-0.5, 0.5], [0.5, 0.5]],
-  6: [[-0.5, -0.55], [0.5, -0.55], [-0.5, 0], [0.5, 0], [-0.5, 0.55], [0.5, 0.55]],
-};
-
 export function createSugoroku({ view, stage, result, play, getChoices, getWeights, getCat, getPurpose }) {
   let geo = null;
   let busy = false;
@@ -120,8 +113,13 @@ export function createSugoroku({ view, stage, result, play, getChoices, getWeigh
     const svg = svgEl('svg', { viewBox: `0 0 ${W} ${H}` });
     let s = '';
     // 盤
-    s += `<rect x="${boardX + 3}" y="${boardY + 6}" width="${boardW}" height="${boardH}" rx="20" fill="#d9b07a" opacity="0.35"/>`;
-    s += `<rect x="${boardX}" y="${boardY}" width="${boardW}" height="${boardH}" rx="20" fill="${C.paper}" stroke="${C.woodDeep}" stroke-width="3"/>`;
+    s += `<rect x="${boardX + 2}" y="${boardY + 7}" width="${boardW}" height="${boardH}" rx="20" fill="#9b6b3a" opacity="0.45"/>`;
+    s += `<rect x="${boardX}" y="${boardY}" width="${boardW}" height="${boardH}" rx="20" fill="#f2d3a2" stroke="#b98a52" stroke-width="3"/>`;
+    for (let k = 0; k < 5; k++) {
+      const gy = boardY + 14 + (k * (boardH - 28)) / 4;
+      s += `<path d="M${boardX + 12},${gy.toFixed(1)} C${(boardX + boardW * 0.3).toFixed(1)},${(gy - 5).toFixed(1)} ${(boardX + boardW * 0.6).toFixed(1)},${(gy + 5).toFixed(1)} ${boardX + boardW - 12},${gy.toFixed(1)}" stroke="#e3bf8a" stroke-width="1.6" fill="none"/>`;
+    }
+    s += `<rect x="${boardX + 6}" y="${boardY + 6}" width="${boardW - 12}" height="${boardH - 12}" rx="15" fill="none" stroke="#e3bf8a" stroke-width="2" stroke-dasharray="6 5"/>`;
     // 道（ますの真ん中を順につなぐ）
     const road = [{ x: startAt.x, y: startAt.y }, ...cells.map((c) => ({ x: c.x + c.w / 2, y: c.y + c.h / 2 }))];
     s += `<path d="M${road.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' L')}" stroke="#f1dcb8" stroke-width="${Math.min(26, ch * 0.4).toFixed(1)}" stroke-linejoin="round" stroke-linecap="round" fill="none"/>`;
@@ -135,8 +133,13 @@ export function createSugoroku({ view, stage, result, play, getChoices, getWeigh
       minLabel = Math.min(minLabel, size);
       const cx = lx + lw / 2;
       const lh = size * 1.12;
+      const rxc = Math.min(14, c.h / 3);
+      const th = Math.max(5, Math.min(8, c.h * 0.1)); // タイルの あつみ
+      s += `<rect x="${c.x + 1}" y="${c.y + th + 2}" width="${c.w}" height="${c.h}" rx="${rxc}" fill="#9b6b3a" opacity="0.3"/>`
+        + `<rect x="${c.x}" y="${c.y + th}" width="${c.w}" height="${c.h}" rx="${rxc}" fill="${SQ_EDGE[i % SQ.length]}"/>`;
       s += `<g class="cell" data-i="${i}">`
-        + `<rect class="cell-bg" x="${c.x}" y="${c.y}" width="${c.w}" height="${c.h}" rx="${Math.min(14, c.h / 3)}" fill="${SQ[i % SQ.length]}" stroke="${SQ_EDGE[i % SQ.length]}" stroke-width="2.4"/>`
+        + `<rect class="cell-bg" x="${c.x}" y="${c.y}" width="${c.w}" height="${c.h}" rx="${rxc}" fill="${SQ[i % SQ.length]}" stroke="${SQ_EDGE[i % SQ.length]}" stroke-width="2.4"/>`
+        + `<rect x="${c.x + 6}" y="${c.y + 4}" width="${c.w - 12}" height="${Math.max(4, c.h * 0.14).toFixed(1)}" rx="${Math.max(2, c.h * 0.07).toFixed(1)}" fill="#ffffff" opacity="0.5"/>`
         + `<circle cx="${c.sx}" cy="${c.sy}" r="${slot}" fill="#ffffff" stroke="${SQ_EDGE[i % SQ.length]}" stroke-width="2"/>`
         + `<text x="${c.sx}" y="${c.sy + 0.5}" font-size="${(slot * 1.05).toFixed(1)}" font-weight="700" fill="${C.inkSoft}" text-anchor="middle" dominant-baseline="central">${i + 1}</text>`
         + lines.map((ln, k) => `<text class="cell-label" x="${cx.toFixed(1)}" y="${(c.sy + (k - (lines.length - 1) / 2) * lh).toFixed(1)}" font-size="${size.toFixed(1)}" fill="${C.ink}" text-anchor="middle" dominant-baseline="central">${escapeXml(ln)}</text>`).join('')
@@ -185,11 +188,7 @@ export function createSugoroku({ view, stage, result, play, getChoices, getWeigh
   }
 
   function drawDie(face) {
-    const d = geo.dieS;
-    const r = d * 0.09;
-    refs.dieIn.innerHTML = `<rect x="${-d / 2}" y="${-d / 2}" width="${d}" height="${d}" rx="${d * 0.2}" fill="#ffffff" stroke="${C.line}" stroke-width="2.6"/>`
-      + `<rect x="${-d / 2 + 3}" y="${d / 2 - d * 0.18}" width="${d - 6}" height="${d * 0.12}" rx="${d * 0.06}" fill="#efe4d6"/>`
-      + PIPS[face].map(([px, py]) => `<circle cx="${(px * d * 0.56).toFixed(2)}" cy="${(py * d * 0.56).toFixed(2)}" r="${(face === 1 ? r * 1.5 : r).toFixed(2)}" fill="${face === 1 ? C.momiji : C.ink}"/>`).join('');
+    refs.dieIn.innerHTML = die3D(face, geo.dieS * 0.92);
     refs.die.dataset.face = String(face);
   }
 
@@ -217,7 +216,7 @@ export function createSugoroku({ view, stage, result, play, getChoices, getWeigh
   }
 
   // さいころを1回ふる（face の目で止める）。last は さいごの1回か、long は1回だけ ふる時か（長めに見せる）
-  async function roll(face, last, long) {
+  async function roll(face, last, long, high = false) {
     const { dieRest, catS } = geo;
     const pr = pawRest();
     // しゃかしゃか（手の中で ふる）
@@ -246,8 +245,8 @@ export function createSugoroku({ view, stage, result, play, getChoices, getWeigh
       const x = from.x + (to.x - from.x) * e;
       const bounce = Math.abs(Math.sin(t * Math.PI * 3)) * 46 * (1 - t) * (1 - t);
       const y = from.y + (to.y - from.y) * Math.min(1, t * 2.2) - bounce;
-      spin = -720 * e;
-      placeDie(x, y, spin, 0.8 + 0.2 * Math.min(1, t * 3));
+      spin = Math.sin(t * Math.PI * 6) * 22 * (1 - t); // 立体の さいころは ころがる時に かたむく（ぐるぐる まわさない）
+      placeDie(x, y - (high ? Math.sin(Math.PI * Math.min(1, t * 1.6)) * 60 : 0), spin, 0.8 + 0.2 * Math.min(1, t * 3));
       const now = t * tumble;
       if (now >= nextFace) {
         drawDie(1 + Math.floor(Math.random() * 6));
@@ -274,7 +273,7 @@ export function createSugoroku({ view, stage, result, play, getChoices, getWeigh
   }
 
   // こまを steps ます進める（from は いまの ますの番号。スタートは -1）
-  async function walk(fromIndex, steps) {
+  async function walk(fromIndex, steps, stumbleAt = -1) {
     const { cells } = geo;
     let at = fromIndex;
     for (let k = 0; k < steps; k++) {
@@ -289,6 +288,12 @@ export function createSugoroku({ view, stage, result, play, getChoices, getWeigh
         placePiece(p0.x + (p1.x - p0.x) * e, p0.y + (p1.y - p0.y) * e, Math.sin(Math.PI * t) * 16, t > 0.85 ? 0.88 : 1);
       });
       piece = p1;
+      if (k === stumbleAt) {
+        // つまずく：こまが よろっと かたむいて、たてなおす
+        showHint(result, 'おっとっと…');
+        audio.heart();
+        await frames(420, (t) => refs.piece.setAttribute('transform', `translate(${p1.x.toFixed(2)} ${p1.y.toFixed(2)}) rotate(${(Math.sin(t * Math.PI * 3) * 24 * (1 - t)).toFixed(1)})`));
+      }
       lightCell(next, true);
       audio.hop(next);
       placePiece(p1.x, p1.y, 0, 1);
@@ -322,17 +327,20 @@ export function createSugoroku({ view, stage, result, play, getChoices, getWeigh
     const dice = diceFor(decided + 1);
     stage.dataset.dice = dice.join(',');
     let at = -1;
+    const vr = Math.random();
+    let variant = vr < 0.25 ? 'over' : vr < 0.5 ? 'stumble' : vr < 0.75 ? 'high' : 'plain';
+    if (variant === 'over' && decided >= n - 1) variant = 'plain';
+    stage.dataset.variant = variant;
     for (let k = 0; k < dice.length; k++) {
-      showHint(result, k === 0 ? 'ころころ…' : 'もう いっかい…');
-      await roll(dice[k], k === dice.length - 1, dice.length === 1);
+      const high = variant === 'high' && k === dice.length - 1;
+      showHint(result, high ? 'えいっ！ たかく なげるよ' : k === 0 ? 'ころころ…' : 'もう いっかい…');
+      await roll(dice[k], k === dice.length - 1, dice.length === 1, high);
       showHint(result, `${dice[k]} すすむ`);
-      at = await walk(at, dice[k]);
+      at = await walk(at, dice[k], variant === 'stumble' && k === 0 ? Math.floor(Math.random() * dice[k]) : -1);
       await wait(k === dice.length - 1 ? 150 : 250);
     }
     // ときどき出る別の動き（v12）：いきおいで 1ます いきすぎて、もどる
-    delete stage.dataset.variant;
-    if (at < n - 1 && Math.random() < 0.3) {
-      stage.dataset.variant = 'over';
+    if (variant === 'over' && at < n - 1) {
       showHint(result, 'あっ、いきすぎ…');
       const back = at;
       await walk(at, 1);

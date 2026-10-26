@@ -7,7 +7,9 @@
 // 2. はりが深さを変えるたびに、その深さの さかなが よってきて つつく。うきが ぴくっと動くが、さかなは はなれていく（1〜2回）。
 // 3. さいごの深さで、さかなが つついて、つついて、ぐいっと食いつく。うきが しずみ、猫が つりあげる。
 // 結果は先に乱数で決め（RS01-S14）、はりを止める深さの並びを、決めた深さで終わるように組む。
-// はなれていく さかなは およぎ去るだけで、札は そのまま読める（どの選択肢も残念がらせない：RS01-S15）。
+// はなれていく さかなは もとの所へ もどるだけで、札は そのまま読める（どの選択肢も残念がらせない：RS01-S15）。
+// v16：選択肢は さかなが しっぽの うしろに 糸で ひっぱる 木の札に じかに書く（左の白い札を やめた）。さかなは 金魚と こいが中心
+// （和金・紅白・でめきん・山吹・更紗・ふな・昭和・らんちゅう・めだか・浅黄・琉金・なまず）。つれると 札も 水の上に あがる。
 // 札はどれも同じ大きさで、同じ間かく（出やすさは表れない：RS01-S21）。
 import { C } from '../art.js';
 import { catSitting } from '../cats.js';
@@ -38,16 +40,54 @@ export function tsuriDuration(count) {
   return T.cast + (count - 1) * fake + final;
 }
 
-const FISH = [['#f7b5a6', '#e08d7c'], ['#a9cbe8', '#7aa7cf'], ['#f6d58a', '#d9b04d'], ['#c6dfae', '#97b878']];
+// さかなの しゅるい（v16：金魚と こいを中心に、ほかの さかなも まぜる。12ひきのうち 8ひきが 金魚か こい）
+export const KINDS = ['wakin', 'kohaku', 'demekin', 'yamabuki', 'sarasa', 'funa', 'showa', 'ranchu', 'medaka', 'asagi', 'ryukin', 'namazu'];
+export const KIND_NAMES = { wakin: '和金', kohaku: '紅白', demekin: 'でめきん', yamabuki: '山吹', sarasa: '更紗', funa: 'ふな', showa: '昭和', ranchu: 'らんちゅう', medaka: 'めだか', asagi: '浅黄', ryukin: '琉金', namazu: 'なまず' };
+const GOLD = { wakin: ['#f4733f', '#d9542a', null], demekin: ['#4a4a58', '#2f2f3a', '#8a8a9a'], sarasa: ['#fffaf4', '#e46a4a', '#ee5a3c'], ranchu: ['#f7903f', '#d96a2a', null], ryukin: ['#f6704a', '#d24f30', '#fffaf4'] };
+const KOI = { kohaku: ['#fffaf4', '#e7a483', '#ee5a3c', null], yamabuki: ['#f8c84a', '#d9a42a', null, null], showa: ['#fffaf4', '#8a7a70', '#ee5a3c', '#3a3a44'], asagi: ['#b9cad8', '#7f97ad', '#f08a5d', null] };
 
 // さかな（中心 0,0、左を向く。長さは約 2.4s）
-function fishSVG(s, k) {
-  const [body, deep] = FISH[k % FISH.length];
+export function fishSVG(s, i) {
+  const kind = KINDS[i % KINDS.length];
   const r = (v) => (v * s).toFixed(2);
-  return `<path d="M${r(0.9)},0 L${r(1.4)},${r(-0.45)} L${r(1.4)},${r(0.45)} Z" fill="${deep}"/>`
-    + `<ellipse cx="0" cy="0" rx="${r(1)}" ry="${r(0.55)}" fill="${body}" stroke="${deep}" stroke-width="${r(0.08)}"/>`
-    + `<circle cx="${r(-0.55)}" cy="${r(-0.1)}" r="${r(0.11)}" fill="#4a3a33"/>`
-    + `<path d="M${r(-0.1)},${r(-0.35)} q${r(0.15)},${r(0.35)} 0,${r(0.7)}" stroke="${deep}" stroke-width="${r(0.07)}" fill="none" opacity="0.7"/>`;
+  const eye = (x, y, big = 0.12) => `<circle cx="${r(x)}" cy="${r(y)}" r="${r(big)}" fill="#ffffff"/><circle cx="${r(x - 0.02)}" cy="${r(y)}" r="${r(big * 0.62)}" fill="#3a2e2a"/>`;
+  if (GOLD[kind]) {
+    const [body, edge, spot] = GOLD[kind];
+    const tail = kind === 'wakin' || kind === 'ranchu' ? 0.7 : 1;
+    let o = `<path d="M${r(0.55)},0 C${r(0.9)},${r(-0.75 * tail)} ${r(1.5)},${r(-0.85 * tail)} ${r(1.45)},${r(-0.2)} Q${r(1.2)},0 ${r(1.45)},${r(0.2)} C${r(1.5)},${r(0.85 * tail)} ${r(0.9)},${r(0.75 * tail)} ${r(0.55)},0 Z" fill="${body}" stroke="${edge}" stroke-width="${r(0.06)}" opacity="0.85"/>`
+      + `<path d="M${r(0.7)},${r(-0.3)} L${r(1.3)},${r(-0.5)} M${r(0.7)},${r(0.3)} L${r(1.3)},${r(0.5)}" stroke="${edge}" stroke-width="${r(0.04)}" opacity="0.6"/>`;
+    if (kind !== 'ranchu') o += `<path d="M${r(-0.2)},${r(-0.5)} Q${r(0.15)},${r(-0.95)} ${r(0.45)},${r(-0.45)} Z" fill="${body}" stroke="${edge}" stroke-width="${r(0.05)}"/>`;
+    o += `<ellipse cx="0" cy="0" rx="${r(0.72)}" ry="${r(0.56)}" fill="${body}" stroke="${edge}" stroke-width="${r(0.07)}"/>`;
+    if (spot) o += `<ellipse cx="${r(0.1)}" cy="${r(-0.15)}" rx="${r(0.32)}" ry="${r(0.24)}" fill="${spot}" opacity="0.9"/>`;
+    o += `<ellipse cx="${r(-0.1)}" cy="${r(0.28)}" rx="${r(0.38)}" ry="${r(0.16)}" fill="#ffffff" opacity="0.3"/>`
+      + `<path d="M${r(-0.05)},${r(0.15)} q${r(0.2)},${r(0.2)} ${r(0.35)},${r(0.1)}" stroke="${edge}" stroke-width="${r(0.05)}" fill="none" opacity="0.6"/>`;
+    o += kind === 'demekin' ? eye(-0.45, -0.22, 0.2) : eye(-0.45, -0.12);
+    return o;
+  }
+  if (KOI[kind]) {
+    const [body, edge, red, black] = KOI[kind];
+    let o = `<path d="M${r(0.95)},0 L${r(1.4)},${r(-0.4)} Q${r(1.28)},0 ${r(1.4)},${r(0.4)} Z" fill="${red || body}" stroke="${edge}" stroke-width="${r(0.05)}" opacity="0.9"/>`
+      + `<path d="M${r(-0.1)},${r(-0.38)} Q${r(0.25)},${r(-0.7)} ${r(0.55)},${r(-0.32)} Z" fill="${body}" stroke="${edge}" stroke-width="${r(0.05)}"/>`
+      + `<path d="M${r(-1)},0 C${r(-0.9)},${r(-0.42)} ${r(0.5)},${r(-0.5)} ${r(1)},0 C${r(0.5)},${r(0.48)} ${r(-0.9)},${r(0.42)} ${r(-1)},0 Z" fill="${body}" stroke="${edge}" stroke-width="${r(0.06)}"/>`;
+    if (red) o += `<path d="M${r(-0.55)},${r(-0.3)} C${r(-0.3)},${r(-0.45)} ${r(0.05)},${r(-0.4)} ${r(0.1)},${r(-0.1)} C${r(-0.15)},${r(0.05)} ${r(-0.5)},0 ${r(-0.55)},${r(-0.3)} Z M${r(0.3)},${r(-0.32)} C${r(0.5)},${r(-0.36)} ${r(0.75)},${r(-0.2)} ${r(0.7)},${r(-0.02)} C${r(0.5)},0 ${r(0.32)},${r(-0.1)} ${r(0.3)},${r(-0.32)} Z" fill="${red}"/>`;
+    if (black) o += `<ellipse cx="${r(0.05)}" cy="${r(0.12)}" rx="${r(0.18)}" ry="${r(0.12)}" fill="${black}"/><ellipse cx="${r(0.6)}" cy="${r(-0.22)}" rx="${r(0.12)}" ry="${r(0.08)}" fill="${black}"/>`;
+    o += `<path d="M${r(-0.3)},${r(0.3)} l${r(0.25)},${r(0.28)} l${r(0.12)},${r(-0.26)} Z" fill="${body}" stroke="${edge}" stroke-width="${r(0.04)}"/>`
+      + `<path d="M${r(-0.95)},${r(0.05)} q${r(-0.12)},${r(0.18)} ${r(-0.05)},${r(0.3)}" stroke="${edge}" stroke-width="${r(0.05)}" fill="none"/>`
+      + eye(-0.7, -0.12, 0.09);
+    return o;
+  }
+  const col = { funa: ['#b9c6b0', '#879a7e'], medaka: ['#ecdca6', '#c9b26a'], namazu: ['#9a8a74', '#6f604f'] }[kind];
+  if (kind === 'namazu') {
+    return `<path d="M${r(0.9)},0 L${r(1.3)},${r(-0.3)} L${r(1.3)},${r(0.3)} Z" fill="${col[1]}"/>`
+      + `<path d="M${r(-1.05)},${r(0.1)} C${r(-1)},${r(-0.42)} ${r(0.5)},${r(-0.38)} ${r(1)},0 C${r(0.5)},${r(0.36)} ${r(-0.9)},${r(0.4)} ${r(-1.05)},${r(0.1)} Z" fill="${col[0]}" stroke="${col[1]}" stroke-width="${r(0.06)}"/>`
+      + `<path d="M${r(-1)},${r(0.05)} q${r(-0.3)},${r(-0.1)} ${r(-0.4)},${r(-0.4)} M${r(-1)},${r(0.15)} q${r(-0.3)},${r(0.1)} ${r(-0.45)},${r(0.35)}" stroke="${col[1]}" stroke-width="${r(0.06)}" fill="none" stroke-linecap="round"/>`
+      + eye(-0.75, -0.1, 0.08);
+  }
+  const k = kind === 'medaka' ? 0.8 : 1;
+  return `<path d="M${r(0.9 * k)},0 L${r(1.4 * k)},${r(-0.45 * k)} L${r(1.4 * k)},${r(0.45 * k)} Z" fill="${col[1]}"/>`
+    + `<ellipse cx="0" cy="0" rx="${r(1 * k)}" ry="${r(0.5 * k)}" fill="${col[0]}" stroke="${col[1]}" stroke-width="${r(0.07)}"/>`
+    + `<path d="M${r(-0.1)},${r(-0.35 * k)} q${r(0.15)},${r(0.35 * k)} 0,${r(0.7 * k)}" stroke="${col[1]}" stroke-width="${r(0.06)}" fill="none" opacity="0.7"/>`
+    + eye(-0.6 * k, -0.08, 0.1);
 }
 
 export function createTsuri({ view, stage, result, play, getChoices, getWeights, getCat, getPurpose }) {
@@ -64,59 +104,72 @@ export function createTsuri({ view, stage, result, play, getChoices, getWeights,
     const W = stage.clientWidth;
     const H = stage.clientHeight;
     if (!W || !H) return;
-    const topRoom = Math.max(78, Math.min(110, H * 0.19)); // さんばしと猫
+    const topRoom = Math.max(78, Math.min(110, H * 0.19)); // さんばしと猫（つれた札も ここに出す）
     const waterTop = topRoom;
     const bandH = Math.min(56, (H - 8 - waterTop - 14) / n);
     const bandsTop = waterTop + 14 + Math.max(0, (H - 8 - waterTop - 14 - bandH * n) / 2);
-    const tagW = Math.max(118, Math.min(150, W * 0.38));
-    const tagH = Math.max(22, Math.min(36, bandH - 6));
-    const x0 = 8 + tagW + 10; // さかなが およぐ はんいの左
-    const x1 = W - 12;
-    const lineX = x0 + (x1 - x0) * 0.45;
-    const fishS = Math.max(7, Math.min(18, bandH * 0.32));
+    const tagH = Math.max(22, Math.min(32, bandH - 4));
+    const fishS = Math.max(8, Math.min(24, bandH * 0.44));
     const catS = Math.max(0.3, Math.min(0.46, (topRoom - 10) / 160));
-    const catAt = { x: W - 14 - 80 * catS, y: waterTop - 6 - 78 * catS };
-    const rodTip = { x: lineX, y: Math.max(8, waterTop - topRoom * 0.75) };
+    const catAt = { x: 10 + 60 * catS, y: waterTop - 6 - 78 * catS };
+    const lineX = catAt.x + 60 * catS + 30;
+    const rodTip = { x: lineX, y: Math.max(8, waterTop - topRoom * 0.78) };
     const bandY = (i) => bandsTop + bandH * (i + 0.5);
-    geo = { n, W, H, waterTop, bandH, bandY, tagW, tagH, x0, x1, lineX, fishS, catS, catAt, rodTip };
+    // 札：さかなが 糸で ひっぱる 木の札（文字の長さで はばを決める）
+    const room = W - 8 - (lineX + fishS * 2.6 + 30);
+    let size = Math.max(12, Math.min(18, tagH * 0.62));
+    const longest = Math.max(1, ...choices.map((c) => charCount(c)));
+    if (longest * size + 14 > room) size = Math.max(12, (room - 14) / longest);
+    const tws = choices.map((c) => Math.min(room, Math.max(50, charCount(c) * size + 14)));
+    geo = { n, W, H, waterTop, bandH, bandY, tagH, tws, lineX, fishS, catS, catAt, rodTip, size };
 
     const svg = svgEl('svg', { viewBox: `0 0 ${W} ${H}` });
-    let s = '';
-    // 池（上ほど明るい水）
-    s += `<defs><linearGradient id="tsW" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d8eef0"/><stop offset="1" stop-color="#bcdde3"/></linearGradient></defs>`;
-    s += `<rect x="4" y="${waterTop}" width="${W - 8}" height="${(H - 4 - waterTop).toFixed(1)}" rx="18" fill="url(#tsW)" stroke="#9fc8cf" stroke-width="3"/>`;
-    s += `<path d="M10,${waterTop + 6} q12,-6 24,0 t24,0 t24,0 t24,0 t24,0 t24,0 t24,0 t24,0 t24,0 t24,0 t24,0 t24,0 t24,0 t24,0 t24,0" stroke="#ffffff" stroke-width="2" fill="none" opacity="0.7"/>`;
-    // さんばし
-    s += `<rect x="${(lineX - 20).toFixed(1)}" y="${(waterTop - 10).toFixed(1)}" width="${(W - lineX + 16).toFixed(1)}" height="10" rx="3" fill="#e3bb84" stroke="#b98a52" stroke-width="2"/>`;
-    s += `<rect x="${(W - 30).toFixed(1)}" y="${(waterTop - 4).toFixed(1)}" width="8" height="24" fill="#c99a62"/>`;
-    // さんばしの バケツと、池の 水草（v12）
-    const bk = Math.max(12, Math.min(20, topRoom * 0.2));
-    s += `<g transform="translate(${(lineX + 8 + bk).toFixed(1)} ${(waterTop - 10).toFixed(1)})"><path d="M${-bk},${-bk * 1.3} h${bk * 2} l${-bk * 0.2},${bk * 1.3} h${-bk * 1.6} Z" fill="#cfe0ea" stroke="#7aa7c4" stroke-width="2"/><path d="M${-bk},${-bk * 1.3} q${bk},${-bk * 1.1} ${bk * 2},0" stroke="#7aa7c4" stroke-width="1.6" fill="none"/><ellipse cy="${-bk * 1.3}" rx="${bk}" ry="${bk * 0.25}" fill="#a9cfd5"/></g>`;
-    [[14, H - 6, 1], [W - 18, H - 6, 0.8]].forEach(([x, y, k]) => {
-      s += `<path d="M${x},${y} q-4,-22 2,-40 M${x + 6},${y} q4,-18 -2,-32 M${x - 6},${y} q-6,-14 0,-26" stroke="#86a256" stroke-width="${(3 * k).toFixed(1)}" fill="none" stroke-linecap="round" opacity="0.7"/>`;
+    let o = '';
+    // 池（上ほど明るい水）と 水面の きらきら
+    o += `<defs><linearGradient id="tsW" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d4eef2"/><stop offset="1" stop-color="#a9d3dc"/></linearGradient></defs>`;
+    o += `<rect x="4" y="${waterTop}" width="${W - 8}" height="${(H - 4 - waterTop).toFixed(1)}" rx="18" fill="url(#tsW)" stroke="#8fc3cf" stroke-width="3"/>`;
+    o += `<path d="M10,${waterTop + 6} q12,-6 24,0 t24,0 t24,0 t24,0 t24,0 t24,0 t24,0 t24,0 t24,0 t24,0 t24,0 t24,0 t24,0 t24,0 t24,0" stroke="#ffffff" stroke-width="2" fill="none" opacity="0.7"/>`;
+    // 池の そこの 小石と 水草
+    for (let k = 0; k < 9; k++) o += `<ellipse cx="${(14 + ((k * 47) % (W - 28))).toFixed(1)}" cy="${(H - 10 - (k % 3) * 3).toFixed(1)}" rx="${(5 + (k % 3) * 2).toFixed(1)}" ry="3.4" fill="#9fb8b0" opacity="0.6"/>`;
+    [[14, H - 6, 1], [W - 18, H - 6, 0.8], [W * 0.55, H - 6, 0.7]].forEach(([x, y, k]) => {
+      o += `<path d="M${x},${y} q-4,-22 2,-40 M${x + 6},${y} q4,-18 -2,-32 M${x - 6},${y} q-6,-14 0,-26" stroke="#7fae6a" stroke-width="${(3 * k).toFixed(1)}" fill="none" stroke-linecap="round" opacity="0.7"/>`;
     });
-    // 深さの線と札、さかな
-    let minLabel = Infinity;
+    // さんばし（左）
+    o += `<rect x="4" y="${(waterTop - 10).toFixed(1)}" width="${(lineX + 16).toFixed(1)}" height="10" rx="3" fill="#e3bb84" stroke="#b98a52" stroke-width="2"/>`
+      + `<rect x="${(lineX - 4).toFixed(1)}" y="${(waterTop - 4).toFixed(1)}" width="8" height="22" fill="#c99a62"/>`;
+    o += `<g class="ts-fx"></g>`;
+    // 深さの線と、さかな と 札（さかなは いつも左向き。札は しっぽの うしろ）
+    fish = choices.map((_, i) => {
+      const lo = lineX + fishS * 1.05 + 22;
+      const hi = W - 8 - fishS * 1.45 - 8 - tws[i] - 10;
+      const home = lo + Math.max(0, hi - lo) * ((i * 0.37 + 0.2) % 1);
+      return { home, x: home, phase: i * 1.7, speed: 0.0012 + (i % 3) * 0.0004 };
+    });
     choices.forEach((label, i) => {
       const y = bandY(i);
-      const size = Math.max(12, Math.min(22, tagH * 0.62, (tagW - 16) / Math.max(charCount(label), 1)));
-      minLabel = Math.min(minLabel, size);
-      s += `<path d="M${x0 - 6},${y.toFixed(1)} H${x1}" stroke="#ffffff" stroke-width="1.5" stroke-dasharray="3 7" opacity="0.6"/>`;
-      s += `<g class="tag" data-i="${i}">`
-        + `<rect class="tag-bg" x="8" y="${(y - tagH / 2).toFixed(1)}" width="${tagW.toFixed(1)}" height="${tagH.toFixed(1)}" rx="${Math.min(10, tagH / 2).toFixed(1)}" fill="${C.paper}" stroke="${C.woodDeep}" stroke-width="2"/>`
-        + `<text class="cell-label" x="${(8 + tagW / 2).toFixed(1)}" y="${y.toFixed(1)}" font-size="${size.toFixed(1)}" fill="${C.ink}" text-anchor="middle" dominant-baseline="central">${escapeXml(label)}</text>`
+      const tl = fish[i].home + fishS * 1.45 + 8;
+      const tw = tws[i];
+      o += `<path d="M${(lineX - 10).toFixed(1)},${y.toFixed(1)} H${W - 10}" stroke="#ffffff" stroke-width="1.2" stroke-dasharray="3 7" opacity="0.45"/>`;
+      o += `<g class="fish" data-i="${i}">${fishSVG(fishS, i)}</g>`;
+      o += `<g class="tag" data-i="${i}">`
+        + `<path class="ts-string" d="M${(fish[i].home + fishS * 1.35).toFixed(1)},${y.toFixed(1)} L${tl.toFixed(1)},${y.toFixed(1)}" stroke="#8a7a70" stroke-width="1.2"/>`
+        + `<rect x="${(tl + 1).toFixed(1)}" y="${(y - tagH / 2 + 3).toFixed(1)}" width="${tw.toFixed(1)}" height="${tagH.toFixed(1)}" rx="${Math.min(8, tagH / 2).toFixed(1)}" fill="#9b6b3a" opacity="0.5"/>`
+        + `<rect class="tag-bg" x="${tl.toFixed(1)}" y="${(y - tagH / 2).toFixed(1)}" width="${tw.toFixed(1)}" height="${tagH.toFixed(1)}" rx="${Math.min(8, tagH / 2).toFixed(1)}" fill="#f2d3a2" stroke="#b98a52" stroke-width="2"/>`
+        + `<circle cx="${(tl + 5).toFixed(1)}" cy="${y.toFixed(1)}" r="2" fill="#fffaf0" stroke="#b98a52" stroke-width="1"/>`
+        + `<text class="cell-label" x="${(tl + 4 + tw / 2).toFixed(1)}" y="${y.toFixed(1)}" font-size="${size.toFixed(1)}" fill="${C.ink}" text-anchor="middle" dominant-baseline="central">${escapeXml(label)}</text>`
         + `</g>`;
-      s += `<g class="fish" data-i="${i}">${fishSVG(fishS, i)}</g>`;
     });
     // 糸・うき・はり
-    s += `<path class="ts-line" d="" stroke="#6b5a4e" stroke-width="1.4" fill="none"/>`;
-    s += `<g class="ts-hook"><path d="M0,-6 V3 q0,5 -5,5 q-4,0 -4,-4" stroke="#8a7a70" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="0" cy="-6" r="2.4" fill="${C.momiji}"/></g>`;
-    s += `<g class="ts-bob"><ellipse cx="0" cy="0" rx="6" ry="8" fill="#ffffff" stroke="${C.ink}" stroke-width="1.6"/><path d="M-6,-1 H6 A6,8 0 0 0 -6,-1 Z" fill="${C.momiji}"/></g>`;
-    s += `<g class="ts-catch" visibility="hidden"></g>`;
+    o += `<path class="ts-line" d="" stroke="#6b5a4e" stroke-width="1.4" fill="none"/>`;
+    o += `<g class="ts-hook"><path d="M0,-6 V3 q0,5 -5,5 q-4,0 -4,-4" stroke="#8a7a70" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="0" cy="-6" r="2.4" fill="${C.momiji}"/></g>`;
+    o += `<g class="ts-bob"><ellipse cx="0" cy="0" rx="6" ry="8" fill="#ffffff" stroke="${C.ink}" stroke-width="1.6"/><path d="M-6,-1 H6 A6,8 0 0 0 -6,-1 Z" fill="${C.momiji}"/></g>`;
+    o += `<g class="ts-catch" visibility="hidden"></g>`;
+    // かめ（動きの ちがいで そこを よこぎる）
+    o += `<g class="ts-kame" visibility="hidden"><ellipse rx="16" ry="10" fill="#9cc96b" stroke="#6f9a4a" stroke-width="2"/><path d="M-8,-6 L0,0 L8,-6 M-10,3 H10" stroke="#6f9a4a" stroke-width="1.4" fill="none"/><circle cx="-20" cy="0" r="5.5" fill="#b9dc8f" stroke="#6f9a4a" stroke-width="1.6"/><circle cx="-22" cy="-1.5" r="1" fill="#3a2e2a"/><ellipse cx="-10" cy="10" rx="4" ry="2.6" fill="#b9dc8f"/><ellipse cx="10" cy="10" rx="4" ry="2.6" fill="#b9dc8f"/></g>`;
     // 猫と つりざお
-    s += `<path class="ts-rod" d="" stroke="#9b5f3a" stroke-width="3.4" stroke-linecap="round" fill="none"/>`;
-    s += `<g transform="translate(${catAt.x.toFixed(1)} ${catAt.y.toFixed(1)}) scale(${catS.toFixed(3)})"><g class="ts-cat">${catSitting(cat, { look: { x: -1, y: 0.6 } })}</g></g>`;
-    svg.innerHTML = s;
+    o += `<path class="ts-rod" d="" stroke="#9b5f3a" stroke-width="3.4" stroke-linecap="round" fill="none"/>`;
+    o += `<g transform="translate(${catAt.x.toFixed(1)} ${catAt.y.toFixed(1)}) scale(${catS.toFixed(3)})"><g class="ts-cat">${catSitting(cat, { look: { x: 1, y: 0.6 } })}</g></g>`;
+    svg.innerHTML = o;
     stage.textContent = '';
     stage.appendChild(svg);
     refs = {
@@ -128,31 +181,31 @@ export function createTsuri({ view, stage, result, play, getChoices, getWeights,
       rod: svg.querySelector('.ts-rod'),
       catch: svg.querySelector('.ts-catch'),
       catG: svg.querySelector('.ts-cat'),
+      kame: svg.querySelector('.ts-kame'),
+      fx: svg.querySelector('.ts-fx'),
     };
-    fish = choices.map((_, i) => ({ x: x0 + 20 + ((i * 0.37) % 1) * (x1 - x0 - 40), dir: i % 2 ? 1 : -1, speed: 0.025 + (i % 3) * 0.008 }));
     fish.forEach((f, i) => placeFish(i, f.x, 0));
     setTackle(geo.waterTop - 2, 0);
     stage.dataset.count = String(n);
     stage.dataset.cat = cat.id;
-    stage.dataset.minLabel = minLabel.toFixed(1);
+    stage.dataset.minLabel = size.toFixed(1);
   }
 
-  // さかな i を x に置く（dir で向き。-1 は左向き）。wiggle は尾びれの ゆれ
+  // さかな i を x に置く（いつも左向き）。札は しっぽの うしろに ついてくる。wiggle は 上下の ゆれ
   function placeFish(i, x, wiggle) {
     const f = fish[i];
     const y = geo.bandY(i) + Math.sin(wiggle) * 1.5;
-    refs.fish[i].setAttribute('transform', `translate(${x.toFixed(1)} ${y.toFixed(1)}) scale(${f.dir < 0 ? 1 : -1} 1)`);
+    refs.fish[i].setAttribute('transform', `translate(${x.toFixed(1)} ${y.toFixed(1)})`);
+    refs.tags[i].setAttribute('transform', `translate(${(x - f.home).toFixed(1)} ${(y - geo.bandY(i)).toFixed(1)})`);
   }
 
-  // さかなを ゆっくり およがせる（dt ミリ秒ぶん）。skip の さかなは動かさない
+  // さかなを その場で ゆっくり ゆらす（skip の さかなは動かさない）
   function swim(dt, skip = -1) {
-    const { x0, x1 } = geo;
+    const now = performance.now();
     fish.forEach((f, i) => {
       if (i === skip) return;
-      f.x += f.dir * f.speed * dt;
-      if (f.x < x0 + 16) { f.x = x0 + 16; f.dir = 1; }
-      if (f.x > x1 - 16) { f.x = x1 - 16; f.dir = -1; }
-      placeFish(i, f.x, performance.now() / 120 + i);
+      f.x = f.home + Math.sin(now * f.speed + f.phase) * 7;
+      placeFish(i, f.x, now / 300 + i);
     });
   }
 
@@ -162,9 +215,9 @@ export function createTsuri({ view, stage, result, play, getChoices, getWeights,
     const bobY = waterTop + twitch * 10;
     refs.bob.setAttribute('transform', `translate(${lineX.toFixed(1)} ${bobY.toFixed(1)})`);
     refs.hook.setAttribute('transform', `translate(${lineX.toFixed(1)} ${hookY.toFixed(1)})`);
-    refs.line.setAttribute('d', `M${rodTip.x.toFixed(1)},${rodTip.y.toFixed(1)} Q${(rodTip.x + 4).toFixed(1)},${((rodTip.y + bobY) / 2).toFixed(1)} ${lineX.toFixed(1)},${(bobY - 6).toFixed(1)} M${lineX.toFixed(1)},${(bobY + 6).toFixed(1)} L${lineX.toFixed(1)},${(hookY - 6).toFixed(1)}`);
+    refs.line.setAttribute('d', `M${rodTip.x.toFixed(1)},${rodTip.y.toFixed(1)} Q${(rodTip.x - 4).toFixed(1)},${((rodTip.y + bobY) / 2).toFixed(1)} ${lineX.toFixed(1)},${(bobY - 6).toFixed(1)} M${lineX.toFixed(1)},${(bobY + 6).toFixed(1)} L${lineX.toFixed(1)},${(hookY - 6).toFixed(1)}`);
     const { catAt, catS } = geo;
-    const hand = { x: catAt.x - 38 * catS, y: catAt.y + 20 * catS };
+    const hand = { x: catAt.x + 38 * catS, y: catAt.y + 20 * catS };
     refs.rod.setAttribute('d', `M${hand.x.toFixed(1)},${hand.y.toFixed(1)} Q${((hand.x + rodTip.x) / 2).toFixed(1)},${(Math.min(hand.y, rodTip.y) - 14 + twitch * 12).toFixed(1)} ${rodTip.x.toFixed(1)},${(rodTip.y + twitch * 10).toFixed(1)}`);
   }
 
@@ -175,10 +228,37 @@ export function createTsuri({ view, stage, result, play, getChoices, getWeights,
     refs.tags.forEach((g, k) => {
       const bg = g.querySelector('.tag-bg');
       const on = k === i;
-      bg.setAttribute('fill', on ? (strong ? '#fff1c4' : '#fff8e4') : C.paper);
-      bg.setAttribute('stroke', on && strong ? C.momiji : C.woodDeep);
+      bg.setAttribute('fill', on ? (strong ? '#fff1c4' : '#fbe6c4') : '#f2d3a2');
+      bg.setAttribute('stroke', on && strong ? C.momiji : '#b98a52');
       bg.setAttribute('stroke-width', on && strong ? '4' : on ? '3' : '2');
     });
+  }
+
+  // 水面の しぶき と 波紋（x の所）
+  function splash(x, y) {
+    const NS = 'http://www.w3.org/2000/svg';
+    const r = document.createElementNS(NS, 'ellipse');
+    r.setAttribute('cx', x.toFixed(1));
+    r.setAttribute('cy', y.toFixed(1));
+    r.setAttribute('rx', '10');
+    r.setAttribute('ry', '3');
+    r.setAttribute('fill', 'none');
+    r.setAttribute('stroke', '#ffffff');
+    r.setAttribute('stroke-width', '2');
+    r.style.transformOrigin = `${x.toFixed(1)}px ${y.toFixed(1)}px`;
+    refs.fx.appendChild(r);
+    r.animate([{ transform: 'scale(1)', opacity: 0.9 }, { transform: 'scale(3)', opacity: 0 }], { duration: 800, easing: 'ease-out' }).onfinish = () => r.remove();
+    for (let q = 0; q < 5; q++) {
+      const d = document.createElementNS(NS, 'circle');
+      d.setAttribute('cx', x.toFixed(1));
+      d.setAttribute('cy', y.toFixed(1));
+      d.setAttribute('r', '2.4');
+      d.setAttribute('fill', '#e6f6fa');
+      d.setAttribute('stroke', '#8fc3cf');
+      refs.fx.appendChild(d);
+      const dx = (q - 2) * 7;
+      d.animate([{ transform: 'translate(0,0)' }, { transform: `translate(${dx}px,-${12 + (q % 3) * 6}px)`, offset: 0.5 }, { transform: `translate(${dx * 1.5}px,2px)`, opacity: 0 }], { duration: 560 }).onfinish = () => d.remove();
+    }
   }
 
   function setCat(mood, look) {
@@ -199,7 +279,7 @@ export function createTsuri({ view, stage, result, play, getChoices, getWeights,
     clearCelebration();
     await audio.unlock();
     render();
-    const { n, lineX, bandY, waterTop, fishS } = geo;
+    const { n, W, H, lineX, bandY, waterTop, fishS } = geo;
     const weights = getWeights();
     if (weights.length !== n) throw new Error(`選択肢と重みの数が合わない: ${n}・${weights.length}`);
     const decided = pickWeighted(weights); // 結果を先に決める（出やすさ：RS01-S21）
@@ -207,6 +287,10 @@ export function createTsuri({ view, stage, result, play, getChoices, getWeights,
     delete stage.dataset.landed;
     const t0 = performance.now();
     const plan = depthPlan(n, decided);
+    // 動きの ちがい（3B：4つ）：ふつう・おおもの・ほかの さかなが はねる・かめが そこを よこぎる
+    const vr = Math.random();
+    const variant = vr < 0.25 ? 'big' : vr < 0.5 ? 'jump' : vr < 0.75 ? 'kame' : 'plain';
+    stage.dataset.variant = variant;
     let last = performance.now();
     const tick = (skip = -1) => { const now = performance.now(); swim(now - last, skip); last = now; };
     // 1. つりざおを ふって、はりを池に入れる
@@ -215,11 +299,32 @@ export function createTsuri({ view, stage, result, play, getChoices, getWeights,
     audio.toss();
     await frames(T.cast, (t) => { setTackle(waterTop - 2 + (bandY(0) - 30 - waterTop) * ease.outCubic(t) * Math.min(1, t * 1.5), Math.sin(t * Math.PI) * 0.3); tick(); });
     let hookY = bandY(0) - 30;
+    if (variant === 'jump' && n > 1) {
+      // ほかの さかなが ぱしゃっと はねる
+      const j = (decided + 1 + Math.floor(Math.random() * (n - 1))) % n;
+      const jx = fish[j].x;
+      const NS = 'http://www.w3.org/2000/svg';
+      const g = document.createElementNS(NS, 'g');
+      g.innerHTML = fishSVG(fishS * 1.1, j);
+      refs.fx.appendChild(g);
+      showHint(result, 'ぱしゃっ！');
+      audio.pop();
+      splash(jx, waterTop);
+      await frames(520, (t) => g.setAttribute('transform', `translate(${(jx - t * 30).toFixed(1)} ${(waterTop - Math.sin(Math.PI * t) * 40).toFixed(1)}) rotate(${(-30 + 60 * t).toFixed(0)})`));
+      g.remove();
+      splash(jx - 30, waterTop);
+    }
     // 2. 深さを変えて、さかなが つつく
     for (let k = 0; k < plan.length; k++) {
       const d = plan[k];
       const final = k === plan.length - 1;
       const y = bandY(d);
+      if (variant === 'kame' && k === 0) {
+        // かめが 池の そこを のんびり よこぎる
+        refs.kame.setAttribute('visibility', 'visible');
+        refs.kame.animate([{ transform: `translate(${W + 30}px, ${H - 22}px)` }, { transform: `translate(-30px, ${H - 26}px)` }], { duration: 3200, easing: 'linear', fill: 'forwards' }).onfinish = () => refs.kame.setAttribute('visibility', 'hidden');
+        setTimeout(() => showHint(result, 'あ、かめさん…'), 300);
+      }
       showHint(result, final && plan.length > 1 ? 'こんどは…？' : 'じっと まつ…');
       const fromY = hookY;
       await frames(T.move, (t) => { setTackle(fromY + (y - fromY) * ease.inOutSine(t), 0); tick(); });
@@ -227,9 +332,8 @@ export function createTsuri({ view, stage, result, play, getChoices, getWeights,
       lightTag(d, false);
       // その深さの さかなが よってくる
       const f = fish[d];
-      const side = f.x < lineX ? -1 : 1;
-      const near = lineX + side * (fishS * 1.4 + 4);
-      f.dir = side < 0 ? 1 : -1; // はりのほうを向く
+      const side = 1; // さかなは いつも 右から はりへ よってくる（口が はりに来る）
+      const near = lineX + fishS * 1.05 + 3;
       const fx = f.x;
       await frames(final ? T.comeLast : T.come, (t) => { f.x = fx + (near - fx) * ease.outCubic(t); placeFish(d, f.x, t * 20); tick(d); });
       // つつく（うきが ぴくっ）
@@ -241,8 +345,7 @@ export function createTsuri({ view, stage, result, play, getChoices, getWeights,
       }
       if (!final) {
         // はなれていく
-        f.dir = -f.dir;
-        const away = f.x - side * 60;
+        const away = f.home;
         const ax = f.x;
         await frames(T.leave, (t) => { f.x = ax + (away - ax) * t; placeFish(d, f.x, t * 20); tick(d); });
         continue;
@@ -251,10 +354,8 @@ export function createTsuri({ view, stage, result, play, getChoices, getWeights,
       showHint(result, 'きた…！');
       audio.heart();
       await frames(T.bite, (t) => { setTackle(hookY, 0.5 + 0.5 * Math.min(1, t * 2)); tick(d); });
-      // ときどき出る別の動き（v12）：おおもの！ ひっぱりあいが 長くなる
-      delete stage.dataset.variant;
-      if (Math.random() < 0.3) {
-        stage.dataset.variant = 'big';
+      // 動きの ちがい：おおもの！ ひっぱりあいが 長くなる
+      if (variant === 'big') {
         showHint(result, 'おおもの…！ がんばれ！');
         setCat('strain', { x: -1, y: 0.6 });
         audio.stretch(0.7);
@@ -268,11 +369,22 @@ export function createTsuri({ view, stage, result, play, getChoices, getWeights,
     refs.catch.innerHTML = fishSVG(fishS * 1.15, landed);
     refs.catch.setAttribute('visibility', 'visible');
     audio.toss();
+    splash(lineX, waterTop);
     const upY = waterTop - 30;
+    // 札も いっしょに 水の上へ（はりの 右、水面の上で 読める所）
+    const tagG = refs.tags[landed];
+    tagG.querySelector('.ts-string').setAttribute('visibility', 'hidden');
+    const f0 = fish[landed];
+    const t0x = f0.x - f0.home;
+    const t0y = 0;
+    const t1x = lineX + 16 - (f0.home + fishS * 1.45 + 8);
+    const t1y = waterTop - geo.tagH / 2 - 8 - bandY(landed);
     await frames(T.reel, (t) => {
-      const y = hookY + (upY - hookY) * ease.inOutSine(t);
+      const e = ease.inOutSine(t);
+      const y = hookY + (upY - hookY) * e;
       setTackle(Math.min(y, hookY), t < 0.2 ? 1 : 0);
       refs.catch.setAttribute('transform', `translate(${(lineX + Math.sin(t * Math.PI * 6) * 4).toFixed(1)} ${(y + 8).toFixed(1)}) rotate(${(70 + Math.sin(t * Math.PI * 8) * 20).toFixed(1)})`);
+      tagG.setAttribute('transform', `translate(${(t0x + (t1x - t0x) * e).toFixed(1)} ${(t0y + (t1y - t0y) * e).toFixed(1)})`);
       tick(landed);
     });
     stage.dataset.landed = String(landed);
