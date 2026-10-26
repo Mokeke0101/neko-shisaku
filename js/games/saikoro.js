@@ -5,7 +5,7 @@
 //
 // 結果が出るまでの「どうなるんだろう？」と思わせる時間（RS01-S19）
 // 1. 猫が さいころを前足で ころころ ゆらしてから、ぽんと押す。
-// 2. さいころは はねながら転がり、目が変わる。だんだん ゆっくりになり、さいごに角で ぐらぐらする。
+// 2. さいころ（v15 から 少し上から見た立体。上の面が結果の目）は はねながら転がり、目が変わる。だんだん ゆっくりになり、さいごに角で ぐらぐらする。
 // 3. 「もういちど」が出たら、もう1回。
 // 結果は先に乱数で決め（RS01-S14）、さいごに上を向く目を、決めた選択肢の目にする。
 // 「もういちど」を はさむかは、あまった目の数の割合（6 − 選択肢の数）/ 6 で決める（多くて1回）。
@@ -49,6 +49,25 @@ function dieFace(face, d, line = C.line) {
     + PIPS[face].map(([px, py]) => `<circle cx="${(px * d * 0.56).toFixed(2)}" cy="${(py * d * 0.56).toFixed(2)}" r="${(face === 1 ? r * 1.5 : r).toFixed(2)}" fill="${face === 1 ? C.momiji : C.ink}"/>`).join('');
 }
 
+// ころがる さいころ（v15）。少し上から見た 立体で、上の面（結果の目）と 手前の面を描く。中心 0,0、はば d。
+// 手前の面は、上の目と となり合う目（向かい合う目の和は 7）
+export const FRONT = { 1: 2, 2: 3, 3: 2, 4: 5, 5: 3, 6: 4 };
+export const dieH = (d) => d * 1.04;
+function die3D(face, d, line = C.line) {
+  const top = d * 0.6;
+  const h = dieH(d);
+  const y0 = -h / 2;
+  const r = d * 0.09;
+  // 点（k の目）。cy は面の中心、vy は 点の たての広がり、sy は 点の たてのつぶれ
+  const pips = (k, cy, vy, sy, col, rr) => PIPS[k].map(([px, py]) => `<ellipse cx="${(px * d * 0.56).toFixed(2)}" cy="${(cy + py * vy).toFixed(2)}" rx="${(k === 1 ? rr * 1.5 : rr).toFixed(2)}" ry="${((k === 1 ? rr * 1.5 : rr) * sy).toFixed(2)}" fill="${k === 1 ? C.momiji : col}"/>`).join('');
+  const sw = Math.max(1.6, d * 0.045).toFixed(2);
+  return `<rect x="${(-d / 2).toFixed(2)}" y="${y0.toFixed(2)}" width="${d.toFixed(2)}" height="${h.toFixed(2)}" rx="${(d * 0.2).toFixed(2)}" fill="#f2e6d8" stroke="${line}" stroke-width="${sw}"/>`
+    + pips(FRONT[face], y0 + top + (h - top) / 2, (h - top) * 0.58, 0.55, '#8a7466', r * 0.8)
+    + `<rect x="${(-d / 2).toFixed(2)}" y="${y0.toFixed(2)}" width="${d.toFixed(2)}" height="${top.toFixed(2)}" rx="${(d * 0.2).toFixed(2)}" fill="#ffffff" stroke="${line}" stroke-width="${sw}"/>`
+    + `<path d="M${(-d * 0.3).toFixed(2)},${(y0 + top * 0.16).toFixed(2)} h${(d * 0.22).toFixed(2)}" stroke="#ffffff" stroke-width="${(d * 0.05).toFixed(2)}" stroke-linecap="round" opacity="0.9"/>`
+    + pips(face, y0 + top / 2, d * 0.56 * 0.6, 0.6, C.ink, r);
+}
+
 export function createSaikoro({ view, stage, result, play, getChoices, getWeights, getCat, getPurpose }) {
   let geo = null;
   let busy = false;
@@ -74,7 +93,7 @@ export function createSaikoro({ view, stage, result, play, getChoices, getWeight
     const catS = Math.max(0.3, Math.min(0.62, (floorY - playTop) / 190));
     const catAt = { x: W - 20 - 80 * catS, y: floorY - 78 * catS };
     const dieS = Math.max(46, Math.min(100, (floorY - playTop) * 0.42));
-    const dieRest = { x: Math.max(dieS, (W - 160 * catS) * 0.45), y: floorY - dieS / 2 - 2 };
+    const dieRest = { x: Math.max(dieS, (W - 160 * catS) * 0.45), y: floorY - dieH(dieS) / 2 - 2 };
     geo = { n, W, H, rowH, listX, listW, listY, floorY, catS, catAt, dieS, dieRest };
 
     const svg = svgEl('svg', { viewBox: `0 0 ${W} ${H}` });
@@ -129,13 +148,12 @@ export function createSaikoro({ view, stage, result, play, getChoices, getWeight
   }
 
   function drawDie(face) {
-    refs.dieIn.innerHTML = dieFace(face, geo.dieS)
-      + `<rect x="${(-geo.dieS / 2 + 4).toFixed(1)}" y="${(geo.dieS / 2 - geo.dieS * 0.16).toFixed(1)}" width="${(geo.dieS - 8).toFixed(1)}" height="${(geo.dieS * 0.1).toFixed(1)}" rx="${(geo.dieS * 0.05).toFixed(1)}" fill="#efe4d6" opacity="0.8"/>`;
+    refs.dieIn.innerHTML = die3D(face, geo.dieS);
     refs.die.dataset.face = String(face);
   }
 
-  function placeDie(x, y, rot = 0, scale = 1) {
-    refs.die.setAttribute('transform', `translate(${x.toFixed(2)} ${y.toFixed(2)}) rotate(${rot.toFixed(1)}) scale(${scale.toFixed(3)})`);
+  function placeDie(x, y, rot = 0, scale = 1, sy = 1) {
+    refs.die.setAttribute('transform', `translate(${x.toFixed(2)} ${y.toFixed(2)}) rotate(${rot.toFixed(1)}) scale(${scale.toFixed(3)} ${(scale * sy).toFixed(3)})`);
     const lift = Math.max(0, geo.dieRest.y - y);
     refs.dieShadow.setAttribute('transform', `translate(${x.toFixed(2)} ${(geo.floorY - 2).toFixed(2)}) scale(${Math.max(0.4, 1 - lift / 120).toFixed(3)})`);
   }
@@ -186,6 +204,7 @@ export function createSaikoro({ view, stage, result, play, getChoices, getWeight
     const span = Math.min(dieRest.x - dieS * 0.7, 120);
     const to = { x: dieRest.x - span * (0.5 + Math.random() * 0.5), y: dieRest.y };
     let next = 0;
+    let flip = -1;
     const tumble = long ? 1600 : 1150;
     // ときどき出る別の動き（v12）：さいころが ぽーんと 高く はねる
     const high = Math.random() < 0.3;
@@ -194,13 +213,18 @@ export function createSaikoro({ view, stage, result, play, getChoices, getWeight
       const e = ease.outCubic(t);
       const x = from.x + (to.x - from.x) * e;
       const bounce = Math.abs(Math.sin(t * Math.PI * 3)) * (high ? 110 : 54) * (1 - t) * (1 - t);
-      placeDie(x, from.y - bounce, -720 * e);
       const now = t * tumble;
       if (now >= next) {
-        drawDie(1 + Math.floor(Math.random() * MAX));
+        let k = 1 + Math.floor(Math.random() * MAX);
+        if (k === Number(refs.die.dataset.face)) k = 7 - k;
+        drawDie(k);
+        flip = now;
         next = now + 70 + 260 * t * t;
         audio.tick();
       }
+      // 目が かわる時に、ころんと 前へ たおれるように 少し つぶれて 傾く
+      const q = flip < 0 ? 1 : Math.min(1, (now - flip) / 90);
+      placeDie(x, from.y - bounce, -Math.sin(q * Math.PI) * 22 - Math.sin(t * Math.PI * 6) * 6 * (1 - t), 1, 1 - Math.sin(q * Math.PI) * 0.16);
     });
     // 角で ぐらぐら（どちらの目か分からない）
     setCat('normal', { x: -1, y: 0.6 });
@@ -209,7 +233,7 @@ export function createSaikoro({ view, stage, result, play, getChoices, getWeight
     while (other === face) other = 1 + Math.floor(Math.random() * MAX);
     let shown = -1;
     await frames(wob, (t) => {
-      const a = Math.sin(t * Math.PI * (last ? 5 : 3)) * 24 * (1 - t);
+      const a = Math.sin(t * Math.PI * (last ? 5 : 3)) * 20 * (1 - t);
       placeDie(to.x, to.y - Math.abs(a) * 0.25, a);
       const want = a > 4 ? other : face;
       if (want !== shown) { shown = want; drawDie(want); if (t > 0.05) audio.tick(); }

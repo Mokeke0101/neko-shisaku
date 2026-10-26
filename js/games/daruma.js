@@ -8,7 +8,9 @@
 // 2. さいごの「だるまさんが…」で、1ぴきが おにへ タッチ。
 // 結果は先に乱数で決め（RS01-S14）、すすむ量を、決めた こねこが さいしょに着くように組む。
 import { C } from '../art.js';
-import { catFace } from '../cats.js';
+import { catFace, catSitting, tail } from '../cats.js';
+import { look as nowLook } from '../look.js';
+import { kitFor } from '../kits.js';
 import { audio } from '../audio.js';
 import { ease, frames, wait } from '../fx.js';
 import { createGame, plate, f } from './common.js';
@@ -61,15 +63,27 @@ export function createDaruma(deps) {
       const lanes = choices.map((_, i) => y0 + laneH * (i + 0.5));
       const ks = Math.max(0.17, Math.min(0.52, (laneH * 0.86) / 100));
       Object.assign(g, { lanes, laneH, plateW, oniW, ks, x0: 8 + plateW + 50 * ks + 2, x1: W - oniW - 50 * ks });
-      // おにの いる 大きな木（みきに かおを つけて かぞえる）
+      // おにの いる 大きな木（v15：季節と行事の木。おには 木のみきに むかって かぞえる）
       const tx = W - oniW / 2 - 6;
-      let s = `<rect x="${f(W - oniW - 6)}" y="4" width="${f(oniW)}" height="${f(H - 8)}" rx="14" fill="#f3d9b0" stroke="#c99a62" stroke-width="2.4"/>`
-        + `<path d="M${f(tx - oniW * 0.18)},${f(H - 8)} L${f(tx - oniW * 0.14)},${f(H * 0.18)} L${f(tx + oniW * 0.14)},${f(H * 0.18)} L${f(tx + oniW * 0.18)},${f(H - 8)} Z" fill="#c99a62" opacity="0.55"/>`
-        + `<ellipse cx="${f(tx)}" cy="${f(H * 0.14)}" rx="${f(oniW * 0.46)}" ry="${f(Math.min(H * 0.12, oniW * 0.4))}" fill="#a3bd6e" stroke="#86a256" stroke-width="2"/>`
-        + `<ellipse cx="${f(tx - oniW * 0.18)}" cy="${f(H * 0.1)}" rx="${f(oniW * 0.2)}" ry="${f(Math.min(H * 0.06, oniW * 0.2))}" fill="#bdd68c"/>`
+      const K = kitFor(nowLook);
+      const P = K.pal;
+      const cr = oniW * 0.62;
+      const cy = Math.max(cr * 0.9, H * 0.13);
+      const tw = oniW * 0.46;
+      const edge = P.snowy ? ` stroke="#c9d9e4" stroke-width="2"` : '';
+      // えだと、えだの先の 小さな葉の かたまり
+      const branch = (y, dx, dy, r, c) => `<path d="M${f(tx)},${f(y)} Q${f(tx + dx * 0.5)},${f(y + dy * 0.2)} ${f(tx + dx)},${f(y + dy)}" stroke="${P.trunk}" stroke-width="${f(tw * 0.32)}" fill="none" stroke-linecap="round"/>`
+        + `<circle cx="${f(tx + dx)}" cy="${f(y + dy)}" r="${f(r)}" fill="${c}"${edge}/><circle cx="${f(tx + dx + r * 0.7)}" cy="${f(y + dy + r * 0.35)}" r="${f(r * 0.7)}" fill="${c}"${edge}/>`;
+      let s = `<ellipse cx="${f(tx)}" cy="${f(H - 8)}" rx="${f(oniW * 0.62)}" ry="7" fill="#a0703f" opacity="0.16"/>`
+        + `<path d="M${f(tx - tw / 2)},${f(cy)} L${f(tx - tw * 0.62)},${f(H - 10)} Q${f(tx - tw)},${f(H - 4)} ${f(tx - tw * 1.1)},${f(H - 4)} H${f(tx + tw * 1.1)} Q${f(tx + tw)},${f(H - 4)} ${f(tx + tw * 0.62)},${f(H - 10)} L${f(tx + tw / 2)},${f(cy)} Z" fill="${P.trunk}" stroke="#7a5236" stroke-width="2.4" stroke-linejoin="round"/>`
+        + `<path d="M${f(tx - tw * 0.18)},${f(cy + 40)} q-4,30 2,60 M${f(tx + tw * 0.2)},${f(H * 0.62)} q4,26 -2,50" stroke="#7a5236" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.45"/>`
+        + branch(H * 0.36, -oniW * 0.5, -H * 0.06, oniW * 0.3, P.tree[1])
+        + branch(H * 0.72, -oniW * 0.46, -H * 0.05, oniW * 0.26, P.tree[2])
+        + K.tree(tx, cy, cr, P.tree[0], 0, P)
         + `<path d="M${f(g.x1 + 50 * ks)},6 V${f(H - 6)}" stroke="${C.momiji}" stroke-width="2" stroke-dasharray="6 6" opacity="0.6"/>`;
       choices.forEach((label, i) => {
-        s += `<path d="M${f(8 + plateW)},${f(lanes[i])} H${f(g.x1)}" stroke="#e2bd87" stroke-width="2" stroke-dasharray="2 8" stroke-linecap="round"/>`;
+        s += `<path d="M${f(8 + plateW)},${f(lanes[i] + laneH * 0.18)} H${f(g.x1 + 50 * ks)}" stroke="#f1d9b0" stroke-width="${f(Math.max(6, laneH * 0.3))}" stroke-linecap="round" opacity="0.75"/>`
+          + `<path d="M${f(8 + plateW)},${f(lanes[i])} H${f(g.x1)}" stroke="#e2bd87" stroke-width="2" stroke-dasharray="2 8" stroke-linecap="round"/>`;
         if (i % 2 === 1) s += `<path d="M${f((8 + plateW + g.x1) / 2)},${f(lanes[i] + laneH * 0.42)} q-2,-7 -6,-9 M${f((8 + plateW + g.x1) / 2)},${f(lanes[i] + laneH * 0.42)} q2,-8 6,-10" stroke="#a3bd6e" stroke-width="2" fill="none" stroke-linecap="round"/>`;
         s += plate(i, 8, lanes[i] - plateH / 2, plateW, plateH, label).svg;
       });
@@ -136,15 +150,27 @@ export function createDaruma(deps) {
     },
   });
 
-  // おにの うしろすがた（耳と まるい頭・しっぽ）と、ふりむいた顔
+  // おにの うしろすがた（耳と まるい頭・しっぽ）と、ふりむいた顔。v15：イズの しま模様を、頭・せなか・しっぽにも描く
   function backOf(g) {
     const d = g.cat;
-    R.oni.innerHTML = `<path d="M-46,-10 L-38,-48 L-10,-34 Z M46,-10 L38,-48 L10,-34 Z" fill="${d.base}" stroke="${d.line}" stroke-width="3.2" stroke-linejoin="round"/>`
-      + `<ellipse cx="0" cy="2" rx="${d.head.rx}" ry="${d.head.ry}" fill="${d.base}" stroke="${d.line}" stroke-width="3.2"/>`
-      + `<ellipse cx="0" cy="70" rx="40" ry="34" fill="${d.base}" stroke="${d.line}" stroke-width="3.2"/>`
-      + `<path d="M30,92 C64,96 70,60 52,40" stroke="${d.line}" stroke-width="15" fill="none" stroke-linecap="round"/><path d="M30,92 C64,96 70,60 52,40" stroke="${d.tail}" stroke-width="9" fill="none" stroke-linecap="round"/>`;
+    const hc = `dh${g.n}`;
+    const bc = `db${g.n}`;
+    const back = d.body === 'saba'
+      ? [50, 62, 74, 86, 98].map((y) => `<path d="M-44,${y} q22,8 44,0 q22,-8 44,0" stroke="${d.stripe}" stroke-width="4.6" fill="none" stroke-linecap="round"/>`).join('')
+        + `<path d="M0,38 V102" stroke="${d.stripe}" stroke-width="5" stroke-linecap="round"/>`
+      : `<ellipse cx="-22" cy="56" rx="22" ry="16" fill="${d.patchA}"/><ellipse cx="24" cy="84" rx="20" ry="15" fill="${d.patchB}"/>`;
+    const nape = d.body === 'saba'
+      ? `<path d="M-12,-34 v18 M0,-36 v22 M12,-34 v18 M-30,-24 q-4,10 0,20 M30,-24 q4,10 0,20 M-${d.head.rx},6 h14 M${d.head.rx},6 h-14 M-${d.head.rx - 4},18 h12 M${d.head.rx - 4},18 h-12" stroke="${d.stripe}" stroke-width="4.4" fill="none" stroke-linecap="round"/>`
+      : d.face(d);
+    R.oni.innerHTML = `<ellipse cx="0" cy="104" rx="46" ry="7" fill="#a0703f" opacity="0.18"/>`
+      + tail(d, 'M30,96 C66,100 72,62 54,42', 11)
+      + `<defs><clipPath id="${bc}"><ellipse cx="0" cy="70" rx="40" ry="34"/></clipPath><clipPath id="${hc}"><ellipse cx="0" cy="2" rx="${d.head.rx}" ry="${d.head.ry}"/></clipPath></defs>`
+      + `<ellipse cx="0" cy="70" rx="40" ry="34" fill="${d.base}"/><g clip-path="url(#${bc})">${back}</g><ellipse cx="0" cy="70" rx="40" ry="34" fill="none" stroke="${d.line}" stroke-width="3.2"/>`
+      + `<path d="M-${d.head.rx - 4},-14 L-${d.head.rx - 8},-48 L-10,-34 Z M${d.head.rx - 4},-14 L${d.head.rx - 8},-48 L10,-34 Z" fill="${d.earL}" stroke="${d.line}" stroke-width="3.2" stroke-linejoin="round"/>`
+      + `<ellipse cx="0" cy="2" rx="${d.head.rx}" ry="${d.head.ry}" fill="${d.base}"/><g clip-path="url(#${hc})">${nape}</g>`
+      + `<ellipse cx="0" cy="2" rx="${d.head.rx}" ry="${d.head.ry}" fill="none" stroke="${d.line}" stroke-width="3.2"/>`;
   }
   function faceOf(g, mood = 'normal') {
-    R.oni.innerHTML = `<ellipse cx="0" cy="70" rx="40" ry="34" fill="${g.cat.base}" stroke="${g.cat.line}" stroke-width="3.2"/><g>${catFace(g.cat, { mood, look: { x: -1, y: 0 } })}</g>`;
+    R.oni.innerHTML = `<g transform="translate(0 24)">${catSitting(g.cat, { mood, look: { x: -1, y: 0 } })}</g>`;
   }
 }
