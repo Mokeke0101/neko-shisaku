@@ -2,6 +2,7 @@
 // 音（RS01-S11・D02）、状態の表示。
 import { store, LIMITS, cleanLabel } from './store.js';
 import { audio } from './audio.js';
+import { bgm } from './bgm.js';
 import { icons } from './art.js';
 import { CAT_DESIGN, designById, catFace } from './cats.js';
 import { LEVELS, DEFAULT_LEVEL, weightsOf, percents } from './odds.js';
@@ -267,19 +268,32 @@ export function setupSettings() {
   sound.checked = store.data.sound;
   playback.checked = store.data.playback;
   playback.disabled = !store.data.sound;
+  const music = document.getElementById('opt-bgm');
+  music.checked = store.data.bgm;
+  music.disabled = !store.data.sound;
   sound.addEventListener('change', async () => {
     store.data.sound = sound.checked;
     playback.disabled = !sound.checked;
+    music.disabled = !sound.checked;
     save();
     audio.reset();
-    if (sound.checked) { await audio.unlock(); audio.tap(); }
+    bgm.stop();
+    if (sound.checked) { await audio.unlock(); audio.tap(); bgm.sync(); }
   });
   playback.addEventListener('change', async () => {
     store.data.playback = playback.checked;
     save();
     audio.reset();
+    bgm.stop();
     await audio.unlock();
     audio.tap();
+    bgm.sync();
+  });
+  music.addEventListener('change', async () => {
+    store.data.bgm = music.checked;
+    save();
+    await audio.unlock();
+    bgm.sync();
   });
   document.getElementById('try-date').addEventListener('change', renderTry);
   document.getElementById('try-back').addEventListener('click', () => {

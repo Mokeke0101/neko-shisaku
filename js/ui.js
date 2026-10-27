@@ -2,6 +2,7 @@
 import { GAME_CAT, CAT_DESIGN, designById, catFace, catName } from './cats.js';
 import { store } from './store.js';
 import { audio } from './audio.js';
+import { bgm } from './bgm.js';
 import { jackpot } from './fx.js';
 export function showHint(el, text) {
   el.classList.remove('is-pop');
@@ -53,6 +54,7 @@ export function showResult(el, label, value) {
 
 export function setBusy(view, busy) {
   view.querySelectorAll('.play, .back, .purpose-btn').forEach((b) => { b.disabled = busy; });
+  bgm.duck(busy); // 遊んでいる間は BGM を 小さく
 }
 
 export function centerOf(el) {

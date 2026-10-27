@@ -3,6 +3,7 @@
 import { APP_VERSION } from './version.js';
 import { store, PURPOSES } from './store.js';
 import { audio } from './audio.js';
+import { bgm } from './bgm.js';
 import { wake } from './wake.js';
 import { icons, logoSVG, menuArt, rotateSVG } from './art.js';
 import { sceneSVG, sceneFX } from './scenes.js';
@@ -91,6 +92,7 @@ const todayNum = () => { const now = new Date(); return dayNum(now.getFullYear()
 // ホーム画面のアイコン（v13）：iPhone は「ホーム画面に追加」した時のアイコンを持ち続けるため、
 // 追加する日の季節の絵を渡す（行事の絵にすると、行事の後も ずっと残るため、季節だけにした）
 onLook((lk) => {
+  bgm.setLook(lk.season, lk.event); // 季節と 行事の BGM（かわると 曲を 切りかえる）
   const el = document.querySelector('link[rel="apple-touch-icon"]');
   if (el) el.setAttribute('href', `icons/apple-touch-icon-${lk.season}.png`);
 });
@@ -315,8 +317,10 @@ document.addEventListener('click', (e) => {
 
 // 音は利用者の操作の中でしか始められないため、画面に触れるたびに準備を確かめる
 for (const type of ['pointerdown', 'touchend', 'click']) {
-  document.addEventListener(type, () => { audio.unlock(); }, { capture: true, passive: true });
+  document.addEventListener(type, () => { audio.unlock().then(() => bgm.sync()); }, { capture: true, passive: true });
 }
+// アプリが 見えない時は BGM を 止め、見えたら また ながす
+document.addEventListener('visibilitychange', () => { if (document.hidden) bgm.stop(); else bgm.sync(); });
 
 // 大きさが変わった時（端末の回転など）はゲームを描き直す
 let resizeTimer = 0;

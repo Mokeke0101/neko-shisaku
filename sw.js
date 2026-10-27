@@ -4,7 +4,7 @@
 // 公開し直す時は VERSION を上げる（js/version.js の APP_VERSION と同じ値にする）。
 'use strict';
 
-const VERSION = 'v18';
+const VERSION = 'v19';
 const CACHE = `nekokime-${VERSION}`;
 // 書体（約 4.2 MB）は版と分けて保存し、版を上げても取り直さない（RS01-S03）。書体のファイルを替えた時だけ FONT_VERSION を上げる
 const FONT_VERSION = 'f1';
@@ -23,6 +23,11 @@ const FILES = [
   './js/version.js',
   './js/store.js',
   './js/audio.js',
+  './js/bgm.js',
+  './audio/bgm-haru.m4a',
+  './audio/bgm-natsu.m4a',
+  './audio/bgm-aki.m4a',
+  './audio/bgm-fuyu.m4a',
   './js/wake.js',
   './js/art.js',
   './js/look.js',

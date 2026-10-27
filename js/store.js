@@ -27,6 +27,7 @@ const DEFAULTS = {
   purpose: 'snack',
   sound: true,
   playback: true,
+  bgm: true, // 季節の BGM（v19）。前の版の 保存に 無い時は オン
   favorites: [],
   sets: null,
   setIndex: 0,
@@ -46,6 +47,7 @@ function fixSets(d) {
   d.sets = sets;
   d.setIndex = idx;
   d.favorites = Array.isArray(d.favorites) ? d.favorites.filter((x) => typeof x === 'string').slice(0, 40) : [];
+  d.bgm = typeof d.bgm === 'boolean' ? d.bgm : true;
   return d;
 }
 
@@ -110,7 +112,7 @@ export const store = {
       if (raw !== null) {
         const d = JSON.parse(raw);
         if (!validV3(d)) throw new Error('保存の形が違う');
-        this.data = fixSets({ snack: d.snack, coin: d.coin, coinLevels: d.coinLevels, purpose: d.purpose, sound: d.sound, playback: d.playback, favorites: d.favorites, sets: d.sets, setIndex: d.setIndex });
+        this.data = fixSets({ snack: d.snack, coin: d.coin, coinLevels: d.coinLevels, purpose: d.purpose, sound: d.sound, playback: d.playback, bgm: d.bgm, favorites: d.favorites, sets: d.sets, setIndex: d.setIndex });
         this.loadState = '端末の保存から読んだ';
       } else if (rawV2 !== null) {
         // 前の版 v2 の2組の選択肢・用途・音を引き継ぐ。お楽しみ袋の出やすさは、どれも「ふつう」から始める
