@@ -10,12 +10,16 @@
 // 結果は先に乱数で決め（RS01-S14）、さがす箱の順を、決めた箱で終わるように組む。
 // 何もなかった箱は ふたが開いたままになるだけで、選択肢の文字は そのまま読める（どの選択肢も残念がらせない：RS01-S15）。
 // 箱はどれも同じ大きさ（出やすさは箱の大きさに表れない：RS01-S21）。
+// v17 の後（テーマパーク）：おもちゃ屋さんの パステルの たな（ラベンダーの ペンキ・前の面の 見える 棚板）。だんボール箱に、
+// クレーンの 値札と おなじ パステルの シールを はって 選択肢を書く。動きの ちがい（3B：4つ）：ふつう・くつした（おもちゃの かわりに くつした）・
+// ちらっ（見くらべる間に、おもちゃが 箱から ちらっと 顔を出す）・すやすや（おもちゃの箱で ねむくなって、はっと 気づく）。
 import { C } from '../art.js';
 import { catSitting, tail } from '../cats.js';
 import { audio } from '../audio.js';
 import { pickWeighted } from '../odds.js';
 import { celebrate, clearCelebration, ease, frames, wait, levelOf } from '../fx.js';
 import { showHint, showResult, setBusy, centerOf, charCount, svgEl, escapeXml } from '../ui.js';
+import { TINTS, pastelTag } from './common.js';
 
 // さがす箱の順。決めた箱 decided で終わり、同じ箱を2回さがさない。
 // さがす数は 1〜3（箱が2つなら 1〜2）。rand() は 0 以上 1 未満
@@ -115,13 +119,16 @@ export function createSagasu({ view, stage, result, play, getChoices, getWeights
     const svg = svgEl('svg', { viewBox: `0 0 ${W} ${H}` });
     let s = '';
     // たなの奥の板
-    s += `<rect x="${shelfX}" y="${shelfTop.toFixed(1)}" width="${shelfW}" height="${shelfH.toFixed(1)}" rx="10" fill="#f8e6c8" stroke="${C.woodDeep}" stroke-width="3"/>`;
+    s += `<rect x="${shelfX + 3}" y="${(shelfTop + 5).toFixed(1)}" width="${shelfW}" height="${shelfH.toFixed(1)}" rx="10" fill="#5a3a22" opacity="0.25"/>`;
+    s += `<rect x="${shelfX}" y="${shelfTop.toFixed(1)}" width="${shelfW}" height="${shelfH.toFixed(1)}" rx="10" fill="#efe6f7" stroke="#a985c9" stroke-width="3"/>`;
+    for (let q = 1; q < 5; q++) s += `<path d="M${(shelfX + (shelfW * q) / 5).toFixed(1)},${(shelfTop + 4).toFixed(1)} V${(shelfTop + shelfH - 4).toFixed(1)}" stroke="#ddd0ec" stroke-width="1.4"/>`;
     // 段（下の段から描く。上の段の板と箱が、下の箱の上に はみ出た しっぽを隠す）
     let minLabel = Infinity;
     for (let r = rows - 1; r >= 0; r--) {
       const plankY = shelfTop + roofT + rowH * (r + 1) - plankT;
-      s += `<rect x="${shelfX + 2}" y="${plankY.toFixed(1)}" width="${shelfW - 4}" height="${plankT}" fill="${C.woodDeep}"/>`
-        + `<path d="M${shelfX + 2},${(plankY + plankT).toFixed(1)} H${shelfX + shelfW - 2}" stroke="#c99a62" stroke-width="1.5" opacity="0.7"/>`;
+      s += `<rect x="${shelfX + 2}" y="${(plankY - 2).toFixed(1)}" width="${shelfW - 4}" height="3" fill="#ffffff" opacity="0.8"/>`
+        + `<rect x="${shelfX + 2}" y="${(plankY + 1).toFixed(1)}" width="${shelfW - 4}" height="${plankT - 1}" fill="#cdbfe0" stroke="#a985c9" stroke-width="1"/>`
+        + `<path d="M${shelfX + 2},${(plankY + plankT).toFixed(1)} H${shelfX + shelfW - 2}" stroke="#5a3a22" stroke-width="1.5" opacity="0.5"/>`;
       boxes.forEach((b, i) => {
         if (b.r !== r) return;
         const label = choices[i];
@@ -133,11 +140,14 @@ export function createSagasu({ view, stage, result, play, getChoices, getWeights
           + `<g class="sg-flaps">${flaps(false)}</g>`
           + `<path d="M${(-boxW / 2 + 3).toFixed(1)},${-boxH} L${(-boxW / 2 + 10).toFixed(1)},${(-boxH - 5).toFixed(1)} H${(boxW / 2 - 10).toFixed(1)} L${(boxW / 2 - 3).toFixed(1)},${-boxH} Z" fill="#a8783f" opacity="0.6"/>`
           + `<g class="sg-tail" visibility="hidden">${tail(cat, tailPath(), tailW)}</g>`
-          + `<rect x="${(-boxW / 2).toFixed(1)}" y="${(-boxH).toFixed(1)}" width="${boxW.toFixed(1)}" height="${boxH.toFixed(1)}" rx="4" fill="${fill}" stroke="#b98a52" stroke-width="2"/>`
-          + `<path d="M${(-boxW / 2 + 4).toFixed(1)},${(-boxH + 4).toFixed(1)} H${(boxW / 2 - 4).toFixed(1)}" stroke="#c99a62" stroke-width="1.6" stroke-linecap="round" opacity="0.6"/>`
+          + `<g class="sg-peek" visibility="hidden">${toyMouse(toyS * 0.85)}</g>`
+          + `<rect x="${(-boxW / 2 + 3).toFixed(1)}" y="${(-boxH + 3).toFixed(1)}" width="${boxW.toFixed(1)}" height="${boxH.toFixed(1)}" rx="4" fill="#5a3a22" opacity="0.3"/>`
+          + `<rect x="${(-boxW / 2).toFixed(1)}" y="${(-boxH).toFixed(1)}" width="${boxW.toFixed(1)}" height="${boxH.toFixed(1)}" rx="4" fill="${fill}" stroke="#a8743f" stroke-width="2"/>`
+          + `<rect x="${(boxW / 2 - boxW * 0.1).toFixed(1)}" y="${(-boxH + 1).toFixed(1)}" width="${(boxW * 0.1 - 1).toFixed(1)}" height="${(boxH - 2).toFixed(1)}" fill="#a8743f" opacity="0.3"/>`
+          + `<path d="M${(-boxW / 2 + 4).toFixed(1)},${(-boxH + 4).toFixed(1)} H${(boxW / 2 - 4).toFixed(1)}" stroke="#a8743f" stroke-width="1.6" stroke-linecap="round" opacity="0.6"/>`
           + `<g class="cell" data-i="${i}">`
-          + `<rect class="cell-bg" x="${(-stW / 2).toFixed(1)}" y="${(-boxH / 2 - stH / 2).toFixed(1)}" width="${stW.toFixed(1)}" height="${stH.toFixed(1)}" rx="${Math.min(8, stH / 3).toFixed(1)}" fill="${C.paper}" stroke="${C.woodDeep}" stroke-width="1.6"/>`
-          + `<text class="cell-label" x="0" y="${(-boxH / 2).toFixed(1)}" font-size="${size.toFixed(1)}" fill="${C.ink}" text-anchor="middle" dominant-baseline="central">${escapeXml(label)}</text>`
+          + pastelTag(i, -stW / 2, -boxH / 2 - stH / 2, stW, stH)
+          + `<text class="cell-label" x="0" y="${(-boxH / 2 + 0.5).toFixed(1)}" font-size="${size.toFixed(1)}" fill="${C.ink}" text-anchor="middle" dominant-baseline="central">${escapeXml(label)}</text>`
           + `</g></g></g>`;
       });
     }
@@ -150,6 +160,7 @@ export function createSagasu({ view, stage, result, play, getChoices, getWeights
     s += [['#f7a6a0', 0], ['#9fc5e8', 9], ['#a6dc98', 17]].map(([col, dx]) => `<rect x="${(ox - 70 + dx).toFixed(1)}" y="${(oy - bkH + (dx === 9 ? 3 : 0)).toFixed(1)}" width="8" height="${(bkH - (dx === 9 ? 3 : 0)).toFixed(1)}" rx="1.5" fill="${col}" stroke="#8c6e5a" stroke-width="1.4"/>`).join('')
       + `<path d="M${(ox - 22).toFixed(1)},${(oy - bkH * 0.55).toFixed(1)} h18 l-3,${(bkH * 0.55).toFixed(1)} h-12 Z" fill="#db8f4a" stroke="#9b5f3a" stroke-width="1.6"/>`
       + `<path d="M${(ox - 13).toFixed(1)},${(oy - bkH * 0.55).toFixed(1)} q-8,-10 -4,-18 M${(ox - 13).toFixed(1)},${(oy - bkH * 0.55).toFixed(1)} q6,-12 10,-14 M${(ox - 13).toFixed(1)},${(oy - bkH * 0.55).toFixed(1)} q0,-12 0,-20" stroke="#86a256" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+    s += `<g class="sg-z"></g>`;
     s += `<g class="sg-sock" visibility="hidden"><path d="M-6,-14 h12 v14 q0,8 8,10 q4,6 -4,8 q-14,0 -16,-10 Z" fill="#cfe0ea" stroke="#7aa7c4" stroke-width="2"/><path d="M-6,-10 h12 M-6,-6 h12" stroke="#f7a6a0" stroke-width="2"/></g>`;
     // おもちゃと猫（いちばん上に描く）
     s += `<g class="sg-toy" visibility="hidden">${toyMouse(toyS)}</g>`;
@@ -162,6 +173,8 @@ export function createSagasu({ view, stage, result, play, getChoices, getWeights
       shakes: boxEls.map((g) => g.querySelector('.sg-shake')),
       flaps: boxEls.map((g) => g.querySelector('.sg-flaps')),
       tails: boxEls.map((g) => g.querySelector('.sg-tail')),
+      peeks: boxEls.map((g) => g.querySelector('.sg-peek')),
+      z: svg.querySelector('.sg-z'),
       cells: boxEls.map((g) => g.querySelector('.cell')),
       toy: svg.querySelector('.sg-toy'),
       catPos: svg.querySelector('.sg-cat-pos'),
@@ -258,6 +271,13 @@ export function createSagasu({ view, stage, result, play, getChoices, getWeights
     tl.setAttribute('visibility', 'hidden');
   }
 
+  function puffZ(b) {
+    const t = svgEl('text', { x: (b.cx + geo.boxW * 0.15).toFixed(1), y: (b.rim - 6).toFixed(1), 'font-size': '24', 'font-weight': '700', fill: '#fffaf0', stroke: '#6e4426', 'stroke-width': '1.4', 'paint-order': 'stroke', opacity: '0' });
+    t.textContent = 'z';
+    refs.z.appendChild(t);
+    t.animate([{ transform: 'translate(0,0)', opacity: 0 }, { opacity: 0.9, offset: 0.3 }, { transform: 'translate(12px,-26px)', opacity: 0 }], { duration: 900, easing: 'ease-out' }).onfinish = () => t.remove();
+  }
+
   function reset() {
     clearCelebration();
     render();
@@ -281,6 +301,11 @@ export function createSagasu({ view, stage, result, play, getChoices, getWeights
     const t0 = performance.now();
     const order = searchPlan(n, decided);
     const T = searchTimes(order.length);
+    const vr = Math.random();
+    const variant = vr < 0.25 && order.length >= 2 ? 'sock' : vr < 0.5 ? 'chira' : vr < 0.75 ? 'suya' : 'plain';
+    stage.dataset.variant = variant;
+    const sockAt = variant === 'sock' ? 0 : -1;
+    if (variant === 'sock') T.intro *= 0.6; // くつしたの分、見くらべを みじかく（9秒を こえない）
 
     // 1. たなの上から、箱を見くらべる
     showHint(result, 'どの はこかな…');
@@ -292,14 +317,29 @@ export function createSagasu({ view, stage, result, play, getChoices, getWeights
       prevLook = j;
       setCat('normal', lookAt(home, boxes[j]));
       audio.hover(k);
+      if (variant === 'chira' && k === looks - 1) {
+        // ちらっ：猫が よそ見を している間に、おもちゃが 箱から 顔を出して すぐ かくれる
+        setCat('normal', lookAt(home, boxes[(decided + 1) % n]));
+        const pk = refs.peeks[decided];
+        const y0 = -geo.boxH + geo.toyS * 1.2;
+        pk.setAttribute('visibility', 'visible');
+        await frames(900, (t) => {
+          const e = t < 0.3 ? ease.outCubic(t / 0.3) : t < 0.7 ? 1 : 1 - Math.pow((t - 0.7) / 0.3, 3);
+          pk.setAttribute('transform', `translate(${(geo.boxW * 0.22).toFixed(1)} ${(y0 - e * geo.toyS * 1.6).toFixed(1)})`);
+        });
+        pk.setAttribute('visibility', 'hidden');
+        setCat('normal', lookAt(home, boxes[decided]));
+        showHint(result, 'いま なにか うごいた…？');
+        audio.heart();
+        await wait(380);
+        continue;
+      }
       await wait(T.intro / looks);
     }
 
     // 2. 箱に飛び移って もぐる。何もなければ顔を出して、次の箱へ
     let pos = home;
     let dove = -1;
-    delete stage.dataset.variant;
-    const sockAt = order.length >= 2 && Math.random() < 0.3 ? 0 : -1;
     for (let k = 0; k < order.length; k++) {
       const b = boxes[order[k]];
       const last = k === order.length - 1;
@@ -318,13 +358,22 @@ export function createSagasu({ view, stage, result, play, getChoices, getWeights
       refs.catPos.setAttribute('visibility', 'hidden');
       dove = boxAt(pos.x, pos.y + 78 * sHop);
       showHint(result, 'ごそごそ…');
+      if (last && variant === 'suya') {
+        // すやすや：箱の中が きもちよくて ねむくなる → はっ！
+        await rustle(dove, T.rustleLast * 0.5);
+        showHint(result, 'すやすや…');
+        for (let q = 0; q < 2; q++) { puffZ(boxes[dove]); await wait(330); }
+        showHint(result, 'はっ！');
+        audio.pop();
+        await rustle(dove, 260);
+        break;
+      }
       await rustle(dove, last ? T.rustleLast : T.rustle);
       if (last) break;
       // 何もない：ふたを開けたままにして、顔を出す
       refs.flaps[dove].innerHTML = flaps(true);
       if (k === sockAt) {
-        // ときどき出る別の動き（v12）：おもちゃの かわりに くつしたが とびだす
-        stage.dataset.variant = 'sock';
+        // くつした：おもちゃの かわりに くつしたが とびだす
         const bx = boxes[dove];
         showHint(result, 'あった！… と おもったら くつした');
         audio.pop();

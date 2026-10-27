@@ -1,5 +1,8 @@
 // にくきゅうスタンプ（見せ方の部品：並んだ格子）。
 // 猫の手がカードのます目をぴょんぴょん渡り、最後に1つのます目へ肉球を「ぽん」と押す。
+// v17 の後（テーマパーク）：カードは ピンクの あつみの ある スタンプラリーの 台紙。ます目は 選択肢ごとの パステル色（くぼみ）。
+// スタンプ台は ふたの あいた 缶。動きの ちがい（3B：4つ）：ふつう・みせかけ（おす ふりを して もう いちど）・
+// インク（とちゅうで インクが たりなくなって 台へ もどる）・まよい（さいごの 2つの ます目の上を いったり きたり）。
 import { C, ginkgoLeaf, mapleLeaf, fallingPiece } from '../art.js';
 import { look, SEASON_KANA } from '../look.js';
 import { catFace, catPaw, pawPrint } from '../cats.js';
@@ -7,6 +10,7 @@ import { audio } from '../audio.js';
 import { pickWeighted } from '../odds.js';
 import { celebrate, clearCelebration, ease, frames, wait, levelOf } from '../fx.js';
 import { showHint, showResult, setBusy, centerOf, charCount, svgEl, escapeXml } from '../ui.js';
+import { TINTS } from './common.js';
 
 // 行事の時のカードの題名
 const EVENT_TITLE = {
@@ -85,8 +89,11 @@ export function createStamp({ view, stage, result, play, getChoices, getWeights,
     s += `<g class="peek" transform="translate(${peekAt.x} ${peekAt.y}) scale(${peekAt.s})"><g class="peek-face">${catFace(cat)}</g></g>`;
     // カード
     s += `<g class="card">`;
-    s += `<rect x="${cardX + 3}" y="${cardY + 6}" width="${cardW}" height="${cardH}" rx="22" fill="#d9b07a" opacity="0.35"/>`;
-    s += `<rect x="${cardX}" y="${cardY}" width="${cardW}" height="${cardH}" rx="22" fill="${C.paper}" stroke="${C.woodDeep}" stroke-width="3"/>`;
+    s += `<rect x="${cardX + 4}" y="${cardY + 9}" width="${cardW}" height="${cardH}" rx="22" fill="#a0703f" opacity="0.22"/>`;
+    s += `<rect x="${cardX}" y="${cardY + 5}" width="${cardW}" height="${cardH}" rx="22" fill="#f2b8c8" stroke="#e391ad" stroke-width="2"/>`;
+    s += `<rect x="${cardX}" y="${cardY + 2.5}" width="${cardW}" height="${cardH}" rx="22" fill="#f8cfdb" stroke="#e391ad" stroke-width="1.4"/>`;
+    s += `<rect x="${cardX}" y="${cardY}" width="${cardW}" height="${cardH}" rx="22" fill="#fde8ee" stroke="#e391ad" stroke-width="3"/>`;
+    for (let q = 1; q < 6; q++) s += `<path d="M${cardX + 14},${(cardY + (cardH * q) / 6).toFixed(1)} h${cardW - 28}" stroke="#f8d6e0" stroke-width="1"/>`;
     s += `<rect x="${cardX + 7}" y="${cardY + 7}" width="${cardW - 14}" height="${cardH - 14}" rx="17" fill="none" stroke="${C.kaki}" stroke-width="2" stroke-dasharray="2 7" stroke-linecap="round" opacity="0.8"/>`;
     // 題名は いまの見た目に合わせる。行事の時は行事の名前、それ以外は季節の名前（v11）
     const title = cardTitle();
@@ -105,13 +112,14 @@ export function createStamp({ view, stage, result, play, getChoices, getWeights,
       const size = Math.max(13, Math.min(24, (cell.w - 16) / Math.max(longest, 1), (cell.h - 14) / (lines.length * 1.3)));
       const ringR = Math.min(cell.w, cell.h) * 0.4;
       s += `<g class="cell" data-i="${i}">`
-        + `<rect class="cell-bg" x="${cell.x}" y="${cell.y}" width="${cell.w}" height="${cell.h}" rx="14" fill="#ffffff" stroke="${C.line}" stroke-opacity="0.25" stroke-width="2"/>`
+        + `<rect x="${cell.x}" y="${cell.y - 1.5}" width="${cell.w}" height="${cell.h}" rx="14" fill="${TINTS[i % TINTS.length][1]}" opacity="0.5"/>`
+        + `<rect class="cell-bg" x="${cell.x}" y="${cell.y}" width="${cell.w}" height="${cell.h}" rx="14" fill="${TINTS[i % TINTS.length][0]}" stroke="${TINTS[i % TINTS.length][1]}" stroke-width="2"/>`
         + `<circle cx="${cell.cx}" cy="${cell.cy}" r="${ringR}" fill="none" stroke="${C.kaki}" stroke-opacity="0.35" stroke-width="2" stroke-dasharray="4 5"/>`
         + `<g class="ink" transform="translate(${cell.cx} ${cell.cy})" opacity="0"></g>`;
       const lh = size * 1.22;
       const y0 = cell.cy - ((lines.length - 1) * lh) / 2;
       lines.forEach((ln, k) => {
-        s += `<text class="cell-label" x="${cell.cx}" y="${y0 + k * lh}" font-size="${size.toFixed(1)}" fill="${C.ink}" text-anchor="middle" dominant-baseline="central" stroke="#ffffff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">${escapeXml(ln)}</text>`;
+        s += `<text class="cell-label" x="${cell.cx}" y="${y0 + k * lh}" font-size="${size.toFixed(1)}" fill="${C.ink}" text-anchor="middle" dominant-baseline="central" stroke="${TINTS[i % TINTS.length][0]}" stroke-width="4" stroke-linejoin="round" paint-order="stroke">${escapeXml(ln)}</text>`;
       });
       s += `</g>`;
     });
@@ -124,8 +132,14 @@ export function createStamp({ view, stage, result, play, getChoices, getWeights,
     if (H - (cardY + cardH) > pawSize * 1.8) {
       const px = cardX + cardW * 0.8;
       const py = cardY + cardH + pawSize * 0.85 + pawSize * 0.55;
-      s += `<rect x="${(px - pawSize * 1.4).toFixed(1)}" y="${(py - pawSize * 0.45).toFixed(1)}" width="${(pawSize * 2.8).toFixed(1)}" height="${(pawSize * 0.9).toFixed(1)}" rx="${(pawSize * 0.25).toFixed(1)}" fill="#c99a62" stroke="#9b5f3a" stroke-width="2"/>`
-        + `<rect x="${(px - pawSize * 1.2).toFixed(1)}" y="${(py - pawSize * 0.38).toFixed(1)}" width="${(pawSize * 2.4).toFixed(1)}" height="${(pawSize * 0.5).toFixed(1)}" rx="${(pawSize * 0.18).toFixed(1)}" fill="${C.momiji}" opacity="0.8"/>`;
+      const q = (v) => (v * pawSize).toFixed(1);
+      s += `<g transform="translate(${px.toFixed(1)} ${py.toFixed(1)})">`
+        + `<rect x="${q(-1.5)}" y="${q(-0.95)}" width="${q(3)}" height="${q(0.6)}" rx="${q(0.2)}" fill="#e6a39a" stroke="#b9675c" stroke-width="2" transform="rotate(-8 ${q(-1.5)} ${q(-0.4)})"/>`
+        + `<rect x="${q(-1.5)}" y="${q(-0.35)}" width="${q(3)}" height="${q(0.95)}" rx="${q(0.22)}" fill="#c4675b"/>`
+        + `<rect x="${q(-1.5)}" y="${q(-0.5)}" width="${q(3)}" height="${q(0.85)}" rx="${q(0.22)}" fill="#e6a39a" stroke="#b9675c" stroke-width="2"/>`
+        + `<rect x="${q(-1.25)}" y="${q(-0.4)}" width="${q(2.5)}" height="${q(0.5)}" rx="${q(0.16)}" fill="${C.momiji}"/>`
+        + `<path d="M${q(-1.1)},${q(-0.32)} h${q(0.9)}" stroke="#ffffff" stroke-width="2" stroke-linecap="round" opacity="0.5"/>`
+        + `</g>`;
     }
     s += `<ellipse class="paw-shadow" cx="0" cy="0" rx="${pawSize * 0.95}" ry="${pawSize * 0.32}" fill="#a0703f" opacity="0.18"/>`;
     s += `<g class="paw"><g class="paw-in">${catPaw(cat, pawSize)}</g></g>`;
@@ -179,7 +193,7 @@ export function createStamp({ view, stage, result, play, getChoices, getWeights,
 
   function lightCell(i) {
     refs.cells.forEach((g, k) => {
-      g.querySelector('.cell-bg').setAttribute('fill', k === i ? '#fff1c4' : '#ffffff');
+      g.querySelector('.cell-bg').setAttribute('fill', k === i ? '#fff1c4' : TINTS[k % TINTS.length][0]);
     });
   }
 
@@ -246,17 +260,35 @@ export function createStamp({ view, stage, result, play, getChoices, getWeights,
       await frames(150, (t) => placePaw(home.x, home.y, 14 * Math.sin(Math.PI * t), 1));
       audio.tap();
     }
+    const vr = Math.random();
+    const variant = vr < 0.25 ? 'feint' : vr < 0.5 ? 'ink' : vr < 0.75 && n > 2 ? 'mayoi' : 'plain';
+    stage.dataset.variant = variant;
+    const inkAt = Math.floor(path.length * 0.4);
     for (let k = 0; k < path.length; k++) {
       const p = k / (path.length - 1);
       const dur = 120 + 420 * Math.pow(p, 2.2);
+      if (variant === 'ink' && k === inkAt) {
+        // インク：台へ もどって ぽんぽん、また つづける
+        showHint(result, 'インクが たりない…');
+        const from = { ...pawPos };
+        await frames(320, (t) => { const e = ease.inOutSine(t); placePaw(from.x + (home.x - from.x) * e, from.y + (home.y - from.y) * e, Math.sin(Math.PI * t) * 30, 1); });
+        pawPos = { ...home };
+        for (let q = 0; q < 2; q++) { await frames(140, (t) => placePaw(home.x, home.y, 14 * Math.sin(Math.PI * t), 1)); audio.tap(); }
+        showHint(result, 'どこに おそうかな…');
+      }
+      if (variant === 'mayoi' && k === path.length - 1) {
+        // まよい：さいごの 2つの ます目の上を いったり きたり
+        showHint(result, 'どっちかな…');
+        const other = path[k - 1];
+        await hopTo(decided, 380, k);
+        await hopTo(other, 380, k + 1);
+      }
       await hopTo(path[k], dur, k);
     }
     // ぐっと持ち上げて、ぽん
     const c = geo.cells[decided];
-    // ときどき出る別の動き（v12）：おす ふりを して、もう いちど もちあげる
-    delete stage.dataset.variant;
-    if (Math.random() < 0.3) {
-      stage.dataset.variant = 'feint';
+    // みせかけ：おす ふりを して、もう いちど もちあげる
+    if (variant === 'feint') {
       showHint(result, 'ぽ… と みせかけて');
       await frames(260, (t) => placePaw(pawPos.x, pawPos.y, 26 * Math.sin(Math.PI * t), 1 + 0.1 * Math.sin(Math.PI * t)));
       audio.heart();

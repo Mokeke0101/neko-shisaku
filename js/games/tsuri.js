@@ -17,6 +17,7 @@ import { audio } from '../audio.js';
 import { pickWeighted } from '../odds.js';
 import { celebrate, clearCelebration, ease, frames, wait, levelOf } from '../fx.js';
 import { showHint, showResult, setBusy, centerOf, charCount, svgEl, escapeXml } from '../ui.js';
+import { TINTS, pastelTag } from './common.js';
 
 // はりを止める深さの並び。決めた深さ decided で終わり、続けて同じ深さにならない。止める数は 2〜3。rand() は 0 以上 1 未満
 export function depthPlan(n, decided, rand = Math.random) {
@@ -153,9 +154,8 @@ export function createTsuri({ view, stage, result, play, getChoices, getWeights,
       o += `<g class="fish" data-i="${i}">${fishSVG(fishS, i)}</g>`;
       o += `<g class="tag" data-i="${i}">`
         + `<path class="ts-string" d="M${(fish[i].home + fishS * 1.35).toFixed(1)},${y.toFixed(1)} L${tl.toFixed(1)},${y.toFixed(1)}" stroke="#8a7a70" stroke-width="1.2"/>`
-        + `<rect x="${(tl + 1).toFixed(1)}" y="${(y - tagH / 2 + 3).toFixed(1)}" width="${tw.toFixed(1)}" height="${tagH.toFixed(1)}" rx="${Math.min(8, tagH / 2).toFixed(1)}" fill="#9b6b3a" opacity="0.5"/>`
-        + `<rect class="tag-bg" x="${tl.toFixed(1)}" y="${(y - tagH / 2).toFixed(1)}" width="${tw.toFixed(1)}" height="${tagH.toFixed(1)}" rx="${Math.min(8, tagH / 2).toFixed(1)}" fill="#f2d3a2" stroke="#b98a52" stroke-width="2"/>`
-        + `<circle cx="${(tl + 5).toFixed(1)}" cy="${y.toFixed(1)}" r="2" fill="#fffaf0" stroke="#b98a52" stroke-width="1"/>`
+        + pastelTag(i, tl, y - tagH / 2, tw, tagH, 'tag-bg')
+        + `<circle cx="${(tl + 5).toFixed(1)}" cy="${y.toFixed(1)}" r="2" fill="#fffaf0" stroke="${TINTS[i % TINTS.length][1]}" stroke-width="1"/>`
         + `<text class="cell-label" x="${(tl + 4 + tw / 2).toFixed(1)}" y="${y.toFixed(1)}" font-size="${size.toFixed(1)}" fill="${C.ink}" text-anchor="middle" dominant-baseline="central">${escapeXml(label)}</text>`
         + `</g>`;
     });
@@ -228,8 +228,8 @@ export function createTsuri({ view, stage, result, play, getChoices, getWeights,
     refs.tags.forEach((g, k) => {
       const bg = g.querySelector('.tag-bg');
       const on = k === i;
-      bg.setAttribute('fill', on ? (strong ? '#fff1c4' : '#fbe6c4') : '#f2d3a2');
-      bg.setAttribute('stroke', on && strong ? C.momiji : '#b98a52');
+      bg.setAttribute('fill', on ? (strong ? '#fff1c4' : '#fff6dc') : TINTS[k % TINTS.length][0]);
+      bg.setAttribute('stroke', on && strong ? C.momiji : TINTS[k % TINTS.length][1]);
       bg.setAttribute('stroke-width', on && strong ? '4' : on ? '3' : '2');
     });
   }

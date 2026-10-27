@@ -39,11 +39,41 @@ export function grid(n, box, cols, gap = 6) {
   });
 }
 
-// 名前の札。badge を渡すと、左に番号の丸を付ける（色は tint）
-export function plate(i, x, y, w, h, label, { badge = null, tint = null, fill = '#ffffff', max = 22 } = {}) {
-  const rx = Math.min(12, h / 2);
+// 札の 材料（v16：白い板を やめ、あつみの ある 物に じかに書く）。face：おもて・edge：ふち・under：下の あつみ・grain：木目（無しは null）
+export const MATS = {
+  wood: { face: '#efcb93', edge: '#a8743f', under: '#8a5a32', grain: '#d9a868', nail: true },
+  kraft: { face: '#e6c48f', edge: '#a8743f', under: '#9b6b3a', grain: null, tape: true },
+  dark: { face: '#d9a868', edge: '#8a5a32', under: '#5a3a22', grain: '#c4925a', nail: true },
+};
+
+// テーマパークの 札（v17 の後：クレーンの 値札と おなじ）。選択肢ごとに パステル色を かえる
+export function pastelMat(i) {
+  const [face, edge] = TINTS[i % TINTS.length];
+  return { face, edge, under: edge, grain: null };
+}
+
+// パステルの札の 下じき（かげ・おもて・つや）。文字は 呼ぶ側で書く。おもては class="cell-bg" か cls で わたす
+export function pastelTag(i, x, y, w, h, cls = 'cell-bg', extra = '') {
+  const [col, edge] = TINTS[i % TINTS.length];
+  const rx = Math.min(9, h / 2.4);
+  return `<rect x="${f(x + 1)}" y="${f(y + 2)}" width="${f(w)}" height="${f(h)}" rx="${f(rx)}" fill="${edge}" opacity="0.45"/>`
+    + `<rect class="${cls}" x="${f(x)}" y="${f(y)}" width="${f(w)}" height="${f(h)}" rx="${f(rx)}" fill="${col}" stroke="${edge}" stroke-width="2"${extra}/>`
+    + `<rect x="${f(x + 3)}" y="${f(y + 2.5)}" width="${f(Math.max(0, w - 6))}" height="${f(h * 0.28)}" rx="${f(h * 0.14)}" fill="#ffffff" opacity="0.45"/>`;
+}
+
+// 名前の札。badge を渡すと、左に番号の丸を付ける（色は tint）。mat は MATS の名前
+export function plate(i, x, y, w, h, label, { badge = null, tint = null, mat = 'pastel', fill = null, max = 22 } = {}) {
+  const m = mat === 'pastel' ? pastelMat(i) : MATS[mat] || MATS.wood;
+  const rx = mat === 'pastel' ? Math.min(9, h / 2.4) : Math.min(5, h / 3);
   let s = `<g class="cell" data-i="${i}">`
-    + `<rect class="cell-bg" x="${f(x)}" y="${f(y)}" width="${f(w)}" height="${f(h)}" rx="${f(rx)}" fill="${fill}" stroke="${C.woodDeep}" stroke-width="2"/>`;
+    + `<rect x="${f(x + 1.5)}" y="${f(y + 3)}" width="${f(w)}" height="${f(h)}" rx="${f(rx)}" fill="${m.under}" opacity="${mat === 'pastel' ? 0.45 : 0.7}"/>`
+    + `<rect class="cell-bg" x="${f(x)}" y="${f(y)}" width="${f(w)}" height="${f(h)}" rx="${f(rx)}" fill="${fill || m.face}" stroke="${m.edge}" stroke-width="2"/>`
+    + (mat === 'pastel'
+      ? `<rect x="${f(x + 3)}" y="${f(y + 2.5)}" width="${f(Math.max(0, w - 6))}" height="${f(h * 0.28)}" rx="${f(h * 0.14)}" fill="#ffffff" opacity="0.45"/>`
+      : `<rect x="${f(x + 2.5)}" y="${f(y + 1.8)}" width="${f(Math.max(0, w - 5))}" height="2.2" rx="1.1" fill="#ffffff" opacity="0.35"/>`);
+  if (m.grain && w > 40) s += `<path d="M${f(x + w * 0.55)},${f(y + h * 0.8)} q${f(w * 0.12)},1.6 ${f(w * 0.26)},-0.6" stroke="${m.grain}" stroke-width="1.2" fill="none"/>`;
+  if (m.nail && h >= 22 && w > 60) s += `<circle cx="${f(x + w - 4.5)}" cy="${f(y + 4.5)}" r="1.4" fill="#8a7466"/><circle cx="${f(x + w - 4.5)}" cy="${f(y + h - 4.5)}" r="1.4" fill="#8a7466"/>`;
+  if (m.tape) s += `<rect x="${f(x + w * 0.5 - 9)}" y="${f(y - 3)}" width="18" height="7" fill="#f6efd8" opacity="0.85" transform="rotate(-6 ${f(x + w * 0.5)} ${f(y)})"/>`;
   let tx = x + w / 2;
   let tw = w;
   let anchor = 'middle';
@@ -52,13 +82,14 @@ export function plate(i, x, y, w, h, label, { badge = null, tint = null, fill = 
     const bx = x + 6 + br;
     const [col, edge] = tint || [C.cream, C.momiji];
     s += `<circle cx="${f(bx)}" cy="${f(y + h / 2)}" r="${f(br)}" fill="${col}" stroke="${edge}" stroke-width="2"/>`
-      + `<text x="${f(bx)}" y="${f(y + h / 2 + 0.5)}" font-size="${f(br * 1.1)}" font-weight="700" fill="${C.ink}" text-anchor="middle" dominant-baseline="central">${badge}</text>`;
+      + `<text x="${f(bx)}" y="${f(y + h / 2 + 0.5)}" font-size="${f(br * 1.1)}" font-weight="700" fill="#3e2a1e" text-anchor="middle" dominant-baseline="central">${badge}</text>`;
     tx = bx + br + 6;
     tw = x + w - tx + 8;
     anchor = 'start';
   }
   const size = fitSize(label, tw, h, max);
-  s += `<text class="cell-label" x="${f(tx)}" y="${f(y + h / 2)}" font-size="${f(size)}" fill="${C.ink}" text-anchor="${anchor}" dominant-baseline="central">${escapeXml(label)}</text></g>`;
+  const ink = mat === 'pastel' ? `fill="${C.ink}"` : 'fill="#3e2a1e" font-weight="700"';
+  s += `<text class="cell-label" x="${f(tx)}" y="${f(y + h / 2)}" font-size="${f(size)}" ${ink} text-anchor="${anchor}" dominant-baseline="central">${escapeXml(label)}</text></g>`;
   return { svg: s, size };
 }
 
@@ -82,7 +113,7 @@ export function lightPlate(svg, i) {
 // 札をうすく光らせる（まよっている時）。on が false で もとに戻す
 export function hintPlate(svg, i, on) {
   const bg = svg.querySelector(`.cell[data-i="${i}"] .cell-bg`);
-  if (bg) bg.setAttribute('fill', on ? '#fff6dc' : bg.dataset.fill || '#ffffff');
+  if (bg) bg.setAttribute('fill', on ? '#fff6dc' : bg.dataset.fill || MATS.wood.face);
 }
 
 // ちがう番号を ランダムに1つ（except を除く）

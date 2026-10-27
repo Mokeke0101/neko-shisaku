@@ -113,13 +113,13 @@ export function createSugoroku({ view, stage, result, play, getChoices, getWeigh
     const svg = svgEl('svg', { viewBox: `0 0 ${W} ${H}` });
     let s = '';
     // 盤
-    s += `<rect x="${boardX + 2}" y="${boardY + 7}" width="${boardW}" height="${boardH}" rx="20" fill="#9b6b3a" opacity="0.45"/>`;
-    s += `<rect x="${boardX}" y="${boardY}" width="${boardW}" height="${boardH}" rx="20" fill="#f2d3a2" stroke="#b98a52" stroke-width="3"/>`;
+    s += `<rect x="${boardX + 2}" y="${boardY + 7}" width="${boardW}" height="${boardH}" rx="20" fill="#6fb39b" opacity="0.35"/>`;
+    s += `<rect x="${boardX}" y="${boardY}" width="${boardW}" height="${boardH}" rx="20" fill="#e3f4ec" stroke="#6fb39b" stroke-width="3"/>`;
     for (let k = 0; k < 5; k++) {
       const gy = boardY + 14 + (k * (boardH - 28)) / 4;
-      s += `<path d="M${boardX + 12},${gy.toFixed(1)} C${(boardX + boardW * 0.3).toFixed(1)},${(gy - 5).toFixed(1)} ${(boardX + boardW * 0.6).toFixed(1)},${(gy + 5).toFixed(1)} ${boardX + boardW - 12},${gy.toFixed(1)}" stroke="#e3bf8a" stroke-width="1.6" fill="none"/>`;
+      s += `<path d="M${boardX + 12},${gy.toFixed(1)} C${(boardX + boardW * 0.3).toFixed(1)},${(gy - 5).toFixed(1)} ${(boardX + boardW * 0.6).toFixed(1)},${(gy + 5).toFixed(1)} ${boardX + boardW - 12},${gy.toFixed(1)}" stroke="#c6e6d8" stroke-width="1.6" fill="none"/>`;
     }
-    s += `<rect x="${boardX + 6}" y="${boardY + 6}" width="${boardW - 12}" height="${boardH - 12}" rx="15" fill="none" stroke="#e3bf8a" stroke-width="2" stroke-dasharray="6 5"/>`;
+    s += `<rect x="${boardX + 6}" y="${boardY + 6}" width="${boardW - 12}" height="${boardH - 12}" rx="15" fill="none" stroke="#a9dcc9" stroke-width="2" stroke-dasharray="6 5"/>`;
     // 道（ますの真ん中を順につなぐ）
     const road = [{ x: startAt.x, y: startAt.y }, ...cells.map((c) => ({ x: c.x + c.w / 2, y: c.y + c.h / 2 }))];
     s += `<path d="M${road.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' L')}" stroke="#f1dcb8" stroke-width="${Math.min(26, ch * 0.4).toFixed(1)}" stroke-linejoin="round" stroke-linecap="round" fill="none"/>`;
@@ -135,7 +135,7 @@ export function createSugoroku({ view, stage, result, play, getChoices, getWeigh
       const lh = size * 1.12;
       const rxc = Math.min(14, c.h / 3);
       const th = Math.max(5, Math.min(8, c.h * 0.1)); // タイルの あつみ
-      s += `<rect x="${c.x + 1}" y="${c.y + th + 2}" width="${c.w}" height="${c.h}" rx="${rxc}" fill="#9b6b3a" opacity="0.3"/>`
+      s += `<rect x="${c.x + 1}" y="${c.y + th + 2}" width="${c.w}" height="${c.h}" rx="${rxc}" fill="#6fb39b" opacity="0.3"/>`
         + `<rect x="${c.x}" y="${c.y + th}" width="${c.w}" height="${c.h}" rx="${rxc}" fill="${SQ_EDGE[i % SQ.length]}"/>`;
       s += `<g class="cell" data-i="${i}">`
         + `<rect class="cell-bg" x="${c.x}" y="${c.y}" width="${c.w}" height="${c.h}" rx="${rxc}" fill="${SQ[i % SQ.length]}" stroke="${SQ_EDGE[i % SQ.length]}" stroke-width="2.4"/>`

@@ -16,7 +16,7 @@ import { seasonFlier } from '../kits.js';
 import { catSitting } from '../cats.js';
 import { audio } from '../audio.js';
 import { ease, frames, wait } from '../fx.js';
-import { createGame, grid, nearest, wander, along, fitSize, f } from './common.js';
+import { createGame, grid, nearest, wander, along, fitSize, TINTS, pastelTag, f } from './common.js';
 import { escapeXml } from '../ui.js';
 
 export function driftPlan(n, decided, rand = Math.random) {
@@ -76,26 +76,10 @@ export function createWatage(deps) {
       const fr = Math.max(20, Math.min(40, skyH * 0.25)); // 大きな たんぽぽの 半径
       const head = { x: W * 0.24, y: skyH * 0.36 };
       Object.assign(g, { cells, plankH, beds, ss, skyH, head, fr });
-      // 野原（明るい みどり。草の ふさ）
-      let s = `<path d="M0,${f(skyH)} Q${f(W * 0.5)},${f(skyH - 14)} ${W},${f(skyH)} V${H} H0 Z" fill="#d9ecc4"/>`
-        + `<path d="M0,${f(skyH)} Q${f(W * 0.5)},${f(skyH - 14)} ${W},${f(skyH)}" stroke="#a9c98f" stroke-width="2.4" fill="none"/>`;
-      for (let k = 0; k < 14; k++) {
-        const x = ((k * 61) % (W - 20)) + 10;
-        const y = skyH + 6 + ((k * 37) % Math.max(10, H - skyH - 20));
-        s += `<path d="M${f(x)},${f(y)} l-3,-7 M${f(x)},${f(y)} l0,-9 M${f(x)},${f(y)} l3,-7" stroke="#a9c98f" stroke-width="1.6" stroke-linecap="round" opacity="0.7"/>`;
-      }
-      // 野原の 小さな白い花と クローバー（花だんの後ろ）
-      for (let k = 0; k < 18; k++) {
-        const x = ((k * 83 + 17) % (W - 16)) + 8;
-        const y = skyH + 10 + ((k * 53) % Math.max(10, H - skyH - 24));
-        if (k % 3) {
-          let p = '';
-          for (let q = 0; q < 5; q++) p += `<circle cx="${f(Math.cos((q / 5) * Math.PI * 2) * 3)}" cy="${f(Math.sin((q / 5) * Math.PI * 2) * 3)}" r="2.2" fill="#ffffff" stroke="#e4ded2" stroke-width="0.6"/>`;
-          s += `<g transform="translate(${f(x)} ${f(y)})">${p}<circle r="1.6" fill="${YEL}"/></g>`;
-        } else {
-          s += `<g transform="translate(${f(x)} ${f(y)})" fill="#9cc96b">${[0, 120, 240].map((a) => `<circle cx="${f(Math.cos((a * Math.PI) / 180) * 3)}" cy="${f(Math.sin((a * Math.PI) / 180) * 3)}" r="3"/>`).join('')}</g>`;
-        }
-      }
+      // v17 の後（テーマパーク）：野原で おおわず、季節の背景の 上に パステルの うえきばちと 花だん
+      let s = `<ellipse cx="${f(head.x)}" cy="${f(skyH + 2)}" rx="${f(fr * 1.3)}" ry="${f(fr * 0.36)}" fill="#e391ad"/>`
+        + `<ellipse cx="${f(head.x)}" cy="${f(skyH - 2)}" rx="${f(fr * 1.3)}" ry="${f(fr * 0.36)}" fill="#fbd9e2" stroke="#e391ad" stroke-width="2"/>`
+        + `<ellipse cx="${f(head.x)}" cy="${f(skyH - 2)}" rx="${f(fr * 1.05)}" ry="${f(fr * 0.24)}" fill="#a07a5a"/>`;
       // 大きな たんぽぽ（くき・ぎざぎざの葉・つぼみ / 花 / わたげの玉）
       const gy = skyH - 4;
       s += `<path d="M${f(head.x - 4)},${f(gy)} Q${f(head.x - 14)},${f((gy + head.y) / 2)} ${f(head.x)},${f(head.y + fr * 0.5)}" stroke="#7fae4f" stroke-width="4" fill="none" stroke-linecap="round"/>`;
@@ -120,17 +104,15 @@ export function createWatage(deps) {
         const sx = c.x + 3;
         const sw = c.w - 6;
         const size = fitSize(choices[i], c.w, plankH);
-        s += `<rect x="${f(sx)}" y="${f(sy)}" width="${f(sw)}" height="${f(sh)}" rx="${f(Math.min(12, sh * 0.4))}" fill="#e0b98a"/>`
-          + `<rect x="${f(sx + 3)}" y="${f(sy + 3)}" width="${f(sw - 6)}" height="${f(sh - 5)}" rx="${f(Math.min(10, sh * 0.34))}" fill="#c99a6b"/>`;
-        for (let q = 0; q < 5; q++) s += `<circle cx="${f(sx + 10 + ((q * 37) % (sw - 20)))}" cy="${f(sy + 7 + ((q * 7) % Math.max(4, sh - 14)))}" r="1.5" fill="#b0845a"/>`;
+        const [pc, pe] = TINTS[i % TINTS.length];
+        s += `<rect x="${f(sx)}" y="${f(sy)}" width="${f(sw)}" height="${f(sh)}" rx="${f(Math.min(12, sh * 0.4))}" fill="${pc}" stroke="${pe}" stroke-width="2"/>`
+          + `<rect x="${f(sx + 4)}" y="${f(sy + 3)}" width="${f(sw - 8)}" height="${f(sh - 6)}" rx="${f(Math.min(10, sh * 0.34))}" fill="#a07a5a"/>`;
+        for (let q = 0; q < 5; q++) s += `<circle cx="${f(sx + 10 + ((q * 37) % (sw - 20)))}" cy="${f(sy + 7 + ((q * 7) % Math.max(4, sh - 14)))}" r="1.5" fill="#8a6548"/>`;
         [-0.32, 0, 0.32].forEach((d, q) => { const x = c.cx + d * sw; const y = sy + 4; s += `<path d="M${f(x)},${f(y + 4)} q-5,-6 -8,-4 M${f(x)},${f(y + 4)} q5,-7 8,-5 M${f(x)},${f(y + 4)} v-6" stroke="#7fae4f" stroke-width="2" fill="none" stroke-linecap="round" opacity="${q === 1 ? 1 : 0.85}"/>`; });
         const br = Math.max(11, Math.min(28, c.w * 0.2, (c.h - plankH) * 0.32));
         s += `<g class="bloom" data-i="${i}" transform="translate(${f(beds[i].cx)} ${f(sy + sh * 0.4 - br * 0.9)}) scale(0)"><path d="M0,0 V${f(br * 0.9 + sh * 0.2)}" stroke="#7fae4f" stroke-width="3"/>${dandelion(br)}</g>`;
-        // 前板（木。厚みと木目）
-        s += `<rect x="${f(c.x)}" y="${f(c.y + c.h - plankH + 3)}" width="${f(c.w)}" height="${f(plankH)}" rx="6" fill="#9b6b3a"/>`
-          + `<g class="cell" data-i="${i}"><rect class="cell-bg" x="${f(c.x)}" y="${f(c.y + c.h - plankH)}" width="${f(c.w)}" height="${f(plankH)}" rx="6" fill="#f2d3a2" stroke="#b98a52" stroke-width="2"/>`
-          + `<path d="M${f(c.x + 8)},${f(c.y + c.h - plankH * 0.28)} q${f(c.w * 0.3)},-3 ${f(c.w * 0.6)},0" stroke="#ddb37c" stroke-width="1.2" fill="none"/>`
-          + `<circle cx="${f(c.x + 6)}" cy="${f(c.y + c.h - plankH / 2)}" r="1.6" fill="#b98a52"/><circle cx="${f(c.x + c.w - 6)}" cy="${f(c.y + c.h - plankH / 2)}" r="1.6" fill="#b98a52"/>`
+        // 前の札（クレーンの 値札と おなじ パステルの札）
+        s += `<g class="cell" data-i="${i}">` + pastelTag(i, c.x, c.y + c.h - plankH, c.w, plankH)
           + `<text class="cell-label" x="${f(c.cx)}" y="${f(c.y + c.h - plankH / 2 + 0.5)}" font-size="${f(size)}" fill="${C.ink}" text-anchor="middle" dominant-baseline="central">${escapeXml(choices[i])}</text></g>`;
       });
       // イズ（たんぽぽの右に すわる）

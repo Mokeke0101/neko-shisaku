@@ -7,6 +7,9 @@
 // 2. のこり2枚になったら、猫の手が2枚の間で まよう（「どっちに しようかな」）。そのあと、結果でない方を抜く。
 // 結果は先に乱数で決め（RS01-S14）、抜く順は、決めた花びらを最後に残すように並べる。
 // 花びらはどれも同じ大きさ（出やすさは、抜く順で決まり、花びらの大きさには表れない：RS01-S21）。
+// v16 作り直し：花びらに 根もとの かげと 先の つや、すじ。花の真ん中は つぶつぶと つやと あつみ。
+// 動きの ちがい（3B：4つ）：ふつう・かぜ（1まい 風で とぶ）・てんとう（次の花びらに てんとうむし。とんでいくのを まつ）・
+// ぬけない（1まい なかなか ぬけず、ぐいっ ぐいっ と ひっぱる）。
 import { C } from '../art.js';
 import { look } from '../look.js';
 import { warmDay } from '../kits.js';
@@ -24,6 +27,7 @@ const FLOWERS = {
   fuyu: { petals: ['#ffffff', '#fdf1f4', '#fbe6ec'], edge: '#e7b3c2', center: '#f6d55e', centerDeep: '#e0b43c' },
 };
 const flower = () => FLOWERS[look.season] || FLOWERS.aki;
+const f = (v) => (Math.round(v * 10) / 10).toFixed(1);
 
 // 花びらを抜く順。決めた花びら（decided）を最後に残す。rand(k) は 0〜k-1 の整数を返す
 export function pluckOrder(n, decided, rand = (k) => Math.floor(Math.random() * k)) {
@@ -93,6 +97,10 @@ export function createHana({ view, stage, result, play, getChoices, getWeights, 
     // 茎と葉（コスモスの細い葉）
     s += `<path d="M${fx},${fy + r0} C${fx + 6},${fy + Rf * 0.7} ${fx - 10},${H - 40} ${fx - 4},${H + 4}" stroke="${C.oliveDeep}" stroke-width="5" fill="none" stroke-linecap="round"/>`;
     s += `<path d="M${fx - 2},${H - 30} q-26,-10 -44,-34 M${fx - 20},${H - 42} q-6,-14 -2,-26 M${fx},${H - 18} q24,-6 40,-28 M${fx + 22},${H - 26} q8,-12 6,-24" stroke="${C.olive}" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+    // 花の かげ と、花びらの かげ・つや（根もとは こく、先は 明るく）
+    s += `<defs><radialGradient id="hn-shade" gradientUnits="userSpaceOnUse" cx="0" cy="0" r="${Rf.toFixed(1)}">`
+      + `<stop offset="${(r0 / Rf).toFixed(3)}" stop-color="${flower().edge}" stop-opacity="0.45"/><stop offset="0.5" stop-color="${flower().edge}" stop-opacity="0"/>`
+      + `<stop offset="0.82" stop-color="#ffffff" stop-opacity="0"/><stop offset="1" stop-color="#ffffff" stop-opacity="0.5"/></radialGradient></defs>`;
     // 花びら
     for (let i = 0; i < n; i++) {
       const a = i * step;
@@ -102,21 +110,26 @@ export function createHana({ view, stage, result, play, getChoices, getWeights, 
       const fill = i === n - 1 && n % FL.petals.length === 1 ? FL.petals[1] : FL.petals[i % FL.petals.length];
       s += `<g class="petal" data-i="${i}" transform="translate(${fx} ${fy}) rotate(${a.toFixed(2)})">`
         + `<path class="petal-bg" d="${petalD}" fill="${fill}" stroke="${FL.edge}" stroke-width="2" stroke-linejoin="round"/>`
-        + `<path d="M0,${-r0 - 4} L0,${-Rf * 0.36}" stroke="${FL.edge}" stroke-width="1.6" stroke-linecap="round" opacity="0.55"/>`
+        + `<path d="${petalD}" fill="url(#hn-shade)" pointer-events="none"/>`
+        + `<path d="M0,${-r0 - 4} L0,${-Rf * 0.36} M${(-wMax * 0.12).toFixed(1)},${-r0 - 6} Q${(-wMax * 0.2).toFixed(1)},${(-Rf * 0.3).toFixed(1)} ${(-wMax * 0.24).toFixed(1)},${(-Rf * 0.4).toFixed(1)} M${(wMax * 0.12).toFixed(1)},${-r0 - 6} Q${(wMax * 0.2).toFixed(1)},${(-Rf * 0.3).toFixed(1)} ${(wMax * 0.24).toFixed(1)},${(-Rf * 0.4).toFixed(1)}" stroke="${FL.edge}" stroke-width="1.4" stroke-linecap="round" fill="none" opacity="0.5"/>`
         + `<text class="cell-label" x="0" y="${-rText}" font-size="${sizes[i].toFixed(1)}" fill="${C.ink}" text-anchor="middle" dominant-baseline="central" transform="rotate(${flip ? 90 : -90} 0 ${-rText})">${escapeXml(choices[i])}</text>`
         + `</g>`;
     }
     // 花の真ん中
+    s += `<circle cx="${fx}" cy="${fy + 3}" r="${r0}" fill="${flower().centerDeep}"/>`;
     s += `<circle cx="${fx}" cy="${fy}" r="${r0}" fill="${flower().center}" stroke="${flower().centerDeep}" stroke-width="3"/>`;
     for (let k = 0; k < 14; k++) {
       const a = k * 2.4;
       const rr = r0 * 0.62 * Math.sqrt((k + 0.5) / 14);
       s += `<circle cx="${fx + Math.cos(a) * rr}" cy="${fy + Math.sin(a) * rr}" r="${Math.max(1.6, r0 * 0.07)}" fill="${C.kakiDeep}" opacity="0.75"/>`;
     }
+    s += `<ellipse cx="${(fx - r0 * 0.35).toFixed(1)}" cy="${(fy - r0 * 0.4).toFixed(1)}" rx="${(r0 * 0.32).toFixed(1)}" ry="${(r0 * 0.18).toFixed(1)}" fill="#ffffff" opacity="0.45" transform="rotate(-30 ${(fx - r0 * 0.35).toFixed(1)} ${(fy - r0 * 0.4).toFixed(1)})"/>`;
     // 花の まわりを とぶ はち（v12）。あたたかい季節の昼だけ（v13）
     s += `<g${warmDay(look) ? '' : ' visibility="hidden"'} transform="translate(${(fx - Rf * 0.85).toFixed(1)} ${(fy - Rf * 0.85).toFixed(1)})"><g class="hana-bee"><ellipse rx="9" ry="7" fill="#f6d55e" stroke="#8c6e5a" stroke-width="1.6"/><path d="M-3,-6.5 V6.5 M2,-6.8 V6.8" stroke="#8c6e5a" stroke-width="2"/><ellipse cx="-2" cy="-9" rx="5" ry="3.4" fill="#ffffff" opacity="0.85" stroke="#cfe0ea" stroke-width="1"/><ellipse cx="4" cy="-9" rx="5" ry="3.4" fill="#ffffff" opacity="0.85" stroke="#cfe0ea" stroke-width="1"/><circle cx="6" cy="-1" r="1.3" fill="#4a3a33"/></g></g>`;
     // 右下で見ている猫
     s += `<g transform="translate(${catAt.x} ${catAt.y}) scale(${catAt.s})"><g class="hana-cat">${catSitting(cat)}</g></g>`;
+    // てんとうむし（動きの ちがい）
+    s += `<g class="hn-bug" visibility="hidden"><ellipse rx="7.5" ry="6.5" fill="#e8564a" stroke="#4a3a33" stroke-width="1.4"/><path d="M0,-6.5 V6.5" stroke="#4a3a33" stroke-width="1.2"/><circle cx="-3.2" cy="-1" r="1.5" fill="#4a3a33"/><circle cx="3.4" cy="1.6" r="1.5" fill="#4a3a33"/><circle cx="-2.6" cy="3.4" r="1.1" fill="#4a3a33"/><circle cx="0" cy="-8.4" r="3" fill="#4a3a33"/></g>`;
     // 猫の手
     s += `<g class="paw"><g class="paw-in">${catPaw(cat, pawSize)}</g></g>`;
     svg.innerHTML = s;
@@ -126,6 +139,7 @@ export function createHana({ view, stage, result, play, getChoices, getWeights, 
       petals: Array.from(svg.querySelectorAll('.petal')),
       paw: svg.querySelector('.paw'),
       catG: svg.querySelector('.hana-cat'),
+      bug: svg.querySelector('.hn-bug'),
       front: svg.querySelector('.hana-cat').parentNode,
     };
     svg.querySelector('.hana-bee').animate([{ transform: 'translate(0px,0px)' }, { transform: 'translate(26px,-10px)' }, { transform: 'translate(40px,12px)' }, { transform: 'translate(12px,20px)' }, { transform: 'translate(0px,0px)' }], { duration: 5000, iterations: Infinity, easing: 'ease-in-out' });
@@ -187,9 +201,40 @@ export function createHana({ view, stage, result, play, getChoices, getWeights, 
     }).then(() => { g.setAttribute('visibility', 'hidden'); });
   }
 
-  async function pluck(i, dur, k) {
+  async function pluck(i, dur, k, odd = null) {
     const p = tipOf(i);
+    if (odd === 'tento') {
+      // てんとうむしが いる。とんでいくまで まつ
+      const b = tipOf(i, 0.55);
+      refs.bug.setAttribute('visibility', 'visible');
+      refs.bug.setAttribute('transform', `translate(${f(b.x)} ${f(b.y)})`);
+      showHint(result, 'あ、てんとうむし');
+      await moveTo({ x: p.x + 18, y: p.y + 24 }, 420);
+      await wait(380);
+      audio.pop();
+      showHint(result, 'ばいばーい');
+      await frames(600, (t) => refs.bug.setAttribute('transform', `translate(${f(b.x + t * 80)} ${f(b.y - t * 90 - Math.sin(t * Math.PI * 4) * 6)}) rotate(${f(t * 40)})`));
+      refs.bug.setAttribute('visibility', 'hidden');
+      showHint(result, 'どれが のこるかな…');
+    }
     await moveTo(p, dur * 0.55);
+    if (odd === 'tug') {
+      // ぬけない：ぐいっ ぐいっ（花びらが 外へ のびる）
+      const g = refs.petals[i];
+      const base = g.getAttribute('transform');
+      showHint(result, 'ぬけない…！');
+      for (let q = 0; q < 2; q++) {
+        audio.tap();
+        await frames(300, (t) => {
+          const e = Math.sin(Math.PI * t);
+          g.setAttribute('transform', `${base} scale(1 ${f(1 + 0.07 * e)})`);
+          const a = (i * geo.step * Math.PI) / 180;
+          placePaw(p.x + Math.sin(a) * geo.Rf * 0.07 * e, p.y - Math.cos(a) * geo.Rf * 0.07 * e, 1);
+        });
+      }
+      g.setAttribute('transform', base);
+      showHint(result, 'えいっ！');
+    }
     // つまむ
     await frames(dur * 0.14, (t) => placePaw(p.x, p.y, 1 - 0.12 * Math.sin(Math.PI * t)));
     audio.pluck(k);
@@ -222,12 +267,13 @@ export function createHana({ view, stage, result, play, getChoices, getWeights, 
     const m = order.length;
     showHint(result, 'どれが のこるかな…');
     // のこり2枚になる前までは、順に抜く
-    // ときどき出る別の動き（v12）：とちゅうの1まいが、風で ふわっと とんでいく
-    delete stage.dataset.variant;
-    const windAt = m >= 3 && Math.random() < 0.3 ? 1 : -1;
+    const vr = Math.random();
+    const variant = m < 2 ? 'plain' : vr < 0.25 && m >= 3 ? 'wind' : vr < 0.5 ? 'tento' : vr < 0.75 ? 'tug' : 'plain';
+    stage.dataset.variant = variant;
+    const oddAt = m >= 3 ? 1 : 0; // ちがいの出る 何まいめ（のこり2枚の まよいより前）
+    const windAt = variant === 'wind' ? 1 : -1;
     for (let k = 0; k < m - 1; k++) {
       if (k === windAt) {
-        stage.dataset.variant = 'wind';
         showHint(result, 'あっ、かぜで とんだ！');
         audio.stretch(0.5);
         fall(order[k]);
@@ -235,7 +281,7 @@ export function createHana({ view, stage, result, play, getChoices, getWeights, 
         showHint(result, 'どれが のこるかな…');
         continue;
       }
-      await pluck(order[k], pluckTime(k, m), k);
+      await pluck(order[k], pluckTime(k, m), k, k === oddAt ? variant : null);
     }
     // のこり2枚：2枚の間で まよってから、結果でない方を抜く
     const last = order[m - 1];
@@ -247,7 +293,7 @@ export function createHana({ view, stage, result, play, getChoices, getWeights, 
       audio.hover(h);
       await frames(380, (t) => placePaw(p.x, p.y + Math.sin(t * Math.PI * 2) * 2.5, 1));
     }
-    await pluck(last, 900, m - 1);
+    await pluck(last, 900, m - 1, m < 2 || (m === 2 && oddAt === 1) ? variant : null);
     await wait(380);
     // さいごの1枚
     const landed = refs.petals.findIndex((g) => !g.classList.contains('is-gone'));

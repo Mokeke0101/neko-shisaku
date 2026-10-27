@@ -8,6 +8,9 @@
 // 3. 色が 札に とどくと、札が ぴょこんと上がる。
 // 結果は先に乱数で決め（RS01-S14）、ひっぱる ひもを、決めた札の ひもにする。
 // ひもの からまり方は 毎回 かわる（どの ひもが どの札か、たばの所では分からない）。
+// v17 の後（テーマパーク）：キャンディの しましまの 横木から つり下げた パステルの札（common.js の plate）。看板も パステル。
+// 動きの ちがい（3B：4つ）：ふつう・ひっかかり・からまる（前足に ひもが からまって ぶんぶん ふりほどく）・
+// くるり（上がった札が くるっと 1回 まわる）。
 import { C } from '../art.js';
 import { catFace, catPaw } from '../cats.js';
 import { audio } from '../audio.js';
@@ -18,7 +21,7 @@ export function tugPlan(n, decided, rand = Math.random) {
   return wander(n, n <= 2 ? 3 : 3 + Math.floor(rand() * 2), decided, rand);
 }
 export const T = { tug: 780, pull: 1900, lift: 560 };
-// ときどき出る別の動き（v12）：ひっぱる とちゅうで ひもが ひっかかり、ぐいぐい ひいて ほどく
+// 動きの ちがい ひっかかり：ひっぱる とちゅうで ひもが ひっかかり、ぐいぐい ひいて ほどく
 export const SNAG = 560;
 export const himoDuration = (tugs, snag = false) => (tugs - 1) * (T.tug + 120) + T.pull + T.lift + 300 + (snag ? SNAG : 0);
 
@@ -43,7 +46,10 @@ export function createHimo(deps) {
       const ends = cells.map((_, i) => ({ x: knot.x - spread / 2 + (slots.indexOf(i) + 0.5) * (spread / n), y: knot.y }));
       Object.assign(g, { cells, plateH, knot, ends, footH });
       let s = cells.map((c) => `<path d="M${f(c.cx)},6 V${f(c.py)}" stroke="#c99a62" stroke-width="1.6"/>`).join('')
-        + `<path d="M6,6 H${W - 6}" stroke="#c99a62" stroke-width="5" stroke-linecap="round"/>`;
+        + `<rect x="5" y="4" width="${W - 10}" height="9" rx="3" fill="#5a3a22" opacity="0.35"/>`
+        + `<rect x="4" y="1" width="${W - 8}" height="9" rx="4.5" fill="#fff6ea" stroke="#d98a9c" stroke-width="1.6"/>`
+        + Array.from({ length: Math.ceil((W - 8) / 12) }, (_, k) => `<path d="M${8 + k * 12},9 l6,-7" stroke="#f29bb5" stroke-width="3"/>`).join('')
+        + `<rect x="4" y="1" width="${W - 8}" height="9" rx="4.5" fill="none" stroke="#d98a9c" stroke-width="1.6"/>`;
       // ひも（札の後ろに描く）
       s += '<g class="strings">';
       cells.forEach((c, i) => {
@@ -63,7 +69,7 @@ export function createHimo(deps) {
           + [0, 1, 2, 3, 4].map((j) => `<circle cx="${f(-jr * 0.5 + (j % 3) * jr * 0.5)}" cy="${f(jr * 0.75 - Math.floor(j / 3) * jr * 0.55)}" r="${f(jr * 0.24)}" fill="${['#fde3a6', '#f7b4a6', '#cfe3c0', '#cfe0ea', '#ece2f4'][(j + k * 2) % 5]}"/>`).join('') + '</g>';
       });
       const signW = Math.min(110, W * 0.28);
-      s += `<g transform="translate(${f(Math.max(signW / 2 + 6, knot.x - W * 0.3))} ${f(H - jr * 2.6 - 22)})"><rect x="${f(-signW / 2)}" y="-13" width="${f(signW)}" height="26" rx="13" fill="#fffaf0" stroke="#e3a074" stroke-width="2.4"/><text y="1" font-size="15" font-weight="700" fill="#c8615c" text-anchor="middle" dominant-baseline="central">ひいてね！</text></g>`;
+      s += `<g transform="translate(${f(Math.max(signW / 2 + 6, knot.x - W * 0.3))} ${f(H - jr * 2.6 - 22)})"><rect x="${f(-signW / 2 + 1)}" y="-11" width="${f(signW)}" height="26" rx="13" fill="#e3a074" opacity="0.4"/><rect x="${f(-signW / 2)}" y="-13" width="${f(signW)}" height="26" rx="13" fill="#fff6ea" stroke="#e3a074" stroke-width="2.4"/><text y="1" font-size="15" font-weight="700" fill="#c8615c" text-anchor="middle" dominant-baseline="central">ひいてね！</text></g>`;
       // たばと猫
       s += `<ellipse cx="${f(knot.x)}" cy="${f(knot.y + 4)}" rx="${f(spread / 2 + 8)}" ry="7" fill="#f6e3c3" stroke="#c99a62" stroke-width="2"/>`;
       s += `<g transform="translate(${f(knot.x)} ${f(faceY)}) scale(${f(fs)})"><g class="hm-face">${catFace(g.cat, { look: { x: 0, y: -1 } })}</g></g>`
@@ -79,6 +85,9 @@ export function createHimo(deps) {
     },
     async perform(g, decided, say) {
       const plan = tugPlan(g.n, decided);
+      const vr = Math.random();
+      const variant = vr < 0.25 ? 'snag' : vr < 0.5 ? 'karamaru' : vr < 0.75 ? 'kururi' : 'plain';
+      g.stage.dataset.variant = variant;
       const pawAt = (x, y) => R.paw.setAttribute('transform', `translate(${f(x)} ${f(y)})`);
       // 1. つまんで 少し ひく
       for (let k = 0; k < plan.length - 1; k++) {
@@ -96,6 +105,21 @@ export function createHimo(deps) {
         R.hangs[i].removeAttribute('transform');
         await wait(120);
       }
+      if (variant === 'karamaru') {
+        // からまる：前足に ひもが からまって、ぶんぶん ふりほどく
+        say('あっ、からまった～');
+        R.face.innerHTML = catFace(g.cat, { mood: 'strain', look: { x: 0, y: -1 } });
+        audio.heart();
+        await frames(640, (t) => {
+          const w = Math.sin(t * Math.PI * 8) * 6;
+          pawAt(g.knot.x + w, g.knot.y + 22);
+          R.hangs.forEach((h, j) => h.setAttribute('transform', `translate(0 ${f(Math.abs(Math.sin(t * Math.PI * 8 + j)) * 3)})`));
+        });
+        R.hangs.forEach((h) => h.removeAttribute('transform'));
+        R.face.innerHTML = catFace(g.cat, { look: { x: 0, y: -1 } });
+        say('ほどけた…');
+        await wait(160);
+      }
       // 2. ぐーっと ひっぱる：色が ひもに そって のぼる
       say('えいっ、ぐーっ…');
       const pulled = R.strs[decided];
@@ -108,16 +132,14 @@ export function createHimo(deps) {
       R.glow.appendChild(line);
       R.face.innerHTML = catFace(g.cat, { mood: 'strain', look: { x: 0, y: -1 } });
       audio.stretch(T.pull / 1000);
-      // ときどき：とちゅうで ひっかかる
-      delete g.stage.dataset.variant;
-      const snag = Math.random() < 0.3;
+      // ひっかかり：とちゅうで ひっかかる
+      const snag = variant === 'snag';
       const pullTo = async (a, b, dur) => frames(dur, (t) => {
         const u = a + (b - a) * t;
         line.setAttribute('stroke-dashoffset', f(-len * (1 - ease.inOutSine(u))));
         pawAt(e.x, e.y + 14 + 18 * Math.min(1, u * 3));
       });
       if (snag) {
-        g.stage.dataset.variant = 'snag';
         await pullTo(0, 0.5, T.pull * 0.5);
         say('あれ？ ひっかかった…');
         audio.heart();
@@ -131,7 +153,10 @@ export function createHimo(deps) {
       // 3. 色が とどいた札が ぴょこんと上がる
       const got = Number(line.dataset.i); // ひっぱった ひもの先の札
       audio.pop();
-      await frames(T.lift, (t) => R.hangs[got].setAttribute('transform', `translate(0 ${f(-Math.sin(Math.PI * Math.min(1, t * 1.4)) * 10)})`));
+      const cc = g.cells[got];
+      const spin = variant === 'kururi';
+      if (spin) say('くるり！');
+      await frames(spin ? T.lift + 200 : T.lift, (t) => R.hangs[got].setAttribute('transform', `translate(0 ${f(-Math.sin(Math.PI * Math.min(1, t * 1.4)) * (spin ? 16 : 10))})${spin ? ` rotate(${f(360 * ease.inOutSine(t))} ${f(cc.cx)} ${f(cc.py + g.plateH / 2)})` : ''}`));
       R.hangs[got].removeAttribute('transform');
       R.face.innerHTML = catFace(g.cat, { mood: 'happy', look: { x: 0, y: -1 } });
       return got;

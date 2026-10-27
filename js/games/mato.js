@@ -7,12 +7,17 @@
 // 3. 猫が手を引いて、パンチ。玉が弧をえがいて飛び、的に当たる。
 // 結果は先に乱数で決め（RS01-S14）、ねらいの移り方を、決めた的で終わるように並べる。
 // 的はどれも同じ大きさ（出やすさは的の大きさに表れない：RS01-S21）。
+// v17 の後（テーマパーク）：縁日の まとあて屋台（ラベンダーと ピンクの かべ・しましまの やね・パステルの 棚板）。
+// 的は 選択肢ごとの パステル色の 板（あつみ・つや）に 的の まるを 書いた。
+// 動きの ちがい（3B：4つ）：ふつう・おしい（1ぱつ目は はずれる）・ずれる（きまった ねらいが すーっと ずれて、じっと 見て もどす）・
+// ぐるぐる（手を ぐるぐる まわして から パンチ）。
 import { C } from '../art.js';
 import { catSitting, catPaw, pawPrint } from '../cats.js';
 import { audio } from '../audio.js';
 import { pickWeighted } from '../odds.js';
 import { celebrate, clearCelebration, ease, frames, wait, levelOf } from '../fx.js';
 import { showHint, showResult, setBusy, centerOf, charCount, svgEl, escapeXml } from '../ui.js';
+import { TINTS, pastelTag } from './common.js';
 
 const RIM = ['#e8664a', '#f29a4a', '#86a256', '#6f9fcb', '#a985c9', '#d4b043'];
 
@@ -93,11 +98,15 @@ export function createMato({ view, stage, result, play, getChoices, getWeights, 
     const svg = svgEl('svg', { viewBox: `0 0 ${W} ${H}` });
     let s = '';
     // 屋台の棚
-    s += `<rect x="${boardX + 3}" y="${boardY + 6}" width="${boardW}" height="${boardH}" rx="20" fill="#d9b07a" opacity="0.35"/>`;
-    s += `<rect x="${boardX}" y="${boardY}" width="${boardW}" height="${boardH}" rx="20" fill="#fff3e2" stroke="${C.woodDeep}" stroke-width="3"/>`;
+    s += `<rect x="${boardX + 3}" y="${boardY + 6}" width="${boardW}" height="${boardH}" rx="14" fill="#c97a6e" opacity="0.25"/>`;
+    s += `<defs><linearGradient id="mt-back" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f3e6f7"/><stop offset="1" stop-color="#fde9ee"/></linearGradient></defs>`;
+    s += `<rect x="${boardX}" y="${boardY}" width="${boardW}" height="${boardH}" rx="14" fill="url(#mt-back)" stroke="#e391ad" stroke-width="3"/>`;
+    for (let yy = boardY + 14; yy < boardY + boardH - 6; yy += 16) for (let xx = boardX + 12 + (Math.round(yy / 16) % 2) * 8; xx < boardX + boardW - 8; xx += 16) s += `<circle cx="${xx}" cy="${yy}" r="1.4" fill="#f2bccb" opacity="0.6"/>`;
     for (let r = 0; r < rows; r++) {
       const y = boardY + pad + 4 + (r + 1) * rowH;
-      s += `<rect x="${boardX + 8}" y="${y}" width="${boardW - 16}" height="7" rx="3" fill="${C.wood}" stroke="${C.woodDeep}" stroke-width="1.6"/>`;
+      s += `<rect x="${boardX + 6}" y="${y + 4}" width="${boardW - 12}" height="9" rx="2" fill="#c97a6e" opacity="0.2"/>`
+        + `<rect x="${boardX + 6}" y="${y - 2}" width="${boardW - 12}" height="4" fill="#ffffff" opacity="0.8"/>`
+        + `<rect x="${boardX + 6}" y="${y + 2}" width="${boardW - 12}" height="7" fill="#f7b4a6" stroke="#c97a6e" stroke-width="1.2"/>`;
     }
     // 屋台の しましまの やね（v12。1だん目の的の上に すきまが ある時）
     const awn = Math.min(16, rowH - ph - 8);
@@ -122,10 +131,10 @@ export function createMato({ view, stage, result, play, getChoices, getWeights, 
       const cx = p.x + p.w / 2;
       s += `<g class="cell" data-i="${i}"><g class="plate" data-cx="${cx}" data-cy="${p.y + p.h}">`
         + `<path d="M${p.x + p.w * 0.3},${p.y + p.h} l-4,4 M${p.x + p.w * 0.7},${p.y + p.h} l4,4" stroke="${C.woodDeep}" stroke-width="3" stroke-linecap="round"/>`
-        + `<rect class="cell-bg" x="${p.x}" y="${p.y}" width="${p.w}" height="${p.h}" rx="${Math.min(12, p.h / 2.4)}" fill="#ffffff" stroke="${rim}" stroke-width="2.6"/>`
-        + `<circle cx="${p.bx}" cy="${p.by}" r="${p.rb}" fill="#ffffff" stroke="${rim}" stroke-width="2"/>`
-        + `<circle cx="${p.bx}" cy="${p.by}" r="${p.rb * 0.62}" fill="${rim}" opacity="0.85"/>`
-        + `<circle cx="${p.bx}" cy="${p.by}" r="${p.rb * 0.26}" fill="#ffffff"/>`
+        + pastelTag(i, p.x, p.y, p.w, p.h)
+        + `<circle cx="${p.bx}" cy="${p.by}" r="${p.rb}" fill="#fffaf0" stroke="${rim}" stroke-width="2"/>`
+        + `<circle cx="${p.bx}" cy="${p.by}" r="${p.rb * 0.62}" fill="${rim}" opacity="0.9"/>`
+        + `<circle cx="${p.bx}" cy="${p.by}" r="${p.rb * 0.26}" fill="#fffaf0"/>`
         + `<g class="star" transform="translate(${p.bx} ${p.by}) scale(0)"><path d="${starPath(p.rb * 1.1)}" fill="${C.icho}" stroke="${C.ichoDeep}" stroke-width="1.6" stroke-linejoin="round"/></g>`
         + `<text class="cell-label" x="${labelX}" y="${p.by}" font-size="${size.toFixed(1)}" fill="${C.ink}" dominant-baseline="central">${escapeXml(choices[i])}</text>`
         + `</g></g>`;
@@ -241,11 +250,35 @@ export function createMato({ view, stage, result, play, getChoices, getWeights, 
     const target = plates[path[path.length - 1]];
     await frames(260, (t) => placeAim(target.bx, target.by, 1 - 0.25 * ease.outCubic(t)));
     await wait(200);
-
-    // ときどき出る別の動き（v12）：1ぱつ目は はずれて「おしい！」、2はつ目で 当てる
-    delete stage.dataset.variant;
-    if (Math.random() < 0.3) {
-      stage.dataset.variant = 'miss';
+    const vr = Math.random();
+    const variant = vr < 0.25 ? 'miss' : vr < 0.5 && n > 1 ? 'zure' : vr < 0.75 ? 'guru' : 'plain';
+    stage.dataset.variant = variant;
+    if (variant === 'zure') {
+      // ずれる：ねらいが すーっと ずれて、猫が じっと 見て もどす
+      const o = plates[(path[path.length - 1] + 1) % n];
+      const mid = { x: target.bx + (o.bx - target.bx) * 0.55, y: target.by + (o.by - target.by) * 0.55 };
+      showHint(result, 'あれ？ ずれてく…');
+      audio.slide(0.4);
+      await frames(520, (t) => placeAim(target.bx + (mid.x - target.bx) * ease.inOutSine(t), target.by + (mid.y - target.by) * ease.inOutSine(t), 0.75));
+      setCat('strain', lookAt(target));
+      showHint(result, 'じーっ…');
+      await wait(260);
+      audio.aim(1);
+      await frames(300, (t) => placeAim(mid.x + (target.bx - mid.x) * ease.outCubic(t), mid.y + (target.by - mid.y) * ease.outCubic(t), 0.75));
+      await wait(120);
+    }
+    if (variant === 'guru') {
+      // ぐるぐる：手を ぐるぐる まわして いきおいを つける
+      showHint(result, 'ぐるぐる…');
+      setCat('strain', lookAt(target));
+      await frames(760, (t) => {
+        const a = t * Math.PI * 4;
+        placePunch(Math.cos(a) * 16 * catS * 2 - 10 * catS, Math.sin(a) * 16 * catS * 2, (a * 180) / Math.PI / 4);
+        if (Math.floor(t * 4) !== Math.floor((t - 0.02) * 4)) audio.tap();
+      });
+    }
+    // おしい：1ぱつ目は はずれて、2はつ目で 当てる
+    if (variant === 'miss') {
       showHint(result, 'えいっ！');
       setCat('strain', lookAt(target));
       await frames(300, (t) => placePunch(-14 * ease.outCubic(t) * catS * 3, 10 * ease.outCubic(t) * catS * 3, -20 * t));

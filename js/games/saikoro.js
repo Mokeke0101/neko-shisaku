@@ -9,12 +9,16 @@
 // 3. 「もういちど」が出たら、もう1回。
 // 結果は先に乱数で決め（RS01-S14）、さいごに上を向く目を、決めた選択肢の目にする。
 // 「もういちど」を はさむかは、あまった目の数の割合（6 − 選択肢の数）/ 6 で決める（多くて1回）。
+// v17 の後（テーマパーク）：目の一覧は ピンクの はしらの たなに ならぶ、クレーンの 値札と おなじ パステルの札（選択肢ごとに 色。あまりの 目は うすい ラベンダー）。
+// 動きの ちがい（3B：4つ）：ふつう・ぽーん（高く はねる）・ちゅっ（ねずみの おもちゃに ぶつかりそうになって ねずみが ぴょん）・
+// こま（さいごに 角で くるくる まわってから 止まる）。
 import { C } from '../art.js';
 import { catSitting, catPaw } from '../cats.js';
 import { audio } from '../audio.js';
 import { pickWeighted } from '../odds.js';
 import { celebrate, clearCelebration, ease, frames, wait, levelOf } from '../fx.js';
 import { showHint, showResult, setBusy, centerOf, charCount, svgEl, escapeXml } from '../ui.js';
+import { TINTS } from './common.js';
 
 export const MAX = 6;
 
@@ -94,12 +98,13 @@ export function createSaikoro({ view, stage, result, play, getChoices, getWeight
     const catAt = { x: W - 20 - 80 * catS, y: floorY - 78 * catS };
     const dieS = Math.max(46, Math.min(100, (floorY - playTop) * 0.42));
     const dieRest = { x: Math.max(dieS, (W - 160 * catS) * 0.45), y: floorY - dieH(dieS) / 2 - 2 };
-    geo = { n, W, H, rowH, listX, listW, listY, floorY, catS, catAt, dieS, dieRest };
+    geo = { n, W, H, rowH, listX, listW, listY, floorY, catS, catAt, dieS, dieRest, mouseX: W * 0.12 + 14 };
 
     const svg = svgEl('svg', { viewBox: `0 0 ${W} ${H}` });
     let s = '';
-    // 目の一覧の板
-    s += `<rect x="${listX - 4}" y="${listY - 2}" width="${listW + 8}" height="${listH + 4}" rx="18" fill="${C.paper}" stroke="${C.woodDeep}" stroke-width="3"/>`;
+    // 目の一覧：木の たなに 6まいの 板（あつみ・木目・くぎ）。選択肢は 板に じかに書く
+    s += `<rect x="${listX - 2}" y="${listY}" width="8" height="${listH}" rx="4" fill="#f7b4a6" stroke="#c97a6e" stroke-width="1.6"/>`
+      + `<rect x="${listX + listW - 6}" y="${listY}" width="8" height="${listH}" rx="4" fill="#f7b4a6" stroke="#c97a6e" stroke-width="1.6"/>`;
     let minLabel = Infinity;
     for (let f = 1; f <= MAX; f++) {
       const y = listY + rowH * (f - 1);
@@ -110,19 +115,28 @@ export function createSaikoro({ view, stage, result, play, getChoices, getWeight
       const tw = listX + listW - 10 - tx;
       const size = Math.max(12, Math.min(24, rowH * 0.5, (tw - 20) / Math.max(charCount(label), 1)));
       if (isChoice) minLabel = Math.min(minLabel, size);
-      if (f > 1) s += `<path d="M${listX + 10},${y.toFixed(1)} H${listX + listW - 10}" stroke="${C.line}" stroke-width="1.5" stroke-dasharray="3 5"/>`;
+      const ph = rowH * 0.8;
+      const py = cy - ph / 2 - 1.5;
+      const px = listX + 4;
+      const pw = listW - 8;
+      const [col, edge] = isChoice ? TINTS[(f - 1) % TINTS.length] : ['#f3eef8', '#cdbfe0'];
       s += `<g class="${isChoice ? 'cell' : 'spare'}" data-i="${f - 1}">`
-        + `<rect class="${isChoice ? 'cell-bg' : 'spare-bg'}" x="${tx - 6}" y="${(cy - rowH * 0.42).toFixed(1)}" width="${(tw + 2).toFixed(1)}" height="${(rowH * 0.84).toFixed(1)}" rx="10" fill="${isChoice ? '#ffffff' : 'none'}" stroke="${isChoice ? '#e6cfae' : 'none'}" stroke-width="1.6"/>`
-        + `<g transform="translate(${(listX + 16 + iconD / 2).toFixed(1)} ${cy.toFixed(1)})">${dieFace(f, iconD)}</g>`
+        + `<rect x="${px + 1}" y="${(py + 2).toFixed(1)}" width="${pw}" height="${ph.toFixed(1)}" rx="9" fill="${edge}" opacity="0.45"/>`
+        + `<rect class="${isChoice ? 'cell-bg' : 'spare-bg'}" x="${px}" y="${py.toFixed(1)}" width="${pw}" height="${ph.toFixed(1)}" rx="9" fill="${col}" stroke="${edge}" stroke-width="2"/>`
+        + `<rect x="${px + 3}" y="${(py + 2.5).toFixed(1)}" width="${pw - 6}" height="${(ph * 0.28).toFixed(1)}" rx="${(ph * 0.14).toFixed(1)}" fill="#ffffff" opacity="0.45"/>`
+        + `<g transform="translate(${(listX + 16 + iconD / 2).toFixed(1)} ${cy.toFixed(1)})" opacity="${isChoice ? 1 : 0.6}">${dieFace(f, iconD)}</g>`
         + `<text class="${isChoice ? 'cell-label' : 'spare-label'}" x="${tx + 6}" y="${cy.toFixed(1)}" font-size="${(isChoice ? size : Math.min(size, 17)).toFixed(1)}" fill="${isChoice ? C.ink : C.inkSoft}" dominant-baseline="central">${escapeXml(label)}</text>`
         + `</g>`;
     }
     // 床と、まるい ラグ（v12）。ラグの はしに、毛糸玉と ねずみの おもちゃ
     s += `<ellipse cx="${W / 2}" cy="${floorY + 2}" rx="${W * 0.48}" ry="9" fill="#e9c99a" opacity="0.55"/>`;
-    s += `<ellipse cx="${(W * 0.45).toFixed(1)}" cy="${(floorY - 4).toFixed(1)}" rx="${(W * 0.44).toFixed(1)}" ry="${Math.max(10, (floorY - playTop) * 0.12).toFixed(1)}" fill="#f8cbbb" opacity="0.55" stroke="#e3a074" stroke-width="2" stroke-dasharray="6 5"/>`;
+    const rugRy = Math.max(10, (floorY - playTop) * 0.12);
+    s += `<ellipse cx="${(W * 0.45).toFixed(1)}" cy="${(floorY - 1).toFixed(1)}" rx="${(W * 0.44).toFixed(1)}" ry="${rugRy.toFixed(1)}" fill="#e3a074" opacity="0.6"/>`
+      + `<ellipse cx="${(W * 0.45).toFixed(1)}" cy="${(floorY - 4).toFixed(1)}" rx="${(W * 0.44).toFixed(1)}" ry="${rugRy.toFixed(1)}" fill="#f8cbbb" stroke="#e3a074" stroke-width="2"/>`
+      + `<ellipse cx="${(W * 0.45).toFixed(1)}" cy="${(floorY - 4).toFixed(1)}" rx="${(W * 0.38).toFixed(1)}" ry="${(rugRy * 0.72).toFixed(1)}" fill="none" stroke="#fde3d6" stroke-width="2" stroke-dasharray="6 5"/>`;
     const ty = floorY - 10;
     s += `<g transform="translate(${(catAt.x - 92 * catS).toFixed(1)} ${ty.toFixed(1)})"><circle r="9" fill="#cfe0ea" stroke="#7aa7c4" stroke-width="2"/><path d="M-7,-2 Q0,-9 7,-2 M-7,3 Q0,-4 7,3" stroke="#7aa7c4" stroke-width="1.2" fill="none"/></g>`
-      + `<g transform="translate(${(W * 0.12 + 14).toFixed(1)} ${(floorY - 8).toFixed(1)})"><ellipse rx="10" ry="6" fill="#d6cfc0" stroke="#8f8499" stroke-width="1.6"/><circle cx="-7" cy="-5" r="3" fill="#d6cfc0" stroke="#8f8499" stroke-width="1.2"/><path d="M10,0 q8,2 10,-6" stroke="#8f8499" stroke-width="1.6" fill="none"/><circle cx="-8" cy="-1" r="1" fill="#4a3a33"/></g>`;
+      + `<g transform="translate(${(W * 0.12 + 14).toFixed(1)} ${(floorY - 8).toFixed(1)})"><g class="sk-mouse"><ellipse rx="10" ry="6" fill="#d6cfc0" stroke="#8f8499" stroke-width="1.6"/><circle cx="-7" cy="-5" r="3" fill="#d6cfc0" stroke="#8f8499" stroke-width="1.2"/><path d="M10,0 q8,2 10,-6" stroke="#8f8499" stroke-width="1.6" fill="none"/><circle cx="-8" cy="-1" r="1" fill="#4a3a33"/></g></g>`;
     // さいころの影と、さいころ
     s += `<ellipse class="die-shadow" cx="0" cy="0" rx="${dieS * 0.5}" ry="${dieS * 0.12}" fill="#a0703f" opacity="0.2"/>`;
     s += `<g class="die"><g class="die-in"></g></g>`;
@@ -138,6 +152,7 @@ export function createSaikoro({ view, stage, result, play, getChoices, getWeight
       dieShadow: svg.querySelector('.die-shadow'),
       catG: svg.querySelector('.sk-cat'),
       paw: svg.querySelector('.paw'),
+      mouse: svg.querySelector('.sk-mouse'),
       rows: Array.from({ length: MAX }, (_, f) => svg.querySelector(`[data-i="${f}"]`)),
     };
     drawDie(1 + Math.floor(Math.random() * Math.min(n, MAX)));
@@ -172,17 +187,17 @@ export function createSaikoro({ view, stage, result, play, getChoices, getWeight
       const bg = g.querySelector('.cell-bg, .spare-bg');
       const on = k === f - 1;
       if (g.classList.contains('cell')) {
-        bg.setAttribute('fill', on ? (strong ? '#fff1c4' : '#fff8e4') : '#ffffff');
-        bg.setAttribute('stroke', on && strong ? C.momiji : '#e6cfae');
-        bg.setAttribute('stroke-width', on && strong ? '3.5' : '1.6');
+        bg.setAttribute('fill', on ? (strong ? '#fff1c4' : '#fff6dc') : TINTS[k % TINTS.length][0]);
+        bg.setAttribute('stroke', on && strong ? C.momiji : TINTS[k % TINTS.length][1]);
+        bg.setAttribute('stroke-width', on && strong ? '3.5' : '2');
       } else {
-        bg.setAttribute('fill', on ? '#f3ece2' : 'none');
+        bg.setAttribute('fill', on ? '#fff3dc' : '#f3eef8');
       }
     });
   }
 
   // さいころを1回ころがして、face の目で止める
-  async function roll(face, last, long) {
+  async function roll(face, last, long, variant = 'plain') {
     const { dieRest, catS, catAt, dieS } = geo;
     // 前足で ころころ ゆらす
     const pawAt = { x: dieRest.x + dieS * 0.62, y: dieRest.y - dieS * 0.1 };
@@ -202,13 +217,15 @@ export function createSaikoro({ view, stage, result, play, getChoices, getWeight
     refs.paw.setAttribute('visibility', 'hidden');
     const from = { ...dieRest };
     const span = Math.min(dieRest.x - dieS * 0.7, 120);
-    const to = { x: dieRest.x - span * (0.5 + Math.random() * 0.5), y: dieRest.y };
+    const mouseRoll = variant === 'mouse' && last;
+    const to = { x: mouseRoll ? Math.min(dieRest.x - dieS * 0.4, geo.mouseX + dieS * 0.75 + 14) : dieRest.x - span * (0.5 + Math.random() * 0.5), y: dieRest.y };
+    let squeaked = false;
     let next = 0;
     let flip = -1;
     const tumble = long ? 1600 : 1150;
-    // ときどき出る別の動き（v12）：さいころが ぽーんと 高く はねる
-    const high = Math.random() < 0.3;
-    if (high) { stage.dataset.variant = 'high'; showHint(result, 'ぽーん！'); }
+    // ぽーん：さいころが 高く はねる（さいごの 1回だけ）
+    const high = variant === 'high' && last;
+    if (high) showHint(result, 'ぽーん！');
     await frames(tumble, (t) => {
       const e = ease.outCubic(t);
       const x = from.x + (to.x - from.x) * e;
@@ -225,7 +242,26 @@ export function createSaikoro({ view, stage, result, play, getChoices, getWeight
       // 目が かわる時に、ころんと 前へ たおれるように 少し つぶれて 傾く
       const q = flip < 0 ? 1 : Math.min(1, (now - flip) / 90);
       placeDie(x, from.y - bounce, -Math.sin(q * Math.PI) * 22 - Math.sin(t * Math.PI * 6) * 6 * (1 - t), 1, 1 - Math.sin(q * Math.PI) * 0.16);
+      // ちゅっ：ねずみの おもちゃの すぐ そばまで 来たら、ねずみが ぴょんと にげる
+      if (mouseRoll && !squeaked && t > 0.55) {
+        squeaked = true;
+        showHint(result, 'ちゅっ！');
+        audio.pop();
+        refs.mouse.animate([{ transform: 'translate(0,0)' }, { transform: 'translate(-10px,-26px) rotate(-20deg)', offset: 0.4 }, { transform: 'translate(-18px,0) rotate(0)', offset: 0.75 }, { transform: 'translate(-18px,0)' }], { duration: 700, easing: 'ease-out', fill: 'forwards' });
+      }
     });
+    // こま：角で くるくる まわる（目が かわる）
+    if (variant === 'spin' && last) {
+      showHint(result, 'くるくる…');
+      let fc = -1;
+      await frames(900, (t) => {
+        const turn = ease.outCubic(t) * 3;
+        const c = Math.max(0.15, Math.abs(Math.cos(turn * Math.PI))); // よこに ほそくなって まわって見える
+        placeDie(to.x, to.y - 6 * Math.sin(Math.PI * t), Math.sin(turn * Math.PI * 2) * 12 * (1 - t), c, 1 / c);
+        const k = Math.floor(turn * 2);
+        if (k !== fc) { fc = k; drawDie(1 + Math.floor(Math.random() * MAX)); audio.tick(); }
+      });
+    }
     // 角で ぐらぐら（どちらの目か分からない）
     setCat('normal', { x: -1, y: 0.6 });
     const wob = last ? 800 : 380;
@@ -267,7 +303,9 @@ export function createSaikoro({ view, stage, result, play, getChoices, getWeight
     const decided = pickWeighted(weights); // 結果を先に決める（出やすさ：RS01-S21）
     stage.dataset.decided = String(decided);
     delete stage.dataset.landed;
-    delete stage.dataset.variant;
+    const vr = Math.random();
+    const variant = vr < 0.25 ? 'high' : vr < 0.5 ? 'mouse' : vr < 0.75 ? 'spin' : 'plain';
+    stage.dataset.variant = variant;
     const t0 = performance.now();
     const faces = rollPlan(n, decided);
     stage.dataset.faces = faces.join(',');
@@ -286,7 +324,7 @@ export function createSaikoro({ view, stage, result, play, getChoices, getWeight
         await frames(420, (t) => placeDie(at.x + (back.x - at.x) * ease.inOutSine(t), back.y - Math.sin(Math.PI * t) * 30, 0));
         showHint(result, 'ころころ…');
       }
-      at = await roll(faces[k], last, faces.length === 1);
+      at = await roll(faces[k], last, faces.length === 1, variant);
     }
     const landed = Number(refs.die.dataset.face) - 1; // 上を向いた目
     stage.dataset.landed = String(landed);

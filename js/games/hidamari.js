@@ -9,6 +9,9 @@
 // 3. さいごは雲が ちらちらして、ひだまりが2つの ざぶとんの間で ゆれてから、1つに落ちつく。
 // 結果は先に乱数で決め（RS01-S14）、ひだまりの うつり方を、決めた ざぶとんで終わるように組む。
 // ざぶとんと札はどれも同じ大きさ（出やすさは表れない：RS01-S21）。
+// v17 の後（テーマパーク）：たたみで おおわず、季節の背景の 上に パステルの ざぶとん（あつみ）を ならべる。名前は クレーンの 値札と おなじ パステルの札。
+// 動きの ちがい（3B：4つ）：ふつう・ちょうちょ（季節の生き物が 来て 目を さます）・くもり（大きな雲で ひだまりが きえ、さむくて まるまる）・
+// ねぼう（さいごに ひだまりが うつっても 気づかず、「はっ！」と いそいで うつる）。
 import { C } from '../art.js';
 import { look as nowLook } from '../look.js';
 import { seasonFlier } from '../kits.js';
@@ -17,6 +20,7 @@ import { audio } from '../audio.js';
 import { pickWeighted } from '../odds.js';
 import { celebrate, clearCelebration, ease, frames, wait, levelOf } from '../fx.js';
 import { showHint, showResult, setBusy, centerOf, charCount, svgEl, escapeXml } from '../ui.js';
+import { pastelTag } from './common.js';
 
 // ひだまりが うつる ざぶとんの並び。はじめの ざぶとん（猫が ねている所）から始まり、決めた ざぶとん decided で終わる。
 // 続けて同じ ざぶとんにならない。うつる回数は 2〜3。rand() は 0 以上 1 未満
@@ -33,6 +37,7 @@ export function sunPlan(n, decided, rand = Math.random) {
 }
 
 // 動きの時間（ミリ秒）
+const f = (v) => (Math.round(v * 100) / 100).toFixed(2);
 export const T = { doze: 700, shift: 520, notice: 300, move: 620, curl: 300, rest: 380, flicker: 1100, settle: 500 };
 export function hidamariDuration(moves) {
   return T.doze + (moves - 1) * (T.shift + T.notice + T.move + T.curl + T.rest) + T.flicker + T.settle + T.notice + T.move + T.curl;
@@ -85,17 +90,20 @@ export function createHidamari({ view, stage, result, play, getChoices, getWeigh
       const y0 = c.cushY - cushH / 2;
       s += `<g class="cush" data-i="${i}">`
         + `<rect x="${(x0 + 2).toFixed(1)}" y="${(y0 + 4).toFixed(1)}" width="${cushW.toFixed(1)}" height="${cushH.toFixed(1)}" rx="${(cushH * 0.3).toFixed(1)}" fill="#a0703f" opacity="0.15"/>`
+        + `<rect x="${x0.toFixed(1)}" y="${(y0 + 5).toFixed(1)}" width="${cushW.toFixed(1)}" height="${cushH.toFixed(1)}" rx="${(cushH * 0.3).toFixed(1)}" fill="${deep}"/>`
         + `<rect x="${x0.toFixed(1)}" y="${y0.toFixed(1)}" width="${cushW.toFixed(1)}" height="${cushH.toFixed(1)}" rx="${(cushH * 0.3).toFixed(1)}" fill="${col}" stroke="${deep}" stroke-width="2.2"/>`
+        + `<ellipse cx="${(c.cx - cushW * 0.18).toFixed(1)}" cy="${(y0 + cushH * 0.26).toFixed(1)}" rx="${(cushW * 0.22).toFixed(1)}" ry="${(cushH * 0.1).toFixed(1)}" fill="#ffffff" opacity="0.35"/>`
         + `<rect x="${(x0 + 5).toFixed(1)}" y="${(y0 + 5).toFixed(1)}" width="${(cushW - 10).toFixed(1)}" height="${(cushH - 10).toFixed(1)}" rx="${(cushH * 0.24).toFixed(1)}" fill="none" stroke="#ffffff" stroke-width="1.6" stroke-dasharray="3 5" opacity="0.8"/>`
         + [[x0 + 3, y0 + 3], [x0 + cushW - 3, y0 + 3], [x0 + 3, y0 + cushH - 3], [x0 + cushW - 3, y0 + cushH - 3]].map(([x, y]) => `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3" fill="${deep}"/>`).join('')
         + `<g class="sun" opacity="0"><ellipse cx="${c.cx.toFixed(1)}" cy="${c.cushY.toFixed(1)}" rx="${(cushW * 0.9).toFixed(1)}" ry="${(cushH * 1.15).toFixed(1)}" fill="url(#hdSun)"/>`
         + [[-0.36, -0.3], [0.38, -0.22], [0.3, 0.32]].map(([dx, dy]) => `<path d="M${(c.cx + dx * cushW).toFixed(1)},${(c.cushY + dy * cushH - 5).toFixed(1)} l1.6,3.4 3.4,1.6 -3.4,1.6 -1.6,3.4 -1.6,-3.4 -3.4,-1.6 3.4,-1.6 Z" fill="#ffffff"/>`).join('') + '</g>'
         + `</g>`;
       s += `<g class="cell" data-i="${i}">`
-        + `<rect class="cell-bg" x="${(c.cx - colW / 2 + 2).toFixed(1)}" y="${c.plateY.toFixed(1)}" width="${(colW - 4).toFixed(1)}" height="${plateH.toFixed(1)}" rx="${Math.min(10, plateH / 2).toFixed(1)}" fill="${C.paper}" stroke="${C.woodDeep}" stroke-width="2"/>`
-        + `<text class="cell-label" x="${c.cx.toFixed(1)}" y="${(c.plateY + plateH / 2).toFixed(1)}" font-size="${size.toFixed(1)}" fill="${C.ink}" text-anchor="middle" dominant-baseline="central">${escapeXml(label)}</text>`
+        + pastelTag(i, c.cx - colW / 2 + 2, c.plateY, colW - 4, plateH)
+        + `<text class="cell-label" x="${c.cx.toFixed(1)}" y="${(c.plateY + plateH / 2 + 0.5).toFixed(1)}" font-size="${size.toFixed(1)}" fill="${C.ink}" text-anchor="middle" dominant-baseline="central">${escapeXml(label)}</text>`
         + `</g>`;
     });
+    s += `<rect class="hd-dim" x="0" y="0" width="${W}" height="${H}" fill="#7d8aa0" opacity="0" pointer-events="none"/>`;
     s += `<g class="hd-pos"><g class="hd-cat"></g></g>`;
     // 上を ながれる 雲と、ときどき来る 季節の生き物（v12。v13 から季節で かえる：kits.js の seasonFlier）
     s += `<g class="hd-cloud" transform="translate(-80 30)" opacity="0.9"><path d="M0,22 q-4,-14 10,-16 q4,-12 20,-8 q12,-8 24,2 q14,-2 14,12 q8,4 2,10 Z" fill="#ffffff" stroke="#e6eef4" stroke-width="2"/></g>`;
@@ -112,6 +120,7 @@ export function createHidamari({ view, stage, result, play, getChoices, getWeigh
       z: svg.querySelector('.hd-z'),
       cloud: svg.querySelector('.hd-cloud'),
       fly: svg.querySelector('.hd-fly'),
+      dim: svg.querySelector('.hd-dim'),
     };
     const start = Math.floor(Math.random() * n);
     curlOn(start);
@@ -156,7 +165,7 @@ export function createHidamari({ view, stage, result, play, getChoices, getWeigh
   }
 
   // 猫が のびをして、ざぶとん to へ うつり、まるくなる
-  async function moveCat(from, to) {
+  async function moveCat(from, to, dur = T.move) {
     const a = geo.cells[from];
     const b = geo.cells[to];
     const footA = { x: a.cx, y: a.cushY + geo.cushH * 0.25 };
@@ -166,7 +175,7 @@ export function createHidamari({ view, stage, result, play, getChoices, getWeigh
     await wait(T.notice);
     const h = 26 + Math.abs(footB.y - footA.y) * 0.3;
     audio.hop(to);
-    await frames(T.move, (t) => {
+    await frames(dur, (t) => {
       const e = ease.inOutSine(t);
       refs.pos.setAttribute('transform', `translate(${(footA.x + (footB.x - footA.x) * e).toFixed(1)} ${(footA.y + (footB.y - footA.y) * e - Math.sin(Math.PI * t) * h - 78 * geo.sitK).toFixed(1)}) scale(${geo.sitK.toFixed(3)})`);
     });
@@ -219,8 +228,22 @@ export function createHidamari({ view, stage, result, play, getChoices, getWeigh
     showHint(result, 'うとうと…');
     puffZ(seq[0]);
     await wait(T.doze);
-    delete stage.dataset.variant;
-    const flyAt = seq.length >= 3 && Math.random() < 0.3 ? 1 : -1;
+    const vr = Math.random();
+    const variant = vr < 0.25 && seq.length >= 3 ? 'fly' : vr < 0.5 ? 'kumo' : vr < 0.75 ? 'osoi' : 'plain';
+    stage.dataset.variant = variant;
+    const flyAt = variant === 'fly' ? 1 : -1;
+    if (variant === 'kumo') {
+      // くもり：大きな雲で ひだまりが きえて、さむくて まるまる。また 日が さす
+      showHint(result, 'くもって きた…');
+      const on = seq[0];
+      audio.slide(0.4);
+      await frames(240, (t) => { refs.dim.setAttribute('opacity', f(0.22 * t)); setSun(on, 1 - t); refs.cloud.setAttribute('transform', `translate(${f(-80 + (geo.W * 0.5) * t)} 30) scale(${f(1 + t)})`); });
+      showHint(result, 'さむい…');
+      const c = geo.cells[on];
+      await frames(220, (t) => refs.pos.setAttribute('transform', `translate(${f(c.cx)} ${f(c.cushY)}) scale(${f(geo.catK * (1 - 0.1 * Math.sin(Math.PI * t)))})`));
+      await frames(240, (t) => { refs.dim.setAttribute('opacity', f(0.22 * (1 - t))); setSun(on, t); refs.cloud.setAttribute('transform', `translate(${f(-80 + geo.W * 0.5 + (geo.W * 0.7) * t)} 30) scale(2)`); });
+      curlOn(on);
+    }
     // 1・2. ひだまりが うつり、猫が追いかける（さいごの1回の前まで）
     for (let k = 1; k < seq.length - 1; k++) {
       showHint(result, 'くもが ながれて…');
@@ -230,8 +253,7 @@ export function createHidamari({ view, stage, result, play, getChoices, getWeigh
       puffZ(seq[k]);
       await wait(T.rest);
       if (k === flyAt) {
-        // ときどき出る別の動き（v12）：ちょうちょ（季節の生き物）が来て、目を さます
-        stage.dataset.variant = 'fly';
+        // ちょうちょ（季節の生き物）が来て、目を さます
         const c = geo.cells[seq[k]];
         showHint(result, `あ、${seasonFlier(nowLook).name}…`);
         curlOn(seq[k], 'happy');
@@ -255,7 +277,19 @@ export function createHidamari({ view, stage, result, play, getChoices, getWeigh
     await frames(T.settle, (t) => { setSun(from, (1 - t) * 0.2); setSun(to, 0.6 + 0.4 * t); });
     setSun(from, 0);
     setSun(to, 1);
-    await moveCat(from, to);
+    if (variant === 'osoi') {
+      // ねぼう：気づかない → 「はっ！」 → いそいで うつる
+      showHint(result, 'すやすや…');
+      puffZ(from);
+      await wait(380);
+      showHint(result, 'はっ！');
+      audio.pop();
+      curlOn(from, 'happy');
+      await wait(160);
+      await moveCat(from, to, 420);
+    } else {
+      await moveCat(from, to);
+    }
     const landed = Number(refs.pos.dataset.on); // 猫が まるくなった ざぶとん
     stage.dataset.landed = String(landed);
     stage.dataset.waitMs = String(Math.round(performance.now() - t0));

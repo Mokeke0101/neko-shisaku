@@ -20,6 +20,7 @@ import { audio } from '../audio.js';
 import { pickWeighted } from '../odds.js';
 import { celebrate, clearCelebration, ease, frames, wait, levelOf } from '../fx.js';
 import { showHint, showResult, setBusy, centerOf, charCount, svgEl, escapeXml } from '../ui.js';
+import { pastelTag } from './common.js';
 
 // 道の木を作る。葉（出口）は 0〜n-1 を上から順に持つ。
 // 3つまでは1つの分かれ道で分ける。4つ以上は2つに分ける（分け方は少し ばらつかせる）。rand() は 0 以上 1 未満
@@ -118,14 +119,11 @@ export function createMaigo({ view, stage, result, play, getChoices, getWeights,
 
     const svg = svgEl('svg', { viewBox: `0 0 ${W} ${H}` });
     let s = '';
-    // 芝生の紙
-    s += `<rect x="${cardX + 3}" y="${cardY + 6}" width="${cardW}" height="${cardH}" rx="22" fill="#a9c98f" opacity="0.35"/>`;
-    s += `<rect x="${cardX}" y="${cardY}" width="${cardW}" height="${cardH}" rx="22" fill="#dcecc4" stroke="#a9c98f" stroke-width="3"/>`;
-    for (let k = 0; k < 16; k++) {
-      const gx = cardX + 12 + ((k * 71) % (cardW - 24));
-      const gy = cardY + 10 + ((k * 43) % Math.max(10, cardH - 20));
-      s += `<path d="M${gx},${gy} l-3,-6 M${gx},${gy} l0,-8 M${gx},${gy} l3,-6" stroke="#a9c98f" stroke-width="1.5" stroke-linecap="round" opacity="0.7"/>`;
-    }
+    // ジオラマ台（水色の 台に あつみ）
+    s += `<rect x="${cardX + 2}" y="${cardY + 11}" width="${cardW}" height="${cardH}" rx="20" fill="#7aa7c4" opacity="0.25"/>`;
+    s += `<rect x="${cardX}" y="${cardY + 6}" width="${cardW}" height="${cardH}" rx="20" fill="#9fc5e8" stroke="#7aa7c4" stroke-width="2"/>`;
+    s += `<rect x="${cardX}" y="${cardY}" width="${cardW}" height="${cardH}" rx="20" fill="#e2eef7" stroke="#7aa7c4" stroke-width="2.6"/>`;
+    s += `<rect x="${cardX + 10}" y="${cardY + 4}" width="${cardW - 20}" height="4" rx="2" fill="#ffffff" opacity="0.6"/>`;
     // 道（ふちの色を下に、道の色を上に）
     const edges = [];
     const walkEdges = (node) => node.children.forEach((c) => { edges.push([node, c]); walkEdges(c); });
@@ -214,10 +212,8 @@ export function createMaigo({ view, stage, result, play, getChoices, getWeights,
       const size = Math.max(12, Math.min(22, th * 0.62, ((tagW - 16) / len) * 0.98));
       minLabel = Math.min(minLabel, size);
       s += `<g class="tag" data-i="${i}">`
-        + `<rect x="${tagX + 2}" y="${y - th / 2 + 3}" width="${tagW}" height="${th}" rx="${Math.min(8, th / 2)}" fill="#9b6b3a"/>`
-        + `<rect class="tag-bg" x="${tagX}" y="${y - th / 2}" width="${tagW}" height="${th}" rx="${Math.min(8, th / 2)}" fill="#f2d3a2" stroke="#b98a52" stroke-width="2"/>`
-        + `<circle cx="${tagX + 6}" cy="${y}" r="1.6" fill="#b98a52"/><circle cx="${tagX + tagW - 6}" cy="${y}" r="1.6" fill="#b98a52"/>`
-        + `<text class="cell-label" x="${tagX + tagW / 2}" y="${y}" font-size="${size.toFixed(1)}" fill="${C.ink}" text-anchor="middle" dominant-baseline="central">${escapeXml(choices[i])}</text>`
+        + pastelTag(i, tagX, y - th / 2, tagW, th, 'tag-bg')
+        + `<text class="cell-label" x="${tagX + tagW / 2}" y="${y + 0.5}" font-size="${size.toFixed(1)}" fill="${C.ink}" text-anchor="middle" dominant-baseline="central">${escapeXml(choices[i])}</text>`
         + `</g>`;
     });
     // 子猫（座った姿を小さく。歩く時は はずむ）

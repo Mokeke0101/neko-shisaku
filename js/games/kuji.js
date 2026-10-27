@@ -6,12 +6,16 @@
 // 2. 箱をかたむけると、棒がゆっくりすべり出る。出きってから、棒の先に番号が「ぽん」と出る。
 // 結果は先に乱数で決め（RS01-S14）、棒の番号をその結果にする。
 // 一覧の欄はどれも同じ大きさ（出やすさは欄の大きさに表れない：RS01-S21）。
+// v17 の後（テーマパーク）：一覧は おみくじの 引き出し だんす。わくは さんごいろの ぬりもの、引き出しは 選択肢ごとの パステル色（あつみ・金の かなぐ）。
+// 選択肢は 引き出しの 前の板に じかに書く。決まると その引き出しが すっと 出てくる。
+// 動きの ちがい（3B：4つ）：ふつう・ひっかかり（もう1回 ふると 出る）・2ほん（2本 出てきて 1本 もどす）・ぽーん（棒が とびだして くるっと まわる）。
 import { C } from '../art.js';
 import { catSitting, catPaw } from '../cats.js';
 import { audio } from '../audio.js';
 import { pickWeighted } from '../odds.js';
 import { celebrate, clearCelebration, ease, frames, wait, levelOf } from '../fx.js';
 import { showHint, showResult, setBusy, centerOf, charCount, svgEl, escapeXml } from '../ui.js';
+import { TINTS } from './common.js';
 
 const BOX = '#f3d9b0';
 const BOX_EDGE = '#c99a62';
@@ -99,6 +103,7 @@ export function createKuji({ view, stage, result, play, getChoices, getWeights, 
       + `<circle r="${tagR}" fill="${C.paper}" stroke="${BAND}" stroke-width="3"/>`
       + `<text class="tag-num" x="0" y="1" font-size="${(tagR * 1.15).toFixed(1)}" font-weight="700" fill="${C.ink}" text-anchor="middle" dominant-baseline="central"></text>`
       + `</g></g>`
+      + `<g class="stick2" transform="translate(0 ${L})"><rect x="3" y="${-bh / 2 - L + 6}" width="10" height="${L}" rx="4" fill="#f1dbb6" stroke="${BOX_EDGE}" stroke-width="2" transform="rotate(8 8 ${-bh / 2 + 6})"/></g>`
       + `<rect x="${-bw / 2 + 4}" y="${-bh / 2 + 6}" width="${bw}" height="${bh}" rx="12" fill="#d9b07a" opacity="0.35"/>`
       + `<rect x="${-bw / 2}" y="${-bh / 2}" width="${bw}" height="${bh}" rx="12" fill="${BOX}" stroke="${BOX_EDGE}" stroke-width="3"/>`
       + `<path d="M${-bw / 2 + bw * 0.33},${-bh / 2 + 3} V${bh / 2 - 3} M${-bw / 2 + bw * 0.67},${-bh / 2 + 3} V${bh / 2 - 3}" stroke="${BOX_EDGE}" stroke-width="1.6" opacity="0.5"/>`
@@ -111,8 +116,9 @@ export function createKuji({ view, stage, result, play, getChoices, getWeights, 
     // 箱を持つ手
     s += `<g class="hold" transform="translate(${boxAt.x - bw / 2 - 2} ${boxAt.y + bh * 0.12})">${catPaw(cat, 13)}</g>`;
     // 一覧（木の札）
-    s += `<rect x="${boardX + 3}" y="${boardY + 5}" width="${boardW}" height="${boardH}" rx="20" fill="#d9b07a" opacity="0.35"/>`;
-    s += `<rect x="${boardX}" y="${boardY}" width="${boardW}" height="${boardH}" rx="20" fill="${C.paper}" stroke="${C.woodDeep}" stroke-width="3"/>`;
+    s += `<rect x="${boardX + 3}" y="${boardY + 6}" width="${boardW}" height="${boardH}" rx="10" fill="#c97a6e" opacity="0.3"/>`;
+    s += `<rect x="${boardX}" y="${boardY}" width="${boardW}" height="${boardH}" rx="10" fill="#f4a7a3" stroke="#c97a6e" stroke-width="3"/>`;
+    s += `<rect x="${boardX + 3}" y="${boardY + 3}" width="${boardW - 6}" height="5" rx="2.5" fill="#ffffff" opacity="0.45"/>`;
     let minLabel = Infinity;
     cells.forEach((c, i) => {
       const br = Math.min(c.h * 0.36, 16);
@@ -122,8 +128,14 @@ export function createKuji({ view, stage, result, play, getChoices, getWeights, 
       const len = Math.max(charCount(choices[i]), 1);
       const size = Math.max(12, Math.min(22, (labelW / len) * 0.98, c.h * 0.58));
       minLabel = Math.min(minLabel, size);
+      const fit = (x, y, sx, sy) => `<path d="M${x},${y + sy * 6} V${y} H${x + sx * 6}" stroke="#d9b04d" stroke-width="2.4" fill="none" stroke-linecap="round"/>`;
+      const [dc, de] = TINTS[i % TINTS.length];
+      s += `<rect x="${c.x - 1.5}" y="${c.y - 1.5}" width="${c.w + 3}" height="${c.h + 3}" rx="6" fill="#c97a6e"/>`;
       s += `<g class="cell" data-i="${i}">`
-        + `<rect class="cell-bg" x="${c.x}" y="${c.y}" width="${c.w}" height="${c.h}" rx="${Math.min(12, c.h / 2)}" fill="#ffffff" stroke="${C.line}" stroke-opacity="0.22" stroke-width="2"/>`
+        + `<rect x="${c.x}" y="${c.y + 2.5}" width="${c.w}" height="${c.h}" rx="5" fill="${de}"/>`
+        + `<rect class="cell-bg" x="${c.x}" y="${c.y}" width="${c.w}" height="${c.h}" rx="5" fill="${dc}" stroke="${de}" stroke-width="1.6"/>`
+        + `<rect x="${c.x + 3}" y="${c.y + 2}" width="${c.w - 6}" height="${(c.h * 0.26).toFixed(1)}" rx="${(c.h * 0.13).toFixed(1)}" fill="#ffffff" opacity="0.45"/>`
+        + fit(c.x + 3, c.y + 3, 1, 1) + fit(c.x + c.w - 3, c.y + 3, -1, 1) + fit(c.x + 3, c.y + c.h - 3, 1, -1) + fit(c.x + c.w - 3, c.y + c.h - 3, -1, -1)
         + `<circle cx="${bx}" cy="${c.y + c.h / 2}" r="${br}" fill="${C.cream}" stroke="${BAND}" stroke-width="2"/>`
         + `<text x="${bx}" y="${c.y + c.h / 2 + 0.5}" font-size="${(br * 1.15).toFixed(1)}" font-weight="700" fill="${C.ink}" text-anchor="middle" dominant-baseline="central">${i + 1}</text>`
         + `<text class="cell-label" x="${labelX}" y="${c.y + c.h / 2}" font-size="${size.toFixed(1)}" fill="${C.ink}" dominant-baseline="central">${escapeXml(choices[i])}</text>`
@@ -135,6 +147,7 @@ export function createKuji({ view, stage, result, play, getChoices, getWeights, 
     refs = {
       box: svg.querySelector('.box'),
       stick: svg.querySelector('.stick'),
+      stick2: svg.querySelector('.stick2'),
       tag: svg.querySelector('.tag'),
       tagNum: svg.querySelector('.tag-num'),
       hold: svg.querySelector('.hold'),
@@ -163,7 +176,7 @@ export function createKuji({ view, stage, result, play, getChoices, getWeights, 
 
   function lightCell(i, color) {
     refs.cells.forEach((g, k) => {
-      g.querySelector('.cell-bg').setAttribute('fill', k === i ? color : '#ffffff');
+      g.querySelector('.cell-bg').setAttribute('fill', k === i ? color : TINTS[k % TINTS.length][0]);
     });
   }
 
@@ -215,13 +228,22 @@ export function createKuji({ view, stage, result, play, getChoices, getWeights, 
     // 2. かたむけて、棒をゆっくり出す
     showHint(result, 'でてくるよ…');
     await frames(420, (t) => setBox(-24 * ease.inOutSine(t)));
-    // ときどき出る別の動き（v12）：棒が とちゅうで ひっかかり、もう1回 ふると 出てくる
-    delete stage.dataset.variant;
-    const stuck = Math.random() < 0.3;
-    const slideTo = (a, b, dur) => frames(dur, (t) => refs.stick.setAttribute('transform', `translate(0 ${(stickL * (1 - (a + (b - a) * ease.outCubic(t)))).toFixed(2)})`));
+    const vr = Math.random();
+    const variant = vr < 0.25 ? 'stuck' : vr < 0.5 ? 'two' : vr < 0.75 ? 'pon' : 'plain';
+    stage.dataset.variant = variant;
+    const slideTo = (a, b, dur, el = refs.stick) => frames(dur, (t) => el.setAttribute('transform', `translate(0 ${(stickL * (1 - (a + (b - a) * ease.outCubic(t)))).toFixed(2)})`));
     audio.slide(1.3);
-    if (stuck) {
-      stage.dataset.variant = 'stuck';
+    if (variant === 'two') {
+      // 2ほん：2本 いっしょに 出てきて、1本を もどす
+      await Promise.all([slideTo(0, 0.55, 700), slideTo(0, 0.5, 700, refs.stick2)]);
+      showHint(result, 'あっ、2ほん でた');
+      audio.heart();
+      await wait(300);
+      showHint(result, 'こっちは もどして…');
+      audio.tap();
+      await slideTo(0.5, 0, 420, refs.stick2);
+      await slideTo(0.55, 1, 600);
+    } else if (variant === 'stuck') {
       await slideTo(0, 0.45, 650);
       showHint(result, 'あれ？ ひっかかった…');
       audio.heart();
@@ -234,6 +256,15 @@ export function createKuji({ view, stage, result, play, getChoices, getWeights, 
     } else {
       await slideTo(0, 1, 1300);
     }
+    if (variant === 'pon') {
+      // ぽーん：棒が とびだして くるっと まわって もどる
+      showHint(result, 'ぽーん！');
+      audio.toss();
+      const cy = -geo.bh / 2 - stickL / 2 + 6;
+      await frames(620, (t) => refs.stick.setAttribute('transform', `translate(0 ${(-Math.sin(Math.PI * t) * stickL * 0.7).toFixed(2)}) rotate(${(360 * ease.inOutSine(t)).toFixed(1)} 0 ${cy.toFixed(1)})`));
+      refs.stick.setAttribute('transform', 'translate(0 0)');
+      audio.tap();
+    }
     await wait(320);
     refs.tagNum.textContent = String(decided + 1);
     audio.pop();
@@ -243,7 +274,15 @@ export function createKuji({ view, stage, result, play, getChoices, getWeights, 
     const landed = Number(refs.tagNum.textContent) - 1;
     stage.dataset.landed = String(landed);
     stage.dataset.waitMs = String(Math.round(performance.now() - t0));
-    lightCell(landed, '#fff1c4');
+    lightCell(landed, '#ffe39a');
+    {
+      const c = geo.cells[landed];
+      const ox = c.x + c.w / 2;
+      const oy = c.y + c.h / 2;
+      refs.cells[landed].parentNode.appendChild(refs.cells[landed]); // 出てきた 引き出しを 前に
+      frames(320, (t) => refs.cells[landed].setAttribute('transform', `translate(${ox} ${(oy + 2 * ease.outCubic(t)).toFixed(2)}) scale(${(1 + 0.05 * ease.outCubic(t)).toFixed(3)}) translate(${-ox} ${-oy})`));
+      audio.slide(0.3);
+    }
     const bg = refs.cells[landed].querySelector('.cell-bg');
     bg.setAttribute('stroke', C.momiji);
     bg.setAttribute('stroke-opacity', '0.9');

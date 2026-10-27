@@ -9,6 +9,9 @@
 // 3. カプセルが ぶるぶる ゆれてから、ぱかっと ひらき、番号が出る。
 // 結果は先に乱数で決め（RS01-S14）、出てくる カプセルを その結果の色と番号にする。
 // 一覧の欄はどれも同じ大きさ（RS01-S21）。
+// v17 の後（テーマパーク）：一覧は ガチャの 台と おなじ ピンクの カウンターに ならべた パステルの札（common.js の plate）。景品の板も パステル。
+// 動きの ちがい（3B：4つ）：ふつう・キラキラ（カプセルが 光る）・かたい（ハンドルが かたくて、ぐぐっと もう ひとまわし）・
+// あかない（カプセルが なかなか あかず、とんとん はねさせると ぱかっ）。
 import { C } from '../art.js';
 import { catSitting, catPaw, catName } from '../cats.js';
 import { audio } from '../audio.js';
@@ -18,7 +21,7 @@ import { plush } from './crane.js';
 
 export const TURNS = 3;
 export const T = { coin: 900, turn: 620, out: 760, bounce: 380, shake: 900, open: 560 };
-// ときどき出る別の動き（v12）：出てきた カプセルが キラキラ光る（あけるまで少し長く ためる）
+// 動きの ちがい キラキラ：出てきた カプセルが 光る（あけるまで少し長く ためる）
 export const SHINE = 420;
 export const gachaDuration = (shine = false) => T.coin + TURNS * (T.turn + 90) + T.out + T.bounce + T.shake + T.open + 300 + (shine ? SHINE : 0);
 
@@ -131,7 +134,8 @@ export function createGacha(deps) {
       if (boardW > 70 && boardH > 54) {
         const ps = Math.min(boardW / 3.8, boardH * 0.36);
         const fs = Math.max(12, Math.min(17, boardH * 0.16, (boardW - 10) / 7));
-        s += `<rect x="${f(boardX)}" y="${f(boardTop)}" width="${f(boardW)}" height="${f(boardH)}" rx="10" fill="#fffaf0" stroke="#e2bd87" stroke-width="2.4"/>`
+        s += `<rect x="${f(boardX + 2)}" y="${f(boardTop + 4)}" width="${f(boardW)}" height="${f(boardH)}" rx="8" fill="#c97a6e" opacity="0.3"/>`
+          + `<rect x="${f(boardX)}" y="${f(boardTop)}" width="${f(boardW)}" height="${f(boardH)}" rx="10" fill="#fde3e8" stroke="#e391ad" stroke-width="2.4"/>`
           + `<text x="${f(boardX + boardW / 2)}" y="${f(boardTop + 6 + fs * 0.7)}" font-size="${f(fs)}" font-weight="700" fill="#c8615c" text-anchor="middle" dominant-baseline="central">あたり いろいろ</text>`;
         for (let k = 0; k < 3; k++) {
           s += `<g transform="translate(${f(boardX + boardW * (0.2 + k * 0.3))} ${f(boardTop + 10 + fs * 1.4 + (boardH - 10 - fs * 1.4) / 2)})">${plush(k, TINTS[(k * 4 + 1) % TINTS.length], ps)}</g>`;
@@ -146,7 +150,10 @@ export function createGacha(deps) {
       s += `<g class="coin" opacity="0"><circle r="${f(capR * 0.42)}" fill="#f6d55e" stroke="#d4b043" stroke-width="2"/><path d="M0,${f(-capR * 0.2)} v${f(capR * 0.4)}" stroke="#d4b043" stroke-width="2" stroke-linecap="round"/></g>`;
       s += `<g class="out-cap" opacity="0"></g>`;
       // 一覧
-      s += `<rect x="6" y="${f(topH + 2)}" width="${W - 12}" height="${f(listH)}" rx="16" fill="${C.paper}" stroke="${C.woodDeep}" stroke-width="3"/>`;
+      s += `<rect x="8" y="${f(topH + 8)}" width="${W - 12}" height="${f(listH)}" rx="12" fill="#5a3a22" opacity="0.3"/>`
+        + `<rect x="6" y="${f(topH + 6)}" width="${W - 12}" height="${f(listH)}" rx="12" fill="#e8998c"/>`
+        + `<rect x="6" y="${f(topH + 2)}" width="${W - 12}" height="${f(listH)}" rx="12" fill="#f7b4a6" stroke="#c97a6e" stroke-width="2.4"/>`
+        + `<rect x="12" y="${f(topH + 4)}" width="${W - 24}" height="3" rx="1.5" fill="#ffffff" opacity="0.5"/>`;
       cells.forEach((c, i) => { s += plate(i, c.x, c.y, c.w, c.h, choices[i], { badge: i + 1, tint: TINTS[i % TINTS.length] }).svg; });
       return s;
     },
@@ -165,6 +172,9 @@ export function createGacha(deps) {
     },
     async perform(g, decided, say) {
       const { svg, n, cat } = g;
+      const vr = Math.random();
+      const variant = vr < 0.25 ? 'shine' : vr < 0.5 ? 'katai' : vr < 0.75 ? 'akanai' : 'plain';
+      g.stage.dataset.variant = variant;
       // 0. コインを入れる
       say(`${catName(cat)}が コインを いれるよ`);
       await movePaw(g, g.slot.x + g.capR * 0.3, g.slot.y - g.capR * 1.1, T.coin * 0.45);
@@ -201,6 +211,27 @@ export function createGacha(deps) {
         await wait(90);
       }
       if (lit >= 0) hintPlate(svg, lit, false);
+      if (variant === 'katai') {
+        // かたい：ハンドルが かたくて、ぐぐっと もう ひとまわし
+        say('…かたい！');
+        R.cat.innerHTML = catSitting(cat, { mood: 'strain', look: { x: -1, y: 0.3 } });
+        audio.heart();
+        await frames(360, (t) => {
+          const deg = TURNS * 120 + Math.sin(t * Math.PI * 6) * 4;
+          R.handle.setAttribute('transform', `translate(${f(g.handle.x)} ${f(g.handle.y)}) rotate(${f(deg)})`);
+          const kn = knobAt(g.handle, deg);
+          setArm(g, kn.x, kn.y);
+        });
+        say('ぐぐっ… ガチャ！');
+        audio.rattle();
+        await frames(300, (t) => {
+          const deg = TURNS * 120 + 120 * ease.outCubic(t);
+          R.handle.setAttribute('transform', `translate(${f(g.handle.x)} ${f(g.handle.y)}) rotate(${f(deg)})`);
+          const kn = knobAt(g.handle, deg);
+          setArm(g, kn.x, kn.y);
+        });
+        R.cat.innerHTML = catSitting(cat, { look: { x: -1, y: 0.3 } });
+      }
       // 2. ふたが ひらいて、カプセルが ころがり出る
       say('ころん！');
       R.flap.animate([{ transform: 'translateY(0)' }, { transform: `translateY(${f(g.capR * 0.8)}px)` }, { transform: 'translateY(0)' }], { duration: 520 });
@@ -218,10 +249,8 @@ export function createGacha(deps) {
       });
       audio.hop(2);
       await frames(T.bounce, (t) => R.out.setAttribute('transform', `translate(${f(b.x)} ${f(b.y - Math.sin(Math.PI * t) * g.capR * 0.9)})`));
-      // ときどき：カプセルが キラキラ光る
-      delete g.stage.dataset.variant;
-      if (Math.random() < 0.3) {
-        g.stage.dataset.variant = 'shine';
+      // キラキラ：カプセルが 光る
+      if (variant === 'shine') {
         say('キラキラ…！？');
         const glow = document.createElementNS('http://www.w3.org/2000/svg', 'g');
         let rays = `<circle r="${f(g.capR * 1.5)}" fill="#fff1c4" opacity="0.85"/>`;
@@ -238,6 +267,19 @@ export function createGacha(deps) {
       audio.heart();
       await frames(T.shake, (t) => spin.setAttribute('transform', `rotate(${f(Math.sin(t * Math.PI * 10) * 10 * (0.4 + t))})`));
       spin.removeAttribute('transform');
+      if (variant === 'akanai') {
+        // あかない：ふたが ちょっと うくだけ。とんとん はねさせる
+        say('…あかない');
+        const top0 = R.out.querySelector('.cap-top');
+        await frames(320, (t) => top0.setAttribute('transform', `translate(0 ${f(-Math.sin(Math.PI * t) * g.capR * 0.2)})`));
+        R.cat.innerHTML = catSitting(cat, { mood: 'strain', look: { x: -1, y: 0.8 } });
+        const tr = g.tray;
+        say('えいっ、えいっ');
+        for (let q = 0; q < 2; q++) {
+          audio.tap();
+          await frames(220, (t) => R.out.setAttribute('transform', `translate(${f(tr.x)} ${f(tr.y - Math.sin(Math.PI * t) * g.capR * 0.5)})`));
+        }
+      }
       audio.pop();
       const top = R.out.querySelector('.cap-top');
       const num = R.out.querySelector('.cap-num');

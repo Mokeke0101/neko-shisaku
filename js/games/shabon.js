@@ -8,6 +8,9 @@
 // 2. 前足が しゃぼんだまを わっていく（はじめは はやく、だんだん ゆっくり）。
 // 3. のこり2つで、前足が いったり きたり まよってから、片方を わる。
 // 結果は先に乱数で決め（RS01-S14）、わる順を、決めた しゃぼんだまが のこるように組む。
+// v16 作り直し：名前の札は 白い板を やめ、あつみの ある 木の札（common.js の plate）。
+// 動きの ちがい（3B：4つ）：ふつう・かぜ（しゃぼんだまが いっせいに ゆれる）・にげる（わろうとした 1つが すいっと にげる）・
+// くしゅん（ちいさな しゃぼんだまが 鼻で はじけて くしゃみ）。
 import { C } from '../art.js';
 import { catFace, catPaw, catName } from '../cats.js';
 import { audio } from '../audio.js';
@@ -23,7 +26,7 @@ export const popGap = (k, total) => 180 + 320 * Math.pow(total <= 1 ? 1 : k / (t
 export const T = { blow: 1300, reach: 200, sway: 380, last: 520 };
 // のこり2つで まよう回数（選択肢が少ない時は多め）
 export const waverOf = (n) => (n <= 4 ? 3 : 2);
-// ときどき出る別の動き（v12）：ふき おわった後に 風が ふいて、しゃぼんだまが いっせいに ゆれる（選択肢 8 個まで）
+// 動きの ちがい かぜ：ふき おわった後に 風が ふいて、しゃぼんだまが いっせいに ゆれる（選択肢 8 個まで）
 export const WIND = 640;
 export const windOk = (n) => n <= 8;
 export function shabonDuration(n, wind = false) {
@@ -113,7 +116,9 @@ export function createShabon(deps) {
     },
     async perform(g, decided, say) {
       const { n, stage } = g;
-      delete stage.dataset.variant;
+      const vr = Math.random();
+      const variant = vr < 0.25 && windOk(n) ? 'wind' : vr < 0.5 && n >= 3 ? 'nigeru' : vr < 0.75 ? 'kushun' : 'plain';
+      stage.dataset.variant = variant;
       // 1. ふくらませて ならべる
       say(`${catName(g.cat)}が ふーっ…`);
       R.face.innerHTML = catFace(g.cat, { mood: 'puff', look: { x: 0, y: -1 } });
@@ -133,11 +138,26 @@ export function createShabon(deps) {
         });
       });
       R.face.innerHTML = catFace(g.cat, { look: { x: 0, y: -1 } });
-      // ときどき：風が ふいて、しゃぼんだまが いっせいに ゆれる
-      if (windOk(n) && Math.random() < 0.35) {
+      if (variant === 'kushun') {
+        // くしゅん：ちいさな しゃぼんだまが 鼻に ついて はじける
+        const el = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        el.innerHTML = bubble(g.wandR * 0.45, 2, g.gid);
+        R.mini.appendChild(el);
+        const nose = { x: g.face.x, y: g.face.y + 6 * g.face.fs };
+        await frames(520, (t) => el.setAttribute('transform', `translate(${f(g.wand.x + (nose.x - g.wand.x) * t)} ${f(g.wand.y + (nose.y - g.wand.y) * t - Math.sin(Math.PI * t) * g.catH * 0.3)})`));
+        el.remove();
+        audio.pop();
+        R.face.innerHTML = catFace(g.cat, { mood: 'strain', look: { x: 0, y: -1 } });
+        say('はっ… くしゅん！');
+        await frames(260, (t) => R.face.setAttribute('transform', `translate(0 ${f(Math.sin(Math.PI * t) * 8)})`));
+        R.face.removeAttribute('transform');
+        R.face.innerHTML = catFace(g.cat, { look: { x: 0, y: -1 } });
+        await wait(120);
+      }
+      // かぜ：しゃぼんだまが いっせいに ゆれる
+      if (variant === 'wind') {
         say('ひゅう～っ… かぜだ！');
         audio.stretch(WIND / 1000);
-        stage.dataset.variant = 'wind';
         await frames(WIND, (t) => {
           const k = Math.sin(t * Math.PI);
           R.bubs.forEach((el, i) => {
@@ -159,6 +179,17 @@ export function createShabon(deps) {
       };
       say('ぱちん、ぱちん！');
       for (let k = 0; k < order.length - 1; k++) {
+        if (variant === 'nigeru' && k === 0) {
+          // にげる：前足が ちかづくと、しゃぼんだまが すいっと にげる
+          const i = order[k];
+          const b = g.bubbles[i];
+          await movePaw(g, b.cx + g.br * 0.3, b.cy + g.br * 1.2, T.reach * 1.5);
+          const dx = (b.cx > g.W / 2 ? -1 : 1) * g.br * 0.7;
+          say('あっ、にげた！');
+          await frames(300, (t) => R.bubs[i].setAttribute('transform', `translate(${f(b.cx + dx * ease.outCubic(t))} ${f(b.cy - g.br * 0.4 * ease.outCubic(t))})`));
+          g.bubbles[i] = { cx: b.cx + dx, cy: b.cy - g.br * 0.4 };
+          say('まてまて～');
+        }
         await popAt(order[k]);
         await wait(popGap(k, n - 1));
       }

@@ -8,6 +8,7 @@
 // 3. さいごの石で ぐらっと ゆれて、すわりこむ。
 // 結果は先に乱数で決め（RS01-S14）、とぶ回数と1回ごとの はばを、決めた石で止まるように組む。
 // 石はどれも同じ大きさ（出やすさは表れない：RS01-S21）。下の石ほど手前、上の石ほど向こう岸に近い。
+// v17 の後（テーマパーク）：とびいしは 選択肢ごとの パステル色の うき台（あつみ）。
 // v16：池を にぎやかに（依頼者の答え 12）。こい が およぎ、はすの葉と花、かえる。とびうつるたびに 水しぶき と 波紋。
 // 石は 厚みのある 平らな石（下に こい色の あつみ・こけ）。選択肢は 石に じかに書く。
 // 動きの ちがい（3B：4つ）：ふつう・こいが はねる・かえるが はすの葉へ とびうつる・ぬれた石で つるっ。
@@ -19,6 +20,7 @@ import { audio } from '../audio.js';
 import { pickWeighted } from '../odds.js';
 import { celebrate, clearCelebration, ease, frames, wait, levelOf } from '../fx.js';
 import { showHint, showResult, setBusy, centerOf, charCount, svgEl, escapeXml } from '../ui.js';
+import { TINTS } from './common.js';
 
 // とぶ はばの並び（1〜3）。合わせて decided + 1（岸を -1 として、石 decided に着く）。とぶ回数は 1〜5。rand() は 0 以上 1 未満
 export function hopPlan(decided, rand = Math.random) {
@@ -118,13 +120,12 @@ export function createTobiishi({ view, stage, result, play, getChoices, getWeigh
       const label = choices[i];
       const size = Math.max(12, Math.min(22, stoneH * 0.58, (stoneW - 28) / Math.max(charCount(label), 1)));
       minLabel = Math.min(minLabel, size);
-      const tint = ['#efe8dc', '#e9e2d4', '#f2ece1'][i % 3];
+      const [tint, edge] = TINTS[i % TINTS.length];
       s += `<g class="cell" data-i="${i}">`
         + `<ellipse cx="${p.x.toFixed(1)}" cy="${(p.y + stoneH * 0.32).toFixed(1)}" rx="${(stoneW * 0.5).toFixed(1)}" ry="${(stoneH * 0.3).toFixed(1)}" fill="#a9cfd5" opacity="0.7"/>`
-        + `<rect x="${(p.x - stoneW / 2).toFixed(1)}" y="${(p.y - stoneH / 2 + Math.max(4, stoneH * 0.18)).toFixed(1)}" width="${stoneW.toFixed(1)}" height="${stoneH.toFixed(1)}" rx="${(stoneH / 2).toFixed(1)}" fill="#9d9282" stroke="#857a6b" stroke-width="1.6"/>`
-        + `<rect class="cell-bg" x="${(p.x - stoneW / 2).toFixed(1)}" y="${(p.y - stoneH / 2).toFixed(1)}" width="${stoneW.toFixed(1)}" height="${stoneH.toFixed(1)}" rx="${(stoneH / 2).toFixed(1)}" fill="${tint}" stroke="#b8ab98" stroke-width="2"/>`
+        + `<rect x="${(p.x - stoneW / 2).toFixed(1)}" y="${(p.y - stoneH / 2 + Math.max(4, stoneH * 0.18)).toFixed(1)}" width="${stoneW.toFixed(1)}" height="${stoneH.toFixed(1)}" rx="${(stoneH / 2).toFixed(1)}" fill="${edge}" stroke="${edge}" stroke-width="1.6"/>`
+        + `<rect class="cell-bg" x="${(p.x - stoneW / 2).toFixed(1)}" y="${(p.y - stoneH / 2).toFixed(1)}" width="${stoneW.toFixed(1)}" height="${stoneH.toFixed(1)}" rx="${(stoneH / 2).toFixed(1)}" fill="${tint}" stroke="${edge}" stroke-width="2"/>`
         + `<ellipse cx="${(p.x - stoneW * 0.26).toFixed(1)}" cy="${(p.y - stoneH * 0.22).toFixed(1)}" rx="${(stoneW * 0.12).toFixed(1)}" ry="${(stoneH * 0.12).toFixed(1)}" fill="#ffffff" opacity="0.55"/>`
-        + `<circle cx="${(p.x + stoneW * 0.38).toFixed(1)}" cy="${(p.y + stoneH * 0.18).toFixed(1)}" r="${Math.max(2, stoneH * 0.08).toFixed(1)}" fill="#b9cc85" opacity="0.8"/><circle cx="${(p.x + stoneW * 0.32).toFixed(1)}" cy="${(p.y + stoneH * 0.28).toFixed(1)}" r="${Math.max(1.5, stoneH * 0.05).toFixed(1)}" fill="#b9cc85" opacity="0.7"/>`
         + `<text class="cell-label" x="${p.x.toFixed(1)}" y="${p.y.toFixed(1)}" font-size="${size.toFixed(1)}" fill="${C.ink}" text-anchor="middle" dominant-baseline="central">${escapeXml(label)}</text>`
         + `</g>`;
     });
@@ -230,7 +231,7 @@ export function createTobiishi({ view, stage, result, play, getChoices, getWeigh
     refs.cells.forEach((g, k) => {
       const bg = g.querySelector('.cell-bg');
       const on = k === i;
-      bg.setAttribute('fill', on ? (strong ? '#fff1c4' : '#fff8e4') : ['#efe8dc', '#e9e2d4', '#f2ece1'][k % 3]);
+      bg.setAttribute('fill', on ? (strong ? '#fff1c4' : '#fff8e4') : TINTS[k % TINTS.length][0]);
       bg.setAttribute('stroke', on && strong ? C.momiji : on ? C.kaki : '#b8ab98');
       bg.setAttribute('stroke-width', on && strong ? '4' : on ? '3' : '2');
     });

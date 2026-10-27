@@ -8,12 +8,22 @@
 // 3. 子猫が足あとを残しながら線をたどる。橋に来るたびに曲がるので、着くまで分からない。終わりに近づくと ゆっくりになる。
 // 結果は先に乱数で決め（RS01-S14）、橋を作った後に、決めた札へ着く左はしを、歩きだす所にする。
 // 札はどれも同じ大きさ（出やすさは札の大きさに表れない：RS01-S21）。
+// v17 の後（テーマパーク）：おもちゃの 線路の ジオラマ台（パステルの 台に あつみ）。線は まくら木と レールの 線路、橋も 線路。
+// 左はしは 色の ついた えき の ボタン。右はしの札は クレーンの 値札と おなじ パステルの札（選択肢ごとに 色を かえる）。
+// 動きの ちがい（3B：4つ）：ふつう・きょろきょろ（とちゅうで 立ちどまる）・みずたまり（線路の 水たまりを ぴょんと とびこす）・
+// かけっこ（はじめは いきおいよく かけだして、さいごは ゆっくり）。
 import { C } from '../art.js';
 import { catFace, pawPrint } from '../cats.js';
 import { audio } from '../audio.js';
 import { pickWeighted } from '../odds.js';
 import { celebrate, clearCelebration, ease, frames, wait, levelOf } from '../fx.js';
 import { showHint, showResult, setBusy, centerOf, charCount, svgEl, escapeXml } from '../ui.js';
+import { TINTS } from './common.js';
+
+// 線路（まくら木と 2本の レール）。d は まっすぐな 線
+const track = (d, vertical) => `<path d="${d}" stroke="#e8c6a0" stroke-width="12" stroke-dasharray="3.5 5"/>`
+  + `<path d="${d}" stroke="#a9b0bb" stroke-width="1.8" transform="translate(${vertical ? '-3 0' : '0 -3'})"/>`
+  + `<path d="${d}" stroke="#a9b0bb" stroke-width="1.8" transform="translate(${vertical ? '3 0' : '0 3'})"/>`;
 
 const COLS = 5; // 橋を置く たての列の数
 
@@ -85,29 +95,31 @@ export function createAmida({ view, stage, result, play, getChoices, getWeights,
 
     const svg = svgEl('svg', { viewBox: `0 0 ${W} ${H}` });
     let s = '';
-    // 紙
-    s += `<rect x="${cardX + 3}" y="${cardY + 6}" width="${cardW}" height="${cardH}" rx="22" fill="#d9b07a" opacity="0.35"/>`;
-    s += `<rect x="${cardX}" y="${cardY}" width="${cardW}" height="${cardH}" rx="22" fill="${C.paper}" stroke="${C.woodDeep}" stroke-width="3"/>`;
-    // 紙の下の えんぴつと けしゴム（v12。よゆうが ある時）
-    if (H - (cardY + cardH) > 26) {
-      const py = Math.min(H - 12, cardY + cardH + 18);
-      s += `<g transform="translate(${(cardX + 40).toFixed(1)} ${py.toFixed(1)}) rotate(-8)"><rect x="0" y="-5" width="96" height="10" rx="2" fill="#f6d55e" stroke="#c9a032" stroke-width="1.6"/><path d="M96,-5 L110,0 L96,5 Z" fill="#f3d9b0" stroke="#c9a032" stroke-width="1.4"/><path d="M106,-1.4 L110,0 L106,1.4 Z" fill="#4a3a33"/><rect x="-10" y="-5" width="10" height="10" rx="2" fill="#f7a6a0" stroke="#d97f7a" stroke-width="1.4"/></g>`
-        + `<g transform="translate(${(cardX + cardW - 70).toFixed(1)} ${py.toFixed(1)}) rotate(6)"><rect x="-18" y="-8" width="36" height="16" rx="3" fill="#ffffff" stroke="#9fbdd0" stroke-width="1.6"/><rect x="-6" y="-8" width="14" height="16" fill="#9fc5e8"/></g>`;
-    }
-    // 横の線と、左はしの立つ所
+    // ジオラマ台（パステルの 台。前の ふちに あつみ）
+    s += `<rect x="${cardX + 2}" y="${cardY + 12}" width="${cardW}" height="${cardH}" rx="18" fill="#a985c9" opacity="0.25"/>`
+      + `<rect x="${cardX}" y="${cardY + 7}" width="${cardW}" height="${cardH}" rx="18" fill="#cdbfe0" stroke="#a985c9" stroke-width="2"/>`
+      + `<rect x="${cardX}" y="${cardY}" width="${cardW}" height="${cardH}" rx="18" fill="#efe6f7" stroke="#a985c9" stroke-width="2.4"/>`
+      + `<rect x="${cardX + 8}" y="${cardY + 4}" width="${cardW - 16}" height="4" rx="2" fill="#ffffff" opacity="0.6"/>`;
+    for (let yy = cardY + 12; yy < cardY + cardH - 6; yy += 16) for (let xx = cardX + 12 + (Math.round(yy / 16) % 2) * 8; xx < cardX + cardW - 8; xx += 16) s += `<circle cx="${xx}" cy="${yy.toFixed(1)}" r="1.4" fill="#d8c8ea" opacity="0.8"/>`;
+    // 線路と、左はしの えき（色の ついた ボタン）
     let minLabel = Infinity;
     ys.forEach((y, i) => {
-      s += `<path d="M${xStart},${y} H${xEnd + 6}" stroke="${C.chestnut}" stroke-width="3" stroke-linecap="round"/>`;
-      s += `<circle class="start" data-i="${i}" cx="${xStart}" cy="${y}" r="5" fill="${C.cream}" stroke="${C.chestnut}" stroke-width="2.5"/>`;
+      const [col, edge] = TINTS[i % TINTS.length];
+      s += track(`M${xStart},${y} H${xEnd + 6}`, false);
+      s += `<circle cx="${xStart}" cy="${y + 2}" r="8" fill="${edge}"/><circle class="start" data-i="${i}" cx="${xStart}" cy="${y}" r="8" fill="${col}" stroke="${edge}" stroke-width="2"/><circle cx="${xStart - 2.4}" cy="${y - 2.4}" r="2.2" fill="#ffffff" opacity="0.7"/>`;
       const len = Math.max(charCount(choices[i]), 1);
       const size = Math.max(12, Math.min(22, th * 0.62, ((tagW - 16) / len) * 0.98));
       minLabel = Math.min(minLabel, size);
+      const rx = Math.min(9, th / 2.4);
       s += `<g class="tag" data-i="${i}">`
-        + `<rect class="tag-bg" x="${tagX}" y="${y - th / 2}" width="${tagW}" height="${th}" rx="${Math.min(12, th / 2)}" fill="#ffffff" stroke="${C.woodDeep}" stroke-width="2"/>`
-        + `<text class="cell-label" x="${tagX + tagW / 2}" y="${y}" font-size="${size.toFixed(1)}" fill="${C.ink}" text-anchor="middle" dominant-baseline="central">${escapeXml(choices[i])}</text>`
+        + `<rect x="${tagX + 1}" y="${y - th / 2 + 2}" width="${tagW}" height="${th}" rx="${rx}" fill="${edge}" opacity="0.45"/>`
+        + `<rect class="tag-bg" x="${tagX}" y="${y - th / 2}" width="${tagW}" height="${th}" rx="${rx}" fill="${col}" stroke="${edge}" stroke-width="2"/>`
+        + `<rect x="${tagX + 3}" y="${(y - th / 2 + 2.5).toFixed(1)}" width="${tagW - 6}" height="${(th * 0.28).toFixed(1)}" rx="${(th * 0.14).toFixed(1)}" fill="#ffffff" opacity="0.45"/>`
+        + `<text class="cell-label" x="${tagX + tagW / 2}" y="${y + 0.5}" font-size="${size.toFixed(1)}" fill="${C.ink}" text-anchor="middle" dominant-baseline="central">${escapeXml(choices[i])}</text>`
         + `</g>`;
     });
     s += `<g class="rungs"></g>`;
+    s += `<g class="puddle" visibility="hidden"><ellipse rx="13" ry="6" fill="#8fc3e0" stroke="#6a9fc0" stroke-width="1.6"/><ellipse cx="-4" cy="-1.5" rx="4" ry="1.4" fill="#ffffff" opacity="0.7"/></g>`;
     s += `<path class="trail" d="" fill="none" stroke="${C.momiji}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>`;
     s += `<g class="prints"></g>`;
     // 子猫（顔だけ。足あとで歩いたことを見せる）
@@ -120,6 +132,7 @@ export function createAmida({ view, stage, result, play, getChoices, getWeights,
       rungs: svg.querySelector('.rungs'),
       trail: svg.querySelector('.trail'),
       prints: svg.querySelector('.prints'),
+      puddle: svg.querySelector('.puddle'),
       kitten: svg.querySelector('.kitten'),
       kittenIn: svg.querySelector('.kitten-in'),
       tags: Array.from(svg.querySelectorAll('.tag')),
@@ -182,7 +195,8 @@ export function createAmida({ view, stage, result, play, getChoices, getWeights,
     const each = Math.min(90, 1100 / all.length);
     for (let k = 0; k < all.length; k++) {
       const { c, r } = all[k];
-      const line = svgEl('path', { d: `M${colX[c]},${ys[r]} V${ys[r + 1]}`, stroke: C.chestnut, 'stroke-width': '3', 'stroke-linecap': 'round' });
+      const line = svgEl('g', {});
+      line.innerHTML = track(`M${colX[c]},${ys[r]} V${ys[r + 1]}`, true);
       refs.rungs.appendChild(line);
       line.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 160 });
       audio.rung(k);
@@ -234,11 +248,23 @@ export function createAmida({ view, stage, result, play, getChoices, getWeights,
     const gapPrint = Math.max(14, geo.spacing * 0.42);
     let nextPrint = gapPrint * 0.5;
     let printNo = 0;
-    // ときどき出る別の動き（v12）：とちゅうで 立ちどまって、きょろきょろ
-    delete stage.dataset.variant;
-    const stop = dur < 5600 && Math.random() < 0.3 ? 700 : 0;
-    if (stop) stage.dataset.variant = 'look';
+    const vr = Math.random();
+    const variant = vr < 0.25 && dur < 5600 ? 'look' : vr < 0.5 ? 'puddle' : vr < 0.75 ? 'run' : 'plain';
+    stage.dataset.variant = variant;
+    // きょろきょろ：とちゅうで 立ちどまる
+    const stop = variant === 'look' ? 700 : 0;
     const stopAt = 0.4;
+    // みずたまり：小道の まん中あたりに 水たまり。そこを ぴょんと とびこす
+    const pd = total * 0.55;
+    const pw = 26;
+    let jumped = false;
+    if (variant === 'puddle') {
+      const q = at(pd);
+      refs.puddle.setAttribute('transform', `translate(${q.x.toFixed(1)} ${q.y.toFixed(1)})${Math.abs(q.dy) > Math.abs(q.dx) ? ' rotate(90)' : ''}`);
+      refs.puddle.setAttribute('visibility', 'visible');
+    }
+    const pow = variant === 'run' ? 2.6 : 1.7;
+    if (variant === 'run') showHint(result, 'よーい どん！');
     let stopped = false;
     await frames(dur + stop, (tt) => {
       const ms = tt * (dur + stop);
@@ -250,10 +276,14 @@ export function createAmida({ view, stage, result, play, getChoices, getWeights,
         return;
       }
       if (stopped && stopped !== 2) { stopped = 2; showHint(result, 'こっちだ！'); }
-      const d = total * (1 - Math.pow(1 - t, 1.7));
+      const d = total * (1 - Math.pow(1 - t, pow));
       const p = at(d);
       refs.trail.setAttribute('stroke-dashoffset', (total - d).toFixed(2));
-      placeKitten(p.x, p.y, Math.abs(Math.sin(d / 9)) * 3);
+      const inJump = variant === 'puddle' && Math.abs(d - pd) < pw;
+      if (inJump && !jumped) { jumped = true; showHint(result, 'ぴょん！'); audio.hop(3); }
+      if (variant === 'run' && t > 0.55 && !stopped) { stopped = 2; showHint(result, 'ふう… ゆっくり いこう'); }
+      placeKitten(p.x, p.y, inJump ? Math.sin(((d - pd + pw) / (pw * 2)) * Math.PI) * 18 : Math.abs(Math.sin(d / 9)) * 3);
+      if (inJump) { nextPrint = Math.max(nextPrint, d + 1); return; }
       const L = Math.hypot(p.dx, p.dy) || 1;
       if (printNo % 3 === 0) setFace('normal', { x: p.dx / L, y: p.dy / L });
       while (d >= nextPrint) {

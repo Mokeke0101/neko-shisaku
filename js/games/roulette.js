@@ -1,6 +1,9 @@
 // にくきゅうルーレット（見せ方の部品：回る円盤）。
 // 盤は動かさず、猫の手の針だけが回る。文字が回らないので、カメラ越しでも選択肢が読みやすい。
 // 選択肢ごとの場所（扇）の大きさは、出やすさに合わせる（RS01-S21）。おやつ決め用は、どれも同じ大きさ。
+// v17 の後（テーマパーク）：ゲームセンターの ピンクの ルーレット盤（ふちの 横の面・電球・つや・ピンクの 台）。選択肢は 盤に じかに書く。
+// 動きの ちがい（3B：4つ）：ふつう・あれ？（1つ手前で止まって もうひとつ）・いきすぎ（となりまで行って もどる）・
+// ちょん（とちゅうで 止まりかけ、真ん中の猫が 手で ちょんと おして もうひとまわり）。
 import { C } from '../art.js';
 import { catFace, catPaw } from '../cats.js';
 import { audio } from '../audio.js';
@@ -99,18 +102,32 @@ export function createRoulette({ view, stage, result, play, getChoices, getWeigh
     let s = '';
     // 木の台（盤の下に すきまが ある時）。盤の外まわりの 電球は、まわす間 おいかけっこで光る（v12）
     const room = H / 2 - R;
+    const th = Math.max(5, R * 0.045); // 盤の あつみ
+    s += `<defs><radialGradient id="rl-rim" cx="0.4" cy="0.35" r="0.75"><stop offset="0.8" stop-color="#f7b4a6"/><stop offset="1" stop-color="#e3918a"/></radialGradient>`
+      + `<radialGradient id="rl-sheen" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#ffffff" stop-opacity="0.35"/><stop offset="0.55" stop-color="#ffffff" stop-opacity="0"/><stop offset="0.92" stop-color="#c97a6e" stop-opacity="0"/><stop offset="1" stop-color="#c97a6e" stop-opacity="0.16"/></radialGradient></defs>`;
     if (room > 16) {
+      // 木の台：2本の足と、あつみの ある 台の板
       const foot = cy + R + Math.min(48, room - 4);
-      s += `<path d="M${f(cx - R * 0.45)},${f(cy + R * 0.6)} L${f(cx - R * 0.62)},${f(foot)} M${f(cx + R * 0.45)},${f(cy + R * 0.6)} L${f(cx + R * 0.62)},${f(foot)}" stroke="#b98a52" stroke-width="${f(Math.max(6, R * 0.05))}" stroke-linecap="round"/>`
-        + `<rect x="${f(cx - R * 0.8)}" y="${f(foot - 5)}" width="${f(R * 1.6)}" height="10" rx="5" fill="#d9a066" stroke="#9b5f3a" stroke-width="2"/>`;
+      const lw = Math.max(9, R * 0.07);
+      for (const sg of [-1, 1]) {
+        s += `<path d="M${f(cx + sg * R * 0.42)},${f(cy + R * 0.55)} L${f(cx + sg * R * 0.6)},${f(foot)}" stroke="#c97a6e" stroke-width="${f(lw + 3)}" stroke-linecap="round"/>`
+          + `<path d="M${f(cx + sg * R * 0.42)},${f(cy + R * 0.55)} L${f(cx + sg * R * 0.6)},${f(foot)}" stroke="#f7b4a6" stroke-width="${f(lw)}" stroke-linecap="round"/>`
+          + `<path d="M${f(cx + sg * R * 0.42 - 2)},${f(cy + R * 0.58)} L${f(cx + sg * R * 0.6 - 2)},${f(foot - 4)}" stroke="#f1c98f" stroke-width="2" stroke-linecap="round"/>`;
+      }
+      s += `<ellipse cx="${f(cx)}" cy="${f(foot + 9)}" rx="${f(R * 0.9)}" ry="6" fill="#a0703f" opacity="0.18"/>`
+        + `<rect x="${f(cx - R * 0.82)}" y="${f(foot - 2)}" width="${f(R * 1.64)}" height="10" rx="5" fill="#e3918a"/>`
+        + `<rect x="${f(cx - R * 0.82)}" y="${f(foot - 7)}" width="${f(R * 1.64)}" height="9" rx="5" fill="#f7b4a6" stroke="#c97a6e" stroke-width="2"/>`;
     } else {
       s += `<ellipse cx="${cx}" cy="${cy + R * 0.96}" rx="${R * 0.82}" ry="${R * 0.09}" fill="#d9b07a" opacity="0.35"/>`;
     }
-    s += `<circle cx="${cx}" cy="${cy}" r="${R}" fill="${C.chestnut}"/>`;
-    s += `<circle cx="${cx}" cy="${cy}" r="${R - 3}" fill="none" stroke="#cf9468" stroke-width="2"/>`;
+    // 盤の 横の面（あつみ）→ ふち → つや
+    s += `<circle cx="${cx}" cy="${f(cy + th)}" r="${R}" fill="#c97a6e"/>`;
+    s += `<circle cx="${cx}" cy="${cy}" r="${R}" fill="url(#rl-rim)" stroke="#c97a6e" stroke-width="1.5"/>`;
+    s += `<circle cx="${cx}" cy="${cy}" r="${R - 3}" fill="none" stroke="#ffd9d0" stroke-width="2"/>`;
+    s += `<path d="M${f(cx - R * 0.86)},${f(cy - R * 0.32)} A${R - 6},${R - 6} 0 0 1 ${f(cx - R * 0.3)},${f(cy - R * 0.87)}" stroke="#ffffff" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.45"/>`;
     for (let k = 0; k < 28; k++) {
       const a = ((k + 0.5) / 28) * Math.PI * 2;
-      s += `<circle class="rl-bulb" cx="${f(cx + Math.cos(a) * (R - 8))}" cy="${f(cy + Math.sin(a) * (R - 8))}" r="2.6" fill="#f3dcc0"/>`;
+      s += `<circle class="rl-bulb" cx="${f(cx + Math.cos(a) * (R - 8))}" cy="${f(cy + Math.sin(a) * (R - 8))}" r="2.6" fill="#fff1c4" stroke="#e3bb84" stroke-width="0.8"/>`;
     }
     // 扇
     for (let i = 0; i < n; i++) {
@@ -120,6 +137,9 @@ export function createRoulette({ view, stage, result, play, getChoices, getWeigh
       const d = `M${cx},${cy} L${cx + Math.cos(a0) * rs},${cy + Math.sin(a0) * rs} A${rs},${rs} 0 ${large} 1 ${cx + Math.cos(a1) * rs},${cy + Math.sin(a1) * rs} Z`;
       s += `<path class="sector" data-i="${i}" d="${d}" fill="${sectorFill(i, n)}" stroke="#fffaf0" stroke-width="3" stroke-linejoin="round"/>`;
     }
+    // 扇の 内がわの くぼみ と つや（色を ぬった 木の板に見せる）
+    s += `<circle cx="${cx}" cy="${cy}" r="${rs}" fill="url(#rl-sheen)" pointer-events="none"/>`
+      + `<circle cx="${cx}" cy="${cy}" r="${rs + 1.5}" fill="none" stroke="#7a4a2a" stroke-width="2" opacity="0.35"/>`;
     // 選ばれた扇を示す縁（最初は隠す）
     s += `<path class="pick-ring" d="" fill="#ffffff" fill-opacity="0.35" stroke="${C.momiji}" stroke-width="5" stroke-linejoin="round" opacity="0"/>`;
     // 文字
@@ -146,13 +166,19 @@ export function createRoulette({ view, stage, result, play, getChoices, getWeigh
     const pawSize = Math.max(11, R * 0.075);
     const armLen = rs - pawSize * 0.9;
     s += `<g class="needle" transform="rotate(${angle} ${cx} ${cy})">`
+      + `<path d="M${cx - 4},${cy + 4} L${cx - 1.2},${cy - armLen + 4} L${cx + 5.2},${cy - armLen + 4} L${cx + 8},${cy + 4} Z" fill="#7a4a2a" opacity="0.22"/>`
+      + `<ellipse cx="${cx + 2}" cy="${f(cy - armLen + 4)}" rx="${f(pawSize)}" ry="${f(pawSize * 0.92)}" fill="#7a4a2a" opacity="0.22"/>`
       + `<path d="M${cx - 6},${cy} L${cx - 3.2},${cy - armLen} L${cx + 3.2},${cy - armLen} L${cx + 6},${cy} Z" fill="${cat.paw}" stroke="${cat.line}" stroke-width="2.4" stroke-linejoin="round"/>`
       + `<g transform="translate(${cx} ${cy - armLen})">${catPaw(cat, pawSize)}</g>`
       + `</g>`;
     // 真ん中の猫
     const k = hub / 50;
-    s += `<circle cx="${cx}" cy="${cy}" r="${hub + 6}" fill="${C.paper}" stroke="${cat.line}" stroke-width="3"/>`;
+    s += `<circle cx="${cx}" cy="${f(cy + 4)}" r="${hub + 7}" fill="#c97a6e" opacity="0.5"/>`
+      + `<circle cx="${cx}" cy="${cy}" r="${hub + 7}" fill="#f7b4a6" stroke="#c97a6e" stroke-width="2.4"/>`
+      + `<circle cx="${cx}" cy="${cy}" r="${hub + 2}" fill="${C.paper}" stroke="#e3918a" stroke-width="1.6"/>`;
     s += `<g class="hub-cat" transform="translate(${cx} ${cy + hub * 0.08}) scale(${(k * 0.9).toFixed(3)})">${catFace(cat)}</g>`;
+    // ちょん と おす 手（動きの ちがい）
+    s += `<g class="rl-push" opacity="0">${catPaw(cat, pawSize * 1.05)}</g>`;
     svg.innerHTML = s;
     stage.textContent = '';
     stage.appendChild(svg);
@@ -160,8 +186,10 @@ export function createRoulette({ view, stage, result, play, getChoices, getWeigh
       needle: svg.querySelector('.needle'),
       ring: svg.querySelector('.pick-ring'),
       hubCat: svg.querySelector('.hub-cat'),
+      push: svg.querySelector('.rl-push'),
       bulbs: Array.from(svg.querySelectorAll('.rl-bulb')),
     };
+    geo.armLen = armLen;
     stage.dataset.count = String(n);
     stage.dataset.cat = cat.id;
     stage.dataset.spans = spans.map((x) => x.toFixed(2)).join(',');
@@ -246,14 +274,21 @@ export function createRoulette({ view, stage, result, play, getChoices, getWeigh
     let lastSector = sectorAt(((from % 360) + 360) % 360);
     let lastTick = 0;
     let lastLook = 0;
-    const dur = 4600 + turns * 260;
-    // ときどき出る別の動き（v12）：1つ手前の場所で いったん止まり、「あれ？」の後に もうひと目もり すすむ
-    delete stage.dataset.variant;
+    // 動きの ちがい（4つ）
+    const vr = Math.random();
+    const variant = geo.n < 2 ? 'plain' : vr < 0.25 ? 'creep' : vr < 0.5 ? 'over' : vr < 0.75 ? 'flick' : 'plain';
+    stage.dataset.variant = variant;
     const prev = (decided - 1 + geo.n) % geo.n;
-    const back = geo.n > 1 && Math.random() < 0.3 ? within + Math.min(spans[prev] * 0.5, 30) : 0;
-    if (back) stage.dataset.variant = 'creep';
+    const next = (decided + 1) % geo.n;
+    // あれ？：1つ手前の場所で いったん止まり、もうひと目もり すすむ
+    const back = variant === 'creep' ? within + Math.min(spans[prev] * 0.5, 30) : 0;
+    // いきすぎ：となりの場所まで行ってから、ゆっくり もどる
+    const over = variant === 'over' ? spans[decided] - within + Math.min(spans[next] * 0.5, 30) : 0;
+    // ちょん：止まりかけた所から、真ん中の猫が おして もうひとまわり
+    const push = variant === 'flick' ? 480 : 0; // ちがう場所で 止まりかけるように ひとまわり と 3分の1
+    const dur = 4600 + turns * 260 - (push ? 1300 : 0);
     await frames(dur, (t) => {
-      angle = from + (total - back) * ease.outQuart(t);
+      angle = from + (total - back + over - push) * ease.outQuart(t);
       setNeedle(angle);
       const ph = Math.floor(angle / 13);
       refs.bulbs.forEach((el, k) => el.setAttribute('fill', (k + ph) % 4 === 0 ? '#ffd36b' : '#f3dcc0'));
@@ -266,6 +301,38 @@ export function createRoulette({ view, stage, result, play, getChoices, getWeigh
       const nowL = performance.now();
       if (nowL - lastLook > 90) { lookAt(angle); lastLook = nowL; }
     });
+    if (over) {
+      showHint(result, 'いきすぎ…？');
+      audio.heart();
+      await wait(380);
+      const a0 = angle;
+      await frames(720, (t) => { angle = a0 - over * ease.inOutSine(t); setNeedle(angle); lookAt(angle); });
+      audio.tick();
+    }
+    if (push) {
+      showHint(result, 'とまっちゃう…？');
+      await wait(260);
+      // 手が 針の先へ のびて ちょん
+      const rad = ((angle - 90) * Math.PI) / 180;
+      const tip = { x: geo.cx + Math.cos(rad) * geo.armLen * 0.55, y: geo.cy + Math.sin(rad) * geo.armLen * 0.55 };
+      setCat('strain');
+      await frames(260, (t) => {
+        refs.push.setAttribute('opacity', f(t));
+        refs.push.setAttribute('transform', `translate(${f(geo.cx + (tip.x - geo.cx) * t)} ${f(geo.cy + (tip.y - geo.cy) * t)})`);
+      });
+      showHint(result, 'ちょん！');
+      audio.pop();
+      const a0 = angle;
+      let ls = sectorAt(((a0 % 360) + 360) % 360);
+      await frames(1100, (t) => {
+        angle = a0 + push * ease.outCubic(t);
+        setNeedle(angle);
+        refs.push.setAttribute('opacity', f(Math.max(0, 1 - t * 4)));
+        const sec = sectorAt(((angle % 360) + 360) % 360);
+        if (sec !== ls) { ls = sec; audio.tick(); }
+        lookAt(angle);
+      });
+    }
     if (back) {
       showHint(result, 'ここ…？');
       audio.heart();

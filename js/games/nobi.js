@@ -1,21 +1,21 @@
 // のびのび せいくらべ（見せ方の部品：柱のきず。v16 で作り直し：依頼者が選んだ B の案）。
-// えんがわの 太い柱に、えんぴつで 高さの印と選択肢が書いてある。イズが 柱に せなかを付けて立ち、
-// つま先立ちで しっぽを ぴんと のばして、ぐーんと のびる。となりの はしごで アズが いっしょに のぼり、
-// 止まった所で イズの頭の てっぺんに えんぴつで 印を付ける。印を付けた高さの選択肢が結果になる。
+// えんがわの 太い柱に、えんぴつで 高さの印と選択肢が書いてある。イズが 柱の前に おすわりして、
+// りょう手を ばんざいに のばし、胴を ぐーんと のばす（猫の のび。人の立ち方には しない：依頼者の希望 2026-10-27）。
+// となりの はしごで アズが いっしょに のぼり、止まった所で 手の先の高さに えんぴつで 印を付ける。印を付けた高さの選択肢が結果になる。
 // 段階の出やすさは、お楽しみ袋の選択肢ごとに選んだもの（RS01-S21）。どの段階もお祝いし、段階が上がるほどお祝いを大きくする（RS01-S09・S15）。
 //
-// のびる体は 部品を重ねて描く（足・胴・うで・頭・しっぽ）。胴だけが のび、しまは 胴の長さぶん 出てくるので、
+// のびる体は 部品を重ねて描く（おしり・胴・うで・頭・手）。胴と うでが のび、しまは 胴の長さぶん 出てくるので、
 // どれだけ のびても 形が くずれない（依頼者の不安への手当て。docs/決めたことの記録.md 16.2）。
 //
 // 結果が出るまでの「どうなるんだろう？」と思わせる時間（RS01-S19）
-// 1. じゅんび：イズが 柱に せなかを ぴたっと付けて、ふりふり。アズが はしごの下で「はかるよー」。
+// 1. じゅんび：イズが かがんで、おしりを ふりふり（飛びつく前の猫のしぐさ）。アズが はしごの下で「はかるよー」。
 // 2. 印に届くたびに、ぷるぷる ふんばって止まる。「まだ のびる…？」。次の印の文字が、そっと光る。アズも はしごを のぼる。
 //    どの印でも同じ ふんばり方をするので、止まるのか、まだのびるのかは、ふんばりが終わるまで分からない。
 // 3. 決めた印で ふんばりが終わったら「ぴたっ」と止まり、アズが えんぴつで しゅっと 印を付ける。
-// 動きの ちがい（3B：4つ）：ふつう・ずるっ（すべって もう いちど）・しっぽ（しっぽの先が 印を こえて アズが「しっぽは なし」）・はしご（アズの はしごが ぐらっ）。
+// 動きの ちがい（3B：4つ）：ふつう・ずるっ（すべって もう いちど）・ちょいちょい（かた手だけ 上の印を ちょいちょい。アズが「かたては なしだよ」）・はしご（アズの はしごが ぐらっ）。
 // のびすぎて戻る動きは使わない（一番小さい段階を残念がる見せ方にしない：RS01-S15）。
 import { C } from '../art.js';
-import { catFace, catSitting, catPaw, torsoPattern, DESIGNS, CAT_DESIGN } from '../cats.js';
+import { catFace, catSitting, catPaw, pawPrint, torsoPattern, tail, DESIGNS, CAT_DESIGN } from '../cats.js';
 import { audio } from '../audio.js';
 import { pickWeighted } from '../odds.js';
 import { celebrate, clearCelebration, ease, frames, wait } from '../fx.js';
@@ -41,36 +41,34 @@ export function nobiTiming(n) {
     settle: 420,
   };
 }
-export const NOBI_VARIANTS = ['plain', 'slip', 'tail', 'ladder'];
+export const NOBI_VARIANTS = ['plain', 'slip', 'choi', 'ladder'];
 
 // 柱と イズと はしごの置き場。labels は選択肢（いちばん長い文字で、柱に書く所の幅を決める）
 export function pillarLayout(labels, W, H) {
   const n = labels.length;
   const k = clamp(H / 520, 0.6, 1);
-  const hs = 0.6 * k; // 頭の大きさ
   const floorY = H - 14 * k;
   const longest = Math.max(1, ...labels.map((l) => charCount(l)));
   const textW = clamp(longest * 15 + 10, 112, W * 0.42);
   const textX = 12;
-  const izuX = textX + textW + 6 + 30 * hs + 4;
-  const ladderX = izuX + 40 * k; // はしごの左の柱
+  const izuX = textX + textW + 8 + 50 * k; // 手と 頭が 文字に かからない
+  const ladderX = izuX + 60 * k; // はしごの左の柱
   const ladderW = 34 * k;
-  const legH = 24 * k;
-  const torso0 = 46 * k;
-  const restReach = floorY - legH - torso0 - 63 * hs;
+  const baseTop = floorY - 54 * k; // おしりの上（ここから上が のびる胴）
+  const restReach = floorY - 152 * k; // のびる前の 手の先
   const lowMark = restReach - 24 * k;
   const topMark = 24;
   const step = n > 1 ? (lowMark - topMark) / (n - 1) : 0;
   const marks = Array.from({ length: n }, (_, i) => lowMark - step * i);
   const size = Math.min(...labels.map((l) => clamp(Math.min(20, (step || 40) * 0.74, (textW - 8) / Math.max(charCount(l), 1)), 0, 20)));
-  return { n, k, hs, floorY, textX, textW, izuX, ladderX, ladderW, legH, torso0, restReach, marks, step, size, pillarR: izuX + 30 * k };
+  return { n, k, floorY, textX, textW, izuX, ladderX, ladderW, baseTop, restReach, marks, step, size, pillarR: izuX + 30 * k };
 }
 
 export function createNobi({ view, stage, result, play, getStages, getWeights, getCat }) {
   let geo = null;
   let busy = false;
   let refs = {};
-  let reach = 0; // いまの イズの頭の てっぺんの高さ（画面の y 座標）
+  let reach = 0; // いまの イズの 手の先の高さ（画面の y 座標）
   let azY = 0; // アズの いる高さ（はしごの上の、すわっている所）
   let cat = null;
 
@@ -82,7 +80,7 @@ export function createNobi({ view, stage, result, play, getStages, getWeights, g
     const H = stage.clientHeight;
     if (!W || !H) return;
     const G = pillarLayout(stages, W, H);
-    const { n, k, hs, floorY, textX, textW, izuX, ladderX, ladderW, marks, pillarR } = G;
+    const { n, k, floorY, textX, textW, izuX, ladderX, ladderW, marks, pillarR, baseTop } = G;
     geo = { ...G, W, H };
     const L = d.line;
     const clipId = `torso-${Math.random().toString(36).slice(2, 8)}`;
@@ -125,18 +123,25 @@ export function createNobi({ view, stage, result, play, getStages, getWeights, g
     s += `<path d="M${f(ladderX)},${f(floorY)} L${f(ladderX + 4 * k)},${f(lt)} M${f(ladderX + ladderW)},${f(floorY)} L${f(ladderX + ladderW - 4 * k)},${f(lt)}" stroke="#b98a52" stroke-width="${f(6 * k)}" stroke-linecap="round"/>`
       + `<path d="M${f(ladderX)},${f(floorY)} L${f(ladderX + 4 * k)},${f(lt)} M${f(ladderX + ladderW)},${f(floorY)} L${f(ladderX + ladderW - 4 * k)},${f(lt)}" stroke="#f1d3a6" stroke-width="${f(3 * k)}" stroke-linecap="round"/>`;
     for (let y = floorY - 18 * k; y > lt + 4; y -= 22 * k) s += `<path d="M${f(ladderX + 2)},${f(y)} H${f(ladderX + ladderW - 2)}" stroke="#c99a62" stroke-width="${f(3.4 * k)}" stroke-linecap="round"/>`;
-    // イズ（後ろから：しっぽ → 足 → 胴 → うで → 頭）
+    // イズ（おすわりして ばんざい：しっぽ → うで → 胴 → おしり → 頭 → 手）
+    const cx = izuX;
     s += `<g class="cat">`
-      + `<ellipse cx="${f(izuX)}" cy="${f(floorY)}" rx="${f(30 * k)}" ry="${f(5 * k)}" fill="#a0703f" opacity="0.2"/>`
-      + `<g class="nb-tail"></g>`
-      + `<g class="nb-legs"></g>`
-      + `<defs><clipPath id="${clipId}"><rect class="torso-clip" x="${f(izuX - 24 * k)}" y="0" width="${f(48 * k)}" height="10" rx="${f(20 * k)}"/></clipPath></defs>`
-      + `<g clip-path="url(#${clipId})"><rect x="${f(izuX - 24 * k)}" y="0" width="${f(48 * k)}" height="${H}" fill="${d.base}"/>`
-      + torsoPattern(d, { x0: izuX - 24 * k, x1: izuX + 24 * k, yBase: floorY, h: H, k })
-      + `<rect x="${f(izuX - 11 * k)}" y="0" width="${f(22 * k)}" height="${H}" fill="${d.chest}"/></g>`
-      + `<rect class="torso-line" x="${f(izuX - 24 * k)}" y="0" width="${f(48 * k)}" height="10" rx="${f(20 * k)}" fill="none" stroke="${L}" stroke-width="${f(2.8 * k)}"/>`
-      + `<g class="nb-arms"></g>`
-      + `<g class="head"><g class="head-in" transform="scale(${f(hs)})">${catFace(d, { look: { x: 0, y: -1 } })}</g></g>`
+      + `<ellipse cx="${f(cx)}" cy="${f(floorY - 2)}" rx="${f(50 * k)}" ry="${f(6 * k)}" fill="#a0703f" opacity="0.2"/>`
+      + tail(d, `M${f(cx + 30 * k)},${f(floorY - 20 * k)} C${f(cx + 62 * k)},${f(floorY - 22 * k)} ${f(cx + 64 * k)},${f(floorY - 66 * k)} ${f(cx + 46 * k)},${f(floorY - 90 * k)}`, 11 * k)
+      + `<rect class="arm" x="${f(cx - 45 * k)}" y="0" width="${f(18 * k)}" height="10" rx="${f(9 * k)}" fill="${d.base}" stroke="${L}" stroke-width="${f(3 * k)}"/>`
+      + `<rect class="arm" x="${f(cx + 27 * k)}" y="0" width="${f(18 * k)}" height="10" rx="${f(9 * k)}" fill="${d.base}" stroke="${L}" stroke-width="${f(3 * k)}"/>`
+      + `<defs><clipPath id="${clipId}"><rect class="torso-clip" x="${f(cx - 30 * k)}" y="0" width="${f(60 * k)}" height="10" rx="${f(26 * k)}"/></clipPath></defs>`
+      + `<g clip-path="url(#${clipId})"><rect x="${f(cx - 30 * k)}" y="0" width="${f(60 * k)}" height="${H}" fill="${d.base}"/>`
+      + torsoPattern(d, { x0: cx - 30 * k, x1: cx + 30 * k, yBase: baseTop, h: H, k })
+      + `<rect x="${f(cx - 14 * k)}" y="0" width="${f(28 * k)}" height="${H}" fill="${d.chest}"/></g>`
+      + `<rect class="torso-line" x="${f(cx - 30 * k)}" y="0" width="${f(60 * k)}" height="10" rx="${f(26 * k)}" fill="none" stroke="${L}" stroke-width="${f(3 * k)}"/>`
+      + `<ellipse cx="${f(cx)}" cy="${f(floorY - 34 * k)}" rx="${f(40 * k)}" ry="${f(30 * k)}" fill="${d.base}" stroke="${L}" stroke-width="${f(3 * k)}"/>`
+      + `<ellipse cx="${f(cx)}" cy="${f(floorY - 30 * k)}" rx="${f(20 * k)}" ry="${f(20 * k)}" fill="${d.chest}"/>`
+      + `<ellipse cx="${f(cx - 22 * k)}" cy="${f(floorY - 9 * k)}" rx="${f(17 * k)}" ry="${f(10 * k)}" fill="${d.paw}" stroke="${L}" stroke-width="${f(3 * k)}"/>`
+      + `<ellipse cx="${f(cx + 22 * k)}" cy="${f(floorY - 9 * k)}" rx="${f(17 * k)}" ry="${f(10 * k)}" fill="${d.paw}" stroke="${L}" stroke-width="${f(3 * k)}"/>`
+      + `<g class="head"><g class="head-in" transform="scale(${f(0.92 * k)})">${catFace(d, { look: { x: 0, y: -1 } })}</g></g>`
+      + `<g class="pawL"><circle r="${f(13 * k)}" fill="${d.paw}" stroke="${L}" stroke-width="${f(3 * k)}"/>${pawPrint('#f7b4a6', 8 * k)}</g>`
+      + `<g class="pawR"><circle r="${f(13 * k)}" fill="${d.paw}" stroke="${L}" stroke-width="${f(3 * k)}"/>${pawPrint('#f7b4a6', 8 * k)}</g>`
       + `</g>`;
     // アズ（はしごに すわって、えんぴつを持つ）
     s += `<g class="nb-az"><g transform="scale(${f(0.48 * k)})"><g class="nb-az-in">${catSitting(AZ, { look: { x: -1, y: -0.3 } })}</g></g>`
@@ -149,9 +154,9 @@ export function createNobi({ view, stage, result, play, getStages, getWeights, g
     stage.appendChild(svg);
     refs = {
       cat: svg.querySelector('.cat'),
-      tail: svg.querySelector('.nb-tail'),
-      legs: svg.querySelector('.nb-legs'),
-      arms: svg.querySelector('.nb-arms'),
+      arms: Array.from(svg.querySelectorAll('.arm')),
+      pawL: svg.querySelector('.pawL'),
+      pawR: svg.querySelector('.pawR'),
       torsoClip: svg.querySelector('.torso-clip'),
       torsoLine: svg.querySelector('.torso-line'),
       head: svg.querySelector('.head'),
@@ -170,51 +175,32 @@ export function createNobi({ view, stage, result, play, getStages, getWeights, g
     stage.dataset.minLabel = G.size.toFixed(1);
   }
 
-  // イズの頭の てっぺんを y にして、各部を描き直す。shake は ふんばりの小さな揺れ。tailUp は しっぽの先を さらに のばす分
-  function setReach(y, shake = 0, tailUp = 0) {
+  // イズの 手の先を y にして、各部を描き直す（のびるのは 胴と うで）。shake は ふんばりの小さな揺れ。
+  // choi は 右手だけ さらに 上へ のばす分（ちょいちょい）
+  function setReach(y, shake = 0, choi = 0) {
     reach = y;
-    const { k, hs, izuX, floorY, legH, restReach } = geo;
-    const d = cat;
-    const L = d.line;
-    const lift = clamp((restReach - y) / (30 * k), 0, 1) * 7 * k; // つま先立ち
-    const headCY = y + 37 * hs;
-    const neckY = headCY + 26 * hs;
-    const hipY = floorY - legH - lift;
-    const top = neckY - 8 * k;
-    const h = Math.max(10, hipY + 8 * k - top);
-    refs.torsoClip.setAttribute('y', f(top));
-    refs.torsoClip.setAttribute('height', f(h));
-    refs.torsoLine.setAttribute('y', f(top));
-    refs.torsoLine.setAttribute('height', f(h));
-    refs.head.setAttribute('transform', `translate(${f(izuX + shake * 0.4)} ${f(headCY)})`);
-    // 足（つま先立ちで かかとが上がる）
-    let legs = '';
-    for (const sg of [-1, 1]) {
-      const lx = izuX + sg * 11 * k;
-      legs += `<rect x="${f(lx - 8 * k)}" y="${f(hipY - 6 * k)}" width="${f(16 * k)}" height="${f(floorY - lift - hipY + 10 * k)}" rx="${f(8 * k)}" fill="${d.base}" stroke="${L}" stroke-width="${f(2.6 * k)}"/>`
-        + `<ellipse cx="${f(lx + sg * 2 * k)}" cy="${f(floorY - 4 * k - lift * 0.4)}" rx="${f(11 * k - lift * 0.5)}" ry="${f(6 * k)}" fill="${d.paw}" stroke="${L}" stroke-width="${f(2.6 * k)}" transform="rotate(${f(sg * lift * 3)} ${f(lx)} ${f(floorY - 4 * k)})"/>`;
-    }
-    refs.legs.innerHTML = legs;
-    // うで（体の横に まっすぐ。長さは かわらない）
-    let arms = '';
-    const sh = neckY + 2 * k;
-    for (const sg of [-1, 1]) {
-      const ax = izuX + sg * 23 * k;
-      arms += `<rect x="${f(ax - 7 * k)}" y="${f(sh + sg * shake * 0.3)}" width="${f(14 * k)}" height="${f(40 * k)}" rx="${f(7 * k)}" fill="${d.base}" stroke="${L}" stroke-width="${f(2.6 * k)}"/>`
-        + `<circle cx="${f(ax)}" cy="${f(sh + 38 * k + sg * shake * 0.3)}" r="${f(7.5 * k)}" fill="${d.paw}" stroke="${L}" stroke-width="${f(2.4 * k)}"/>`;
-    }
-    refs.arms.innerHTML = arms;
-    // しっぽ（こしから ぴんと上へ。長さは かわらない）
-    const tx = izuX - 20 * k;
-    const tl = 96 * k + tailUp;
-    const tp = `M${f(tx + 6 * k)},${f(hipY)} C${f(tx - 6 * k)},${f(hipY - tl * 0.3)} ${f(tx - 2 * k)},${f(hipY - tl * 0.7)} ${f(tx - 6 * k + shake * 0.5)},${f(hipY - tl)}`;
-    const w = 10 * k;
-    refs.tail.innerHTML = `<path d="${tp}" stroke="${L}" stroke-width="${f(w + 5 * k)}" fill="none" stroke-linecap="round"/>`
-      + `<path d="${tp}" stroke="${d.tail}" stroke-width="${f(w)}" fill="none" stroke-linecap="round"/>`
-      + (d.body === 'saba' ? `<path d="${tp}" stroke="${d.stripe}" stroke-width="${f(w * 0.66)}" fill="none" stroke-linecap="round" stroke-dasharray="${f(w * 0.45)} ${f(w * 0.8)}"/>` : '');
+    const { k, izuX: cx, baseTop } = geo;
+    const pawY = y + 13 * k;
+    const headY = y + 72 * k;
+    const torsoTop = headY + 20 * k;
+    const torsoH = Math.max(10, baseTop - torsoTop + 16 * k);
+    refs.torsoClip.setAttribute('y', f(torsoTop));
+    refs.torsoClip.setAttribute('height', f(torsoH));
+    refs.torsoLine.setAttribute('y', f(torsoTop));
+    refs.torsoLine.setAttribute('height', f(torsoH));
+    const shoulder = headY + 24 * k;
+    const pr = pawY - choi;
+    refs.arms.forEach((a, i) => {
+      const top = i ? pr - shake : pawY + shake;
+      a.setAttribute('y', f(top));
+      a.setAttribute('height', f(Math.max(10, shoulder - top)));
+    });
+    refs.head.setAttribute('transform', `translate(${f(cx + shake * 0.3)} ${f(headY)})`);
+    refs.pawL.setAttribute('transform', `translate(${f(cx - 36 * k)} ${f(pawY + shake)})`);
+    refs.pawR.setAttribute('transform', `translate(${f(cx + 36 * k)} ${f(pr - shake)}) rotate(${f(choi ? Math.sin(choi / (6 * k)) * 14 : 0)})`);
   }
 
-  // アズの高さ（はしごの上）。えんぴつは イズの頭の てっぺんを さす
+  // アズの高さ（はしごの上）。えんぴつは イズの 手の先の高さを さす
   function setAz(y, lean = 0) {
     azY = y;
     const { k, ladderX, ladderW, izuX } = geo;
@@ -261,7 +247,8 @@ export function createNobi({ view, stage, result, play, getStages, getWeights, g
       const ms = t * dur;
       if (ms >= beats * 520) { audio.heart(); beats++; }
       const sh = Math.sin((ms / 1000) * Math.PI * 2 * 11) * 1.6 * k;
-      setReach(y, sh, extra === 'tail' ? Math.sin(Math.PI * t) * (geo.step + 30 * k) : 0);
+      // ちょいちょい：右手だけ 上の印へ 2回 のばす
+      setReach(y, sh, extra === 'choi' ? Math.abs(Math.sin(Math.PI * 2 * t)) * (geo.step + 18 * k) : 0);
       if (extra === 'ladder') setAz(y, Math.sin(t * Math.PI * 6) * 4 * k * (1 - t));
     });
     if (glow) glow.setAttribute('fill-opacity', '0');
@@ -297,20 +284,20 @@ export function createNobi({ view, stage, result, play, getStages, getWeights, g
     stage.dataset.decided = String(decided);
     delete stage.dataset.landed;
     const t0 = performance.now();
-    // 1. じゅんび：柱に せなかを ぴたっ。ふりふり
+    // 1. じゅんび：かがんで、おしりを ふりふり
     showHint(result, 'はかるよー');
-    await moveTo(restReach + 8 * k, 300, ease.inOutSine);
+    await moveTo(restReach + 14 * k, 300, ease.inOutSine);
     for (let w = 0; w < 3; w++) {
       audio.wiggle(w);
-      await frames(330, (t) => refs.cat.setAttribute('transform', `translate(${f(Math.sin(t * Math.PI * 2) * 3 * k)} 0)`));
+      await frames(330, (t) => refs.cat.setAttribute('transform', `translate(${f(Math.sin(t * Math.PI * 2) * 5 * k)} 0)`));
     }
     refs.cat.removeAttribute('transform');
     // 2. 印ごとに、のびて ふんばる
     const r = Math.random();
-    const variant = r < 0.25 && decided >= 1 ? 'slip' : r < 0.5 ? 'tail' : r < 0.75 ? 'ladder' : 'plain';
+    const variant = r < 0.25 && decided >= 1 ? 'slip' : r < 0.5 ? 'choi' : r < 0.75 ? 'ladder' : 'plain';
     stage.dataset.variant = variant;
     const slipAt = variant === 'slip' ? Math.floor(Math.random() * decided) : -1;
-    const oddAt = Math.floor(Math.random() * (decided + 1)); // しっぽ・はしごの出る印
+    const oddAt = Math.floor(Math.random() * (decided + 1)); // ちょいちょい・はしごの出る印
     for (let j = 0; j <= decided; j++) {
       setMood('up');
       showHint(result, j === 0 ? 'ぐーん…' : 'ぐぐっ…');
@@ -321,8 +308,8 @@ export function createNobi({ view, stage, result, play, getStages, getWeights, g
       flashTag(j, false);
       setMood('strain');
       showHint(result, j === n - 1 ? 'いちばん うえ…！' : 'まだ のびる…？');
-      const extra = j === oddAt && (variant === 'tail' || variant === 'ladder') ? variant : null;
-      if (extra === 'tail') setTimeout(() => showHint(result, 'しっぽは なしだよ'), T.hold(j) * 0.4);
+      const extra = j === oddAt && (variant === 'choi' || variant === 'ladder') ? variant : null;
+      if (extra === 'choi') setTimeout(() => showHint(result, 'かたては なしだよ'), T.hold(j) * 0.4);
       if (extra === 'ladder') setTimeout(() => showHint(result, 'おっとっと…'), T.hold(j) * 0.2);
       await hold(marks[j], T.hold(j), j, extra);
       if (j === slipAt) {
@@ -348,7 +335,7 @@ export function createNobi({ view, stage, result, play, getStages, getWeights, g
     setReach(top);
     setAz(top);
     flashTag(decided, true);
-    // イズの頭の てっぺんに一番近い印を、届いた段階とする
+    // イズの 手の先に一番近い印を、届いた段階とする
     let landed = 0;
     marks.forEach((m, i) => { if (Math.abs(m - reach) < Math.abs(marks[landed] - reach)) landed = i; });
     stage.dataset.landed = String(landed);

@@ -9,12 +9,16 @@
 // 3. ゴールが近づくと、ゆっくりになる。2番目の玉も、すぐ後ろに来る。
 // 結果は先に乱数で決め（RS01-S14）、決めた玉がちょうどゴールに着いた時に、ほかの玉がまだ着いていないように速さを組む。
 // 走路はどれも同じ大きさ（出やすさは走路の大きさに表れない：RS01-S21）。
+// v17 の後（テーマパーク）：ゲームセンターの レースの 台（水色の わくに あつみ）。走路は 選択肢ごとの パステル色。
+// 左はしの札は クレーンの 値札と おなじ パステルの札。ゴールの 看板も パステル。動きの ちがい（3B：4つ）：ふつう・ころん（1つ つまずく）・ねずみ（おもちゃの ねずみが 走路を よこぎって、
+// みんな いったん とまる）・ねぼう（1つ スタートで ねぼうして、あとから おいかける）。
 import { C } from '../art.js';
 import { catSitting } from '../cats.js';
 import { audio } from '../audio.js';
 import { pickWeighted } from '../odds.js';
 import { celebrate, clearCelebration, ease, frames, wait, levelOf } from '../fx.js';
 import { showHint, showResult, setBusy, centerOf, charCount, svgEl, escapeXml } from '../ui.js';
+import { TINTS, pastelTag } from './common.js';
 
 // 毛糸玉の色（12本の走路で同じ色が並ばない）
 const YARN = [
@@ -93,19 +97,23 @@ export function createRace({ view, stage, result, play, getChoices, getWeights, 
 
     const svg = svgEl('svg', { viewBox: `0 0 ${W} ${H}` });
     let s = '';
-    // 板の間（明るい木の床）
-    s += `<rect x="${cardX + 3}" y="${cardY + 6}" width="${cardW}" height="${cardH}" rx="22" fill="#d9b07a" opacity="0.35"/>`;
-    s += `<rect x="${cardX}" y="${cardY}" width="${cardW}" height="${cardH}" rx="22" fill="${C.paper}" stroke="${C.woodDeep}" stroke-width="3"/>`;
-    // 走路（1本おきに うすい色）
+    // 板の間（走路ごとの 床板。あつみ と 木目）
+    s += `<rect x="${cardX + 2}" y="${cardY + 9}" width="${cardW}" height="${cardH}" rx="16" fill="#7aa7c4" opacity="0.25"/>`;
+    s += `<rect x="${cardX}" y="${cardY + 5}" width="${cardW}" height="${cardH}" rx="16" fill="#9fc5e8" stroke="#7aa7c4" stroke-width="2"/>`;
+    s += `<rect x="${cardX}" y="${cardY}" width="${cardW}" height="${cardH}" rx="16" fill="#e2eef7" stroke="#7aa7c4" stroke-width="2.6"/>`;
+    // 走路（1本ずつの 床板）
     let minLabel = Infinity;
     ys.forEach((y, i) => {
-      if (i % 2 === 0) s += `<rect x="${tagX + tagW + 4}" y="${y - spacing / 2}" width="${xGoal - tagX - tagW - 4}" height="${spacing}" fill="${C.cream}" opacity="0.9"/>`;
+      const px = cardX + 3;
+      const pw = cardW - 6;
+      s += `<rect x="${px}" y="${(y - spacing / 2 + 1).toFixed(1)}" width="${pw}" height="${(spacing - 2).toFixed(1)}" rx="3" fill="${TINTS[i % TINTS.length][0]}" opacity="0.55"/>`
+        + `<path d="M${px},${(y + spacing / 2).toFixed(1)} H${px + pw}" stroke="#ffffff" stroke-width="2" stroke-dasharray="6 5"/>`;
       const len = Math.max(charCount(choices[i]), 1);
       const size = Math.max(12, Math.min(22, th * 0.62, ((tagW - 16) / len) * 0.98));
       minLabel = Math.min(minLabel, size);
       s += `<g class="tag" data-i="${i}">`
-        + `<rect class="tag-bg" x="${tagX}" y="${y - th / 2}" width="${tagW}" height="${th}" rx="${Math.min(12, th / 2)}" fill="#ffffff" stroke="${C.woodDeep}" stroke-width="2"/>`
-        + `<text class="cell-label" x="${tagX + tagW / 2}" y="${y}" font-size="${size.toFixed(1)}" fill="${C.ink}" text-anchor="middle" dominant-baseline="central">${escapeXml(choices[i])}</text>`
+        + pastelTag(i, tagX, y - th / 2, tagW, th, 'tag-bg')
+        + `<text class="cell-label" x="${tagX + tagW / 2}" y="${y + 0.5}" font-size="${size.toFixed(1)}" fill="${C.ink}" text-anchor="middle" dominant-baseline="central">${escapeXml(choices[i])}</text>`
         + `</g>`;
     });
     // スタートの線と、ゴールの線（小さな三角の旗を並べる）
@@ -119,7 +127,7 @@ export function createRace({ view, stage, result, play, getChoices, getWeights, 
     }
     // ゴールの 看板（v12。カードの上に よゆうが ある時）
     if (cardY > 24) {
-      s += `<g transform="translate(${xGoal} ${(cardY - 4).toFixed(1)})"><path d="M-24,0 V-20 M24,0 V-20" stroke="${C.chestnutDeep}" stroke-width="3"/><rect x="-32" y="-30" width="64" height="20" rx="10" fill="#fffaf0" stroke="${C.momiji}" stroke-width="2.4"/>`
+      s += `<g transform="translate(${xGoal} ${(cardY - 4).toFixed(1)})"><path d="M-24,0 V-20 M24,0 V-20" stroke="${C.chestnutDeep}" stroke-width="3"/><rect x="-31" y="-28" width="64" height="20" rx="10" fill="${C.momiji}" opacity="0.3"/><rect x="-32" y="-30" width="64" height="20" rx="10" fill="#fff6ea" stroke="${C.momiji}" stroke-width="2.2"/>`
         + `<text y="-19.5" font-size="13" font-weight="700" fill="${C.momiji}" text-anchor="middle" dominant-baseline="central">ゴール</text></g>`;
     }
     // 糸（走った後に残る）と毛糸玉
@@ -136,6 +144,8 @@ export function createRace({ view, stage, result, play, getChoices, getWeights, 
         + `</g>`;
     });
     s += `</g>`;
+    // おもちゃの ねずみ（動きの ちがい）
+    s += `<g class="rc-mouse" visibility="hidden"><path d="M0,10 q6,8 0,16" stroke="#8f8499" stroke-width="2" fill="none" stroke-linecap="round"/><ellipse rx="8" ry="11" fill="#e3dde9" stroke="#8f8499" stroke-width="1.8"/><circle cx="-6" cy="-7" r="4" fill="#e3dde9" stroke="#8f8499" stroke-width="1.6"/><circle cx="6" cy="-7" r="4" fill="#e3dde9" stroke="#8f8499" stroke-width="1.6"/><circle cx="0" cy="-11" r="2" fill="#f19bb0"/></g>`;
     // いちばんの印（着いた玉の走路の、ゴールの線の右に出す）
     const rr = Math.max(9, Math.min(15, spacing * 0.38));
     s += `<g class="medal" visibility="hidden"><g class="medal-in">`
@@ -161,6 +171,7 @@ export function createRace({ view, stage, result, play, getChoices, getWeights, 
       flag: svg.querySelector('.flag'),
       medal: svg.querySelector('.medal'),
       medalIn: svg.querySelector('.medal-in'),
+      mouse: svg.querySelector('.rc-mouse'),
     };
     stage.dataset.count = String(n);
     stage.dataset.cat = cat.id;
@@ -227,20 +238,42 @@ export function createRace({ view, stage, result, play, getChoices, getWeights, 
     let lastTick = 0;
     let lastLook = 0;
     let hinted = false;
-    delete stage.dataset.variant;
-    let trip = n > 1 && Math.random() < 0.3 ? Math.floor(Math.random() * n) : -1;
+    const vr = Math.random();
+    const variant = n < 2 ? 'plain' : vr < 0.25 ? 'trip' : vr < 0.5 ? 'mouse' : vr < 0.75 ? 'nebou' : 'plain';
+    stage.dataset.variant = variant;
+    let trip = variant === 'trip' ? Math.floor(Math.random() * n) : -1;
     if (trip === decided) trip = (trip + 1) % n;
     let tripped = false;
+    // ねぼう：1つ（決めた玉とは かぎらない）が スタートで ねぼうして、あとから おいかける
+    const nebou = variant === 'nebou' ? Math.floor(Math.random() * n) : -1;
+    const late = 0.16;
+    const lateAt = (i, sv) => (i !== nebou ? null : sv < late ? 0 : i === decided ? (sv - late) / (1 - late) : Math.min(prof.at(i, (sv - late) / (1 - late)), 0.99));
+    if (nebou >= 0) showHint(result, 'あれ？ 1つ うごかない…');
+    // ねずみ：おもちゃの ねずみが よこぎって、みんな いったん とまる
+    let mouseDone = variant !== 'mouse';
+    let pausedUntil = 0;
     await new Promise((resolve) => {
       const step = (now) => {
         const dt = Math.min(50, now - last);
         last = now;
+        if (!mouseDone && s > 0.38) {
+          mouseDone = true;
+          pausedUntil = now + 900;
+          showHint(result, 'ねずみが よこぎった！');
+          audio.pop();
+          const mx = (geo.xStart + geo.xGoal) / 2;
+          refs.mouse.setAttribute('visibility', 'visible');
+          frames(900, (t) => refs.mouse.setAttribute('transform', `translate(${(mx + Math.sin(t * Math.PI * 6) * 4).toFixed(1)} ${(-20 + (geo.H + 40) * t).toFixed(1)}) rotate(180)`)).then(() => { refs.mouse.setAttribute('visibility', 'hidden'); showHint(result, 'さいかい！'); });
+        }
+        if (now < pausedUntil) { requestAnimationFrame(step); return; }
+        if (nebou >= 0 && s < late && s + (dt / D) >= late) { showHint(result, 'あ、おきた！'); audio.hop(1); }
         s = simStep(s, dt, D);
         const sNow = Math.min(s, 1);
         let lead = 0;
         let leadP = -1;
         for (let i = 0; i < n; i++) {
-          const p = i === decided ? sNow : Math.min(prof.at(i, sNow), 0.995);
+          const lp = lateAt(i, sNow);
+          const p = lp !== null ? lp : i === decided ? sNow : Math.min(prof.at(i, sNow), 0.995);
           placeBall(i, p);
           if (p > leadP) { leadP = p; lead = i; }
         }
@@ -254,9 +287,8 @@ export function createRace({ view, stage, result, play, getChoices, getWeights, 
           setCat('normal', { x: -1, y: Math.max(-1, Math.min(1, dy)) });
         }
         if (trip >= 0 && !tripped && s > 0.45) {
-          // ときどき出る別の動き（v12）：毛糸玉が 1つ つまずいて、ころん
+          // ころん：毛糸玉が 1つ つまずく
           tripped = true;
-          stage.dataset.variant = 'trip';
           showHint(result, 'あっ、ころん！');
           audio.hop(0);
           refs.ballIns[trip].animate([{ transform: 'translateY(0) rotate(0deg)' }, { transform: `translateY(${-geo.r * 1.6}px) rotate(-90deg)` }, { transform: 'translateY(0) rotate(-180deg)' }, { transform: `translateY(${-geo.r * 0.5}px) rotate(-240deg)` }, { transform: 'translateY(0) rotate(-270deg)' }], { duration: 700 });

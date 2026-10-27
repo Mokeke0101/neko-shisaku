@@ -7,11 +7,14 @@
 // 2. ひこうきが 風に のって、3〜4か所の上を ふわっと とおる（おりそうで おりない）。
 // 3. さいごは ゆっくり すべるように おりて、ぴたっと止まる。
 // 結果は先に乱数で決め（RS01-S14）、とぶ道を、決めた場所で終わるように組む。
+// v17 の後（テーマパーク）：芝生は 描かず、季節の背景の 上に しきものを ならべる。しきものの 下に パステルの まるい 台（あつみ）。札は パステル（common.js の plate）。
+// 動きの ちがい（3B：4つ）：ふつう・くるりん（宙がえり）・ブーメラン（いちど 猫の ほうへ もどってくる）・
+// すれすれ（ちがう しきものに おりそうに なって、ふわっと また 上がる）。
 import { C } from '../art.js';
 import { catSitting } from '../cats.js';
 import { audio } from '../audio.js';
 import { ease, frames, wait } from '../fx.js';
-import { createGame, grid, plate, nearest, wander, along, f } from './common.js';
+import { createGame, grid, plate, nearest, wander, along, TINTS, f } from './common.js';
 
 // 上を とおる場所の並び（最後が決めた場所）
 export function flightPlan(n, decided, rand = Math.random) {
@@ -55,7 +58,8 @@ export function createHikoki(deps) {
           const u1 = (k + 0.5) / 4;
           sheet += `<path d="M${f(-rx + 2 * rx * u0)},${f(ry)} L${f(-rx * 0.8 + 1.6 * rx * u0)},${f(-ry)} L${f(-rx * 0.8 + 1.6 * rx * u1)},${f(-ry)} L${f(-rx + 2 * rx * u1)},${f(ry)} Z" fill="${ca}" opacity="0.8"/>`;
         }
-        s += `<g transform="translate(${f(m.cx)} ${f(m.cy)})">${sheet}</g>`;
+        const [pc, pe] = TINTS[i % TINTS.length];
+        s += `<g transform="translate(${f(m.cx)} ${f(m.cy)})"><ellipse cy="${f(ry + 5)}" rx="${f(rx * 1.18)}" ry="${f(ry * 1.15)}" fill="${pe}"/><ellipse cy="${f(ry + 1)}" rx="${f(rx * 1.18)}" ry="${f(ry * 1.15)}" fill="${pc}" stroke="${pe}" stroke-width="1.8"/>${sheet}</g>`;
         s += plate(i, c.x, c.y + c.h - plateH, c.w, plateH, choices[i]).svg;
       });
       // 空の 小さな雲と、右上の ふきながし
@@ -79,12 +83,17 @@ export function createHikoki(deps) {
       // 道：とばした所 → 高く上がる → 場所の上を とおる → 決めた場所へ おりる
       const plan = flightPlan(g.n, decided);
       const pts = [g.start, { x: W * 0.55, y: Math.max(8, g.skyH * 0.2) }];
-      // ときどき：空で くるりんと 1回 宙がえり
-      delete g.stage.dataset.variant;
-      const loop = Math.random() < 0.3;
+      const vr = Math.random();
+      const variant = vr < 0.25 ? 'loop' : vr < 0.5 ? 'boomerang' : vr < 0.75 && g.n >= 2 ? 'sure' : 'plain';
+      g.stage.dataset.variant = variant;
+      if (variant === 'boomerang') {
+        // ブーメラン：いちど 猫の ほうへ もどってくる
+        pts.push({ x: W * 0.32, y: g.skyH * 0.75 }, { x: g.start.x + 10, y: g.skyH * 0.35 }, { x: W * 0.45, y: Math.max(8, g.skyH * 0.15) });
+      }
+      // くるりん：空で 1回 宙がえり
+      const loop = variant === 'loop';
       let looped = 0;
       if (loop) {
-        g.stage.dataset.variant = 'loop';
         const c = { x: W * 0.62, y: Math.max(30, g.skyH * 0.55) };
         const r = Math.min(34, g.skyH * 0.32);
         [-0.5, 0, 0.5, 1, 1.5].forEach((q) => pts.push({ x: c.x + Math.cos(Math.PI * q) * r + q * 6, y: c.y - Math.sin(Math.PI * q) * r }));
@@ -92,7 +101,9 @@ export function createHikoki(deps) {
       plan.forEach((i, k) => {
         const m = g.mats[i];
         const last = k === plan.length - 1;
-        pts.push({ x: m.cx + (last ? 0 : (k % 2 ? 1 : -1) * 14), y: last ? m.cy : m.cy - Math.max(30, g.cells[0].h * 0.55) });
+        // すれすれ：さいごの 1つ前の しきものに、おりそうなくらい ひくく とおる
+        const low = variant === 'sure' && k === plan.length - 2;
+        pts.push({ x: m.cx + (last ? 0 : (k % 2 ? 1 : -1) * 14), y: last ? m.cy : low ? m.cy - 8 : m.cy - Math.max(30, g.cells[0].h * 0.55) });
       });
       // 最後の1つ前に、決めた場所の上（高い所）を足して、すーっと おりるようにする
       const fin = g.mats[decided];
@@ -108,6 +119,9 @@ export function createHikoki(deps) {
         const deg = Math.max(-50, Math.min(50, (p.a * 180) / Math.PI));
         R.plane.setAttribute('transform', `translate(${f(p.x)} ${f(p.y)}) rotate(${f(deg)})`);
         if (loop && u > 0.12 && !looped) { looped = 1; say('くるりん！'); audio.hop(2); }
+        if (variant === 'boomerang' && u > 0.1 && !looped) { looped = 1; say('もどってきた！？'); R.cat.innerHTML = catSitting(g.cat, { mood: 'happy', look: { x: 1, y: 0 } }); audio.hop(2); }
+        if (variant === 'boomerang' && u > 0.3 && looped === 1) { looped = 2; say('また いった～'); R.cat.innerHTML = catSitting(g.cat, { look: { x: 1, y: 0.4 } }); }
+        if (variant === 'sure' && u > 0.66 && looped === 0) { looped = 1; say('すれすれ…！'); audio.heart(); }
         if (u > 0.5 && !said) { said = 1; say('どこに おりるかな…'); audio.heart(); }
         if (Math.floor(t * 4) > blew) { blew = Math.floor(t * 4); gust(g, p); audio.slide(0.3); }
       });

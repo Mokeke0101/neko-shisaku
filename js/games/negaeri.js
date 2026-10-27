@@ -192,10 +192,10 @@ export function createNegaeri(deps) {
       g.catS = Math.max(0.34, Math.min(0.8, (L.cw * 0.7) / 116, (L.topH + 16) / 80, L.lane / 128));
       g.beds = L.list.map((c) => ({ cx: c.x, cy: c.y }));
       // へやの ゆか（板）と、まん中の ラグ
-      let s = `<rect x="0" y="0" width="${W}" height="${H}" rx="16" fill="#f3dcb6"/>`;
-      for (let y = 34; y < H; y += 34) s += `<path d="M0,${y} H${W}" stroke="#e6c697" stroke-width="2"/>`;
-      for (let y = 0, k = 0; y < H; y += 34, k++) s += `<path d="M${f(((k * 97) % (W - 40)) + 20)},${y + 3} v28" stroke="#e6c697" stroke-width="1.6"/>`;
-      s += `<rect x="0" y="0" width="${W}" height="${H}" rx="16" fill="none" stroke="#d9b886" stroke-width="2.4"/>`;
+      // v17 の後（テーマパーク）：ゆかは パステルの ふわふわ マット（水玉。ふちに あつみ）
+      let s = `<rect x="0" y="4" width="${W}" height="${H - 4}" rx="16" fill="#cdbfe0"/>`
+        + `<rect x="0" y="0" width="${W}" height="${H - 4}" rx="16" fill="#f3eef8" stroke="#a985c9" stroke-width="2.4"/>`;
+      for (let y = 16; y < H - 10; y += 18) for (let x = 14 + (Math.round(y / 18) % 2) * 9; x < W - 8; x += 18) s += `<circle cx="${x}" cy="${y}" r="1.6" fill="#e2d6ef"/>`;
       // 窓の ひだまり
       s += `<path d="M${f(W * 0.3)},0 L${f(W * 0.72)},0 L${f(W * 0.62)},${f(H * 0.5)} L${f(W * 0.18)},${f(H * 0.5)} Z" fill="#fff6dc" opacity="0.45"/>`;
       const rugRx = Math.min(L.lane * 0.46, 70);

@@ -4,7 +4,7 @@
 // 公開し直す時は VERSION を上げる（js/version.js の APP_VERSION と同じ値にする）。
 'use strict';
 
-const VERSION = 'v16';
+const VERSION = 'v17';
 const CACHE = `nekokime-${VERSION}`;
 // 書体（約 4.2 MB）は版と分けて保存し、版を上げても取り直さない（RS01-S03）。書体のファイルを替えた時だけ FONT_VERSION を上げる
 const FONT_VERSION = 'f1';

@@ -7,20 +7,23 @@
 // 2. 猫が ひくく かまえて、おしりを ふりふり（3回）。
 // 3. ぴょーんと とびついて、ねこじゃらしが しなる。
 // 結果は先に乱数で決め（RS01-S14）、ゆれる順を、決めた ねこじゃらしで終わるように組む。
+// v17 の後（テーマパーク）：ねこじゃらしは パステルの うえきばちの ふち（あつみ）から はえる。名前は パステルの札（common.js の plate）。
+// 動きの ちがい（3B：4つ）：ふつう・フェイント（とびつく ふり）・かぜ（ぜんぶ いっせいに ゆれて きょろきょろ）・
+// ごろん（うれしくて ごろんと ころがってから とびつく）。
 import { C } from '../art.js';
 import { look as nowLook } from '../look.js';
 import { seasonFlier } from '../kits.js';
 import { catSitting } from '../cats.js';
 import { audio } from '../audio.js';
 import { ease, frames, wait } from '../fx.js';
-import { createGame, grid, plate, nearest, wander, f } from './common.js';
+import { createGame, grid, plate, nearest, wander, TINTS, f } from './common.js';
 
 // ゆれる ねこじゃらしの並び（最後が決めた1本）
 export function swayPlan(n, decided, rand = Math.random) {
   return wander(n, n <= 2 ? 4 : 4 + Math.floor(rand() * 2), decided, rand);
 }
 export const T = { sway: 640, wiggle: 300, wiggles: 3, crouch: 280, jump: 620, bend: 520 };
-// ときどき出る別の動き（v12）：とびつく ふりを して、もう いちど おしりを ふる（フェイント）
+// 動きの ちがい フェイント：とびつく ふりを して、もう いちど おしりを ふる（フェイント）
 export const FEINT = 380 + T.wiggle;
 export const jarashiDuration = (steps, feint = false) => steps * T.sway + T.crouch + T.wiggles * T.wiggle + T.jump + T.bend + (feint ? FEINT : 0);
 
@@ -56,6 +59,12 @@ export function createJarashi(deps) {
       Object.assign(g, { cells, plateH, th, roots, sk, home: { x: W * 0.5, y: catH * 0.52 } });
       let s = '';
       cells.forEach((c, i) => {
+        // パステルの うえきばちの ふち（あつみ）と 土
+        const mw = Math.min(c.w * 0.44, th * 0.62);
+        const [pc, pe] = TINTS[i % TINTS.length];
+        s += `<ellipse cx="${f(roots[i].cx)}" cy="${f(roots[i].cy + 3)}" rx="${f(mw)}" ry="${f(mw * 0.28)}" fill="${pe}"/>`
+          + `<ellipse cx="${f(roots[i].cx)}" cy="${f(roots[i].cy - 1)}" rx="${f(mw)}" ry="${f(mw * 0.26)}" fill="${pc}" stroke="${pe}" stroke-width="1.8"/>`
+          + `<ellipse cx="${f(roots[i].cx)}" cy="${f(roots[i].cy - 1)}" rx="${f(mw * 0.8)}" ry="${f(mw * 0.17)}" fill="#8a6a55"/>`;
         // 根もとの 草（かざり）
         s += `<path d="M${f(roots[i].cx - th * 0.22)},${f(roots[i].cy)} q${f(th * 0.04)},${f(-th * 0.2)} ${f(-th * 0.06)},${f(-th * 0.26)} M${f(roots[i].cx - th * 0.16)},${f(roots[i].cy)} q${f(th * 0.06)},${f(-th * 0.14)} ${f(th * 0.1)},${f(-th * 0.18)} M${f(roots[i].cx + th * 0.2)},${f(roots[i].cy)} q${f(-th * 0.02)},${f(-th * 0.16)} ${f(th * 0.08)},${f(-th * 0.22)}" stroke="#a3bd6e" stroke-width="2.2" fill="none" stroke-linecap="round"/>`;
         s += `<g transform="translate(${f(roots[i].cx)} ${f(roots[i].cy)})"><g class="tail" data-i="${i}">${foxtail(th, i)}</g></g>`;
@@ -77,6 +86,9 @@ export function createJarashi(deps) {
     },
     async perform(g, decided, say) {
       const plan = swayPlan(g.n, decided);
+      const vr = Math.random();
+      const variant = vr < 0.25 ? 'feint' : vr < 0.5 ? 'kaze' : vr < 0.75 ? 'goron' : 'plain';
+      g.stage.dataset.variant = variant;
       const look = (i) => {
         const r = g.roots[i];
         return { x: Math.max(-1, Math.min(1, (r.cx - g.home.x) / (g.W * 0.35))), y: 1 };
@@ -89,6 +101,18 @@ export function createJarashi(deps) {
         audio.hover(k);
         await frames(T.sway, (t) => swayTo(R.tails[i], Math.sin(t * Math.PI * 3) * 16 * (1 - t * 0.5)));
         swayTo(R.tails[i], 0);
+        if (variant === 'kaze' && k === 1) {
+          // かぜ：ぜんぶ いっせいに ゆれて、目が おいつかない
+          say('ひゅう～っ… ぜんぶ ゆれてる！');
+          audio.stretch(0.6);
+          let lk = -1;
+          await frames(680, (t) => {
+            R.tails.forEach((el, j) => swayTo(el, Math.sin(t * Math.PI * 4 + j * 0.7) * 18 * Math.sin(Math.PI * t)));
+            const want = Math.floor(t * 5) % g.n;
+            if (want !== lk) { lk = want; R.cat.innerHTML = catSitting(g.cat, { look: look((want * 3) % g.n) }); }
+          });
+          R.tails.forEach((el) => swayTo(el, 0));
+        }
       }
       // 2. かまえて おしりを ふりふり
       say('ふり ふり…');
@@ -98,10 +122,17 @@ export function createJarashi(deps) {
         audio.wiggle(k);
         await frames(T.wiggle, (t) => at(g.home.x + Math.sin(t * Math.PI * 2) * 5, g.home.y + 8, 0.88, Math.sin(t * Math.PI * 2) * 5));
       }
-      // ときどき：とびつく ふりを して、もう いちど ふりふり
-      delete g.stage.dataset.variant;
-      if (Math.random() < 0.3) {
-        g.stage.dataset.variant = 'feint';
+      if (variant === 'goron') {
+        // ごろん：うれしくて ころがる
+        say('ごろーん');
+        R.cat.innerHTML = catSitting(g.cat, { mood: 'happy', look: look(decided) });
+        audio.hop(2);
+        await frames(640, (t) => at(g.home.x + Math.sin(Math.PI * t) * 10, g.home.y + 8, 0.88, 360 * ease.inOutSine(t)));
+        R.cat.innerHTML = catSitting(g.cat, { look: look(decided) });
+        say('ふり ふり…');
+      }
+      // フェイント：とびつく ふりを して、もう いちど ふりふり
+      if (variant === 'feint') {
         say('…と みせかけて');
         await frames(380, (t) => at(g.home.x, g.home.y + 8 - Math.sin(Math.PI * t) * 16, 0.88 + 0.12 * Math.sin(Math.PI * t)));
         say('まだ まだ… ふり ふり');

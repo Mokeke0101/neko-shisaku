@@ -7,12 +7,16 @@
 // 2. さいごは、次の ページの はしを持ち上げては もどし、めくるか まよう。
 // 結果は先に乱数で決め（RS01-S14）、めくる ページの並びを、決めた ページで終わるように組む。
 // ページは どれも同じ大きさで、一覧の札も同じ大きさ（出やすさは表れない：RS01-S21）。
+// v17 の後（テーマパーク）：めくりカードは ピンクの 台に立てた 卓上めくり（金の リング・紙の 重なり）。一覧は ラベンダーの ボードに、クレーンの 値札と おなじ パステルの札。
+// 動きの ちがい（3B：4つ）：ふつう・めくりすぎ（1まい めくりすぎて もどす）・かぜ（ひゅうっと 風で 何まいも めくれる）・
+// ふーっ（さいごの 1まいを 猫が 息で ふいて めくる）。
 import { C } from '../art.js';
 import { catSitting, catPaw, pawPrint } from '../cats.js';
 import { audio } from '../audio.js';
 import { pickWeighted } from '../odds.js';
 import { celebrate, clearCelebration, ease, frames, wait, levelOf } from '../fx.js';
 import { showHint, showResult, setBusy, centerOf, charCount, svgEl, escapeXml } from '../ui.js';
+import { TINTS, pastelTag } from './common.js';
 
 // めくる ページの並び（いちばん上に出る ページの番号）。決めた ページ decided で終わり、続けて同じ ページにならない。
 // めくる回数は 11〜14。rand() は 0 以上 1 未満
@@ -78,13 +82,27 @@ export function createMekuri({ view, stage, result, play, getChoices, getWeights
     const svg = svgEl('svg', { viewBox: `0 0 ${W} ${H}` });
     let s = '';
     // めくりカード：台紙と、とじ具
-    s += `<rect x="${(padX + 4).toFixed(1)}" y="${(padTop + 8).toFixed(1)}" width="${padW}" height="${padH}" rx="14" fill="#d9b07a" opacity="0.35"/>`;
-    s += `<rect x="${padX.toFixed(1)}" y="${padTop}" width="${padW}" height="${padH}" rx="14" fill="#efe0c8" stroke="${C.woodDeep}" stroke-width="3"/>`;
+    // 木の台（うしろの 足と、下の 板）
+    s += `<path d="M${(padX + padW * 0.5).toFixed(1)},${padTop} L${(padX + padW * 0.5 + 10).toFixed(1)},${(padTop + padH + 8).toFixed(1)}" stroke="#e39a8e" stroke-width="8" stroke-linecap="round"/>`;
+    s += `<rect x="${(padX + 4).toFixed(1)}" y="${(padTop + 8).toFixed(1)}" width="${padW}" height="${padH}" rx="14" fill="#c97a6e" opacity="0.25"/>`;
+    s += `<rect x="${padX.toFixed(1)}" y="${padTop}" width="${padW}" height="${padH}" rx="14" fill="#f7b4a6" stroke="#c97a6e" stroke-width="3"/>`;
+    // 紙の 重なり（下の はしに 何まいも 見える）
+    for (let q = 3; q >= 1; q--) s += `<rect x="${(padX + 6).toFixed(1)}" y="${(padTop + 8 + q * 2.4).toFixed(1)}" width="${(padW - 12).toFixed(1)}" height="${(padH - 14).toFixed(1)}" rx="10" fill="${q % 2 ? '#efe2cb' : '#f7eedd'}" stroke="#d9c09c" stroke-width="1"/>`;
+    s += `<rect x="${(padX - 6).toFixed(1)}" y="${(padTop + padH - 4).toFixed(1)}" width="${padW + 12}" height="10" rx="5" fill="#f7b4a6" stroke="#c97a6e" stroke-width="2"/>`;
     s += `<g class="mk-under"></g><g class="mk-top"></g>`;
-    for (let k = 0; k < 4; k++) {
-      const rx = padX + padW * (0.2 + k * 0.2);
-      s += `<rect x="${(rx - 5).toFixed(1)}" y="${padTop - 10}" width="10" height="22" rx="5" fill="#fffaf0" stroke="${C.chestnut}" stroke-width="2.4"/>`;
+    // 金の リング
+    for (let k = 0; k < 6; k++) {
+      const rx = padX + padW * (0.14 + k * 0.144);
+      s += `<ellipse cx="${rx.toFixed(1)}" cy="${(padTop + 3).toFixed(1)}" rx="4.5" ry="9" fill="none" stroke="#a8915a" stroke-width="3.4"/>`
+        + `<ellipse cx="${rx.toFixed(1)}" cy="${(padTop + 3).toFixed(1)}" rx="4.5" ry="9" fill="none" stroke="#f1dc9a" stroke-width="1.4"/>`
+        + `<circle cx="${rx.toFixed(1)}" cy="${(padTop + 11).toFixed(1)}" r="2.4" fill="#8a7466"/>`;
     }
+    // コルクボード（一覧の 下じき）
+    const lastC = cells[cells.length - 1];
+    const boardY = listY - 8;
+    const boardH = lastC.y + lastC.h + 8 - boardY;
+    s += `<rect x="4" y="${(boardY + 3).toFixed(1)}" width="${W - 8}" height="${boardH.toFixed(1)}" rx="12" fill="#a985c9" opacity="0.3"/>`
+      + `<rect x="4" y="${boardY.toFixed(1)}" width="${W - 8}" height="${boardH.toFixed(1)}" rx="12" fill="#efe6f7" stroke="#a985c9" stroke-width="2.4"/>`;
     // 一覧
     let minLabel = Infinity;
     cells.forEach((c, i) => {
@@ -92,8 +110,8 @@ export function createMekuri({ view, stage, result, play, getChoices, getWeights
       const size = Math.max(12, Math.min(22, c.h * 0.56, (c.w - 46) / Math.max(charCount(label), 1)));
       minLabel = Math.min(minLabel, size);
       s += `<g class="cell" data-i="${i}">`
-        + `<rect class="cell-bg" x="${c.x.toFixed(1)}" y="${c.y.toFixed(1)}" width="${c.w.toFixed(1)}" height="${c.h.toFixed(1)}" rx="${Math.min(12, c.h / 2).toFixed(1)}" fill="${C.paper}" stroke="${C.woodDeep}" stroke-width="2"/>`
-        + `<circle cx="${(c.x + 17).toFixed(1)}" cy="${(c.y + c.h / 2).toFixed(1)}" r="${Math.min(11, c.h * 0.36).toFixed(1)}" fill="#fde3d6"/>`
+        + pastelTag(i, c.x, c.y, c.w, c.h)
+        + `<circle cx="${(c.x + 17).toFixed(1)}" cy="${(c.y + c.h / 2).toFixed(1)}" r="${Math.min(11, c.h * 0.36).toFixed(1)}" fill="#fffaf0" stroke="${TINTS[i % TINTS.length][1]}" stroke-width="1.6"/>`
         + `<text x="${(c.x + 17).toFixed(1)}" y="${(c.y + c.h / 2).toFixed(1)}" font-size="${Math.min(14, c.h * 0.42).toFixed(1)}" font-weight="700" fill="${C.chestnut}" text-anchor="middle" dominant-baseline="central">${i + 1}</text>`
         + `<text class="cell-label" x="${(c.x + 34 + (c.w - 40) / 2).toFixed(1)}" y="${(c.y + c.h / 2).toFixed(1)}" font-size="${size.toFixed(1)}" fill="${C.ink}" text-anchor="middle" dominant-baseline="central">${escapeXml(label)}</text>`
         + `</g>`;
@@ -163,17 +181,18 @@ export function createMekuri({ view, stage, result, play, getChoices, getWeights
     refs.cells.forEach((g, k) => {
       const bg = g.querySelector('.cell-bg');
       const on = k === i;
-      bg.setAttribute('fill', on ? (strong ? '#fff1c4' : '#fff8e4') : C.paper);
-      bg.setAttribute('stroke', on && strong ? C.momiji : C.woodDeep);
-      bg.setAttribute('stroke-width', on && strong ? '4' : on ? '3' : '2');
+      const [col, edge] = TINTS[k % TINTS.length];
+      bg.setAttribute('fill', on ? (strong ? '#fff1c4' : '#fff8e4') : col);
+      bg.setAttribute('stroke', on && strong ? C.momiji : on ? C.woodDeep : edge);
+      bg.setAttribute('stroke-width', on && strong ? '4' : on ? '2.6' : '2');
     });
   }
 
   // 1まい めくる：いまの ページが上へ めくれて、下の ページ next が出る
-  async function flip(next, dur, k) {
+  async function flip(next, dur, k, paw = true) {
     drawPage(refs.under, next);
     audio.pluck(k);
-    await frames(dur, (t) => { liftTop(ease.inOutSine(t)); placePaw(Math.sin(Math.PI * t) * 0.6); });
+    await frames(dur, (t) => { liftTop(ease.inOutSine(t)); placePaw(paw ? Math.sin(Math.PI * t) * 0.6 : 0); });
     drawPage(refs.top, next);
     refs.top.dataset.page = String(next);
     liftTop(0);
@@ -210,16 +229,34 @@ export function createMekuri({ view, stage, result, play, getChoices, getWeights
     showHint(result, 'ぺらぺら…');
     refs.catG.innerHTML = catSitting(cat, { look: { x: -1, y: 0.4 } });
     await wait(500);
+    const vr = Math.random();
+    const variant = n < 2 ? 'plain' : vr < 0.25 ? 'back' : vr < 0.5 ? 'wind' : vr < 0.75 ? 'fu' : 'plain';
+    stage.dataset.variant = variant;
+    const windAt = Math.floor(seq.length * 0.45);
     // 1. ぺらぺら めくる（だんだん ゆっくり）
     for (let k = 1; k < seq.length; k++) {
       if (k === seq.length - 3) showHint(result, 'どこで とめようかな…');
+      if (variant === 'wind' && k >= windAt && k < windAt + 3) {
+        // かぜ：ひゅうっと 何まいも めくれる（手は 使わない）
+        if (k === windAt) { showHint(result, 'ひゅう…！'); refs.catG.innerHTML = catSitting(cat, { mood: 'strain', look: { x: -1, y: 0.2 } }); }
+        await flip(seq[k], 110, k, false);
+        if (k === windAt + 2) { refs.catG.innerHTML = catSitting(cat, { look: { x: -1, y: 0.4 } }); showHint(result, 'ぺらぺら…'); }
+        continue;
+      }
+      if (variant === 'fu' && k === seq.length - 1) {
+        // ふーっ：さいごの 1まいは 息で ふいて めくる
+        showHint(result, 'ふーっ');
+        refs.catG.innerHTML = catSitting(cat, { mood: 'puff', look: { x: -1, y: 0.2 } });
+        await wait(250);
+        await flip(seq[k], 700, k, false);
+        refs.catG.innerHTML = catSitting(cat, { look: { x: -1, y: 0.4 } });
+        continue;
+      }
       await flip(seq[k], flipTime(k, seq.length), k);
       await wait(60);
     }
-    // ときどき出る別の動き（v12）：1まい めくりすぎて、「あっ」と もどす
-    delete stage.dataset.variant;
-    if (n > 1 && Math.random() < 0.3) {
-      stage.dataset.variant = 'back';
+    // めくりすぎ：1まい めくりすぎて、「あっ」と もどす
+    if (variant === 'back') {
       let over = decided;
       while (over === decided) over = Math.floor(Math.random() * n);
       await flip(over, 420, seq.length);
