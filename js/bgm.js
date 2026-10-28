@@ -1,7 +1,7 @@
 // 季節の BGM（v19）。依頼者が ほかの AI（Suno）で 作った 曲を、音の ファイル（audio/bgm-*.m4a・AAC）で ながす。
-// - 季節ごとに 1曲（春・夏・秋・冬）。行事の 曲は まだ 無いので、行事の日も その日の 季節の 曲（TRACKS に 足せば 行事の 曲になる）
+// - 季節ごとに 1曲（春・夏・秋・冬）と、行事の 曲（v20：9つ）。行事の 曲が ある日は 行事の 曲、ほかは その日の 季節の 曲
 // - くり返し ながす。曲の 終わりの CROSS 秒は、次の くり返しの はじまりと 重ねて（クロスフェード）、とぎれずに つなぐ
-//   （曲の 終わりが 大きいまま 終わる 曲も、小さくなって 終わる 曲も ある。おわりの 小さすぎる 所は 先に けずる）
+//   （曲の 終わりが 大きいまま 終わる 曲も、小さくなって 終わる 曲も ある。はじめと おわりの 小さすぎる 所・無音は 先に けずる）
 // - 音量は 効果音より 小さく、ゲームで 遊んでいる間は さらに 小さくする（duck）。季節が かわると 曲を ゆっくり 切りかえる
 // - 「音を鳴らす」と「季節の BGM を ながす」の 両方が オンの時だけ 鳴る。アプリが 見えない時は 止める
 // 音は Web Audio で 鳴らす（効果音と おなじ 通り道。消音モードでも鳴らす 設定に したがう）。ファイルは sw.js が 端末に 保存する
@@ -13,13 +13,23 @@ export const TRACKS = {
   natsu: './audio/bgm-natsu.m4a',
   aki: './audio/bgm-aki.m4a',
   fuyu: './audio/bgm-fuyu.m4a',
+  // 行事（v20。依頼者が Suno で 作った。大きさは 季節の 曲に そろえて 変換した）
+  valentine: './audio/bgm-valentine.m4a',
+  hinamatsuri: './audio/bgm-hinamatsuri.m4a',
+  hanami: './audio/bgm-hanami.m4a',
+  kodomonohi: './audio/bgm-kodomonohi.m4a',
+  tanabata: './audio/bgm-tanabata.m4a',
+  natsumatsuri: './audio/bgm-natsumatsuri.m4a',
+  halloween: './audio/bgm-halloween.m4a',
+  christmas: './audio/bgm-christmas.m4a',
+  nekonohi: './audio/bgm-nekonohi.m4a',
 };
 const VOL = 0.22; // BGM 全体の 音量（効果音の master の 中で。曲は 大きめに 作られているので 下げる）
 const DUCK = 0.45; // 遊んでいる間の 下げ方
 const CROSS = 3; // くり返しの つなぎ目で 重ねる 秒
 const FADE_IN = 1.5;
 
-// 曲の 中の 鳴らす はんい：おわりの 小さすぎる（いちばん 大きい所より 30dB 下）所を けずる
+// 曲の 中の 鳴らす はんい：はじめと おわりの 小さすぎる（いちばん 大きい所より 30dB 下）所を けずる
 export function trimOf(buffer) {
   const d = buffer.getChannelData(0);
   const rate = buffer.sampleRate;
@@ -36,7 +46,9 @@ export function trimOf(buffer) {
   const floor = peak * Math.pow(10, -30 / 20);
   let last = env.length - 1;
   while (last > 0 && env[last] < floor) last--;
-  return { start: 0, end: Math.min(buffer.duration, (last + 1) * 0.25) };
+  let first = 0;
+  while (first < last && env[first] < floor) first++;
+  return { start: Math.max(0, first * 0.25 - 0.1), end: Math.min(buffer.duration, (last + 1) * 0.25) };
 }
 
 export const bgm = {
